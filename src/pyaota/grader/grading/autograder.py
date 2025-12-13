@@ -33,7 +33,7 @@ import tempfile
 
 from pdf2image import convert_from_path
 
-from answer_sheet_reader import LayoutConfig, read_answer_sheet, annotate_overlay
+from ..util.answer_sheet_reader import LayoutConfig, read_answer_sheet, annotate_overlay
 
 
 # ----------------------------------------------------------------------

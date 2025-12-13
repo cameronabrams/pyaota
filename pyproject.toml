@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyaota"
+version = "0.1.0"
+description = "Python app for generating and grading exams (with digit OCR support)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Cameron F. Abrams" }]
+
+dependencies = [
+  "numpy",
+  "pillow",
+  "opencv-python",
+  "pydantic>=2",
+  "pyyaml",
+  "tqdm",
+  "tensorflow>=2.12",   # swap for torch if you prefer
+  "docx",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "black",
+]
+docs = [
+  "sphinx",
+  "furo",
+  "sphinx-autodoc-typehints",
+  "myst-parser",
+]
+
+[project.scripts]
+pyaota = "pyaota.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyaota"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]

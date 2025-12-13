@@ -51,8 +51,10 @@ def main():
     test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
     print(f"Test accuracy: {test_acc:.4f}")
 
-    # Save model next to this script
-    out_path = Path(__file__).with_name("mnist_digit_cnn.keras")
+    # this script lives at PACKAGE_ROOT/src/package_name/ocr/train_mnist_digit_model.py
+    # model data lives at PACKAGE_ROOT/data/models/mnist_digit_cnn.keras
+    PACKAGE_ROOT = Path(__file__).parents[2]
+    out_path = PACKAGE_ROOT / "data" / "models" / "mnist_digit_cnn.keras"
     model.save(out_path)
     print(f"Saved digit model to {out_path}")
 

@@ -20,7 +20,7 @@ import cv2
 import numpy as np
 import math
 
-from digit_ocr import ocr_digit_nn, load_digit_model
+from ...ocr.digit_ocr import ocr_digit_nn, load_digit_model
 
 # Optionally load global model once if you like
 _DIGIT_MODEL = None

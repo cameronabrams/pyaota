@@ -8,6 +8,7 @@ from typing import Tuple, Optional
 import numpy as np
 import cv2
 import tensorflow as tf
+
 load_model = tf.keras.models.load_model
 
 _MODEL: Optional[tf.keras.Model] = None
@@ -16,16 +17,16 @@ _MODEL: Optional[tf.keras.Model] = None
 def load_digit_model(model_path: str | Path | None = None) -> tf.keras.Model:
     """
     Load (or reuse) the MNIST-style digit classifier.
-
-    If model_path is None, assumes 'mnist_digit_cnn.keras' lives next
-    to this file.
+    If no model path is provided, use the default model from the package.
     """
     global _MODEL
     if _MODEL is not None:
         return _MODEL
-
+    
+    PACKAGE_ROOT = Path(__file__).parents[2]
+    package_model_path = PACKAGE_ROOT / "data" / "models" / "mnist_digit_cnn.keras"
     if model_path is None:
-        model_path = Path(__file__).with_name("mnist_digit_cnn.keras")
+        model_path = package_model_path
     else:
         model_path = Path(model_path)
 
@@ -37,7 +38,6 @@ def load_digit_model(model_path: str | Path | None = None) -> tf.keras.Model:
 
     _MODEL = load_model(model_path)
     return _MODEL
-
 
 def preprocess_digit_crop(
     img_gray: np.ndarray,
@@ -71,7 +71,6 @@ def preprocess_digit_crop(
     norm = norm[..., None]  # add channel dim
     batch = np.expand_dims(norm, axis=0)
     return batch
-
 
 def ocr_digit_nn(
     img_gray: np.ndarray,
