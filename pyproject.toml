@@ -12,12 +12,10 @@ license = { file = "LICENSE" }
 authors = [{ name = "Cameron F. Abrams" }]
 
 dependencies = [
-  "numpy",
-  "pillow",
-  "opencv-python",
-  "pydantic>=2",
   "pyyaml",
-  "tqdm",
+  "pdf2image",
+  "numpy",
+  "opencv-python",
   "tensorflow>=2.12",   # swap for torch if you prefer
   "docx",
 ]
@@ -39,8 +37,21 @@ docs = [
 [project.scripts]
 pyaota = "pyaota.cli:main"
 
+# --- BUILD CONFIG -------------------------------------------------
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyaota"]
+
+# Include non-.py package data inside src/pyaota/ (e.g., src/pyaota/data/**)
+[tool.hatch.build]
+include = [
+  "src/pyaota/data/**",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/pyaota/**",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

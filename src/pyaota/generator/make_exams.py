@@ -7,11 +7,10 @@ generate the specified number of unique exam versions in LaTeX format.  Also gen
 Uses the yaml2tex.py module.
 """
 
-import argparse as ap
 import csv
 import random
 import yaml
-
+import os
 from ..latex.content import *
 from .yaml2tex import render_mcq, tex_escape
 
@@ -301,7 +300,9 @@ def write_version_keys_csv(
 
 def make_exams(args):
 
-    yaml_paths = args.bank_files
+    yaml_paths = args.question_banks
+
+    output_dir = args.output_dir
 
     data = get_data(yaml_paths)
 
@@ -345,6 +346,9 @@ def make_exams(args):
             f.write(exam_tex)
 
     else:
+        # create the output dir if it doesn't exist
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
         # Generate multiple versions
         master_rng = random.Random(args.seed)
         version_answer_records: list[tuple[str, list[str]]] = []
@@ -396,7 +400,7 @@ def make_exams(args):
                 extra_content=answer_sheet_tex,
             )
 
-            exam_filename = f"exam_v{v_index}.tex"
+            exam_filename = output_dir / f"exam_v{v_index}.tex"
             with open(exam_filename, "w", encoding="utf-8") as f:
                 f.write(exam_tex)
 
@@ -407,7 +411,7 @@ def make_exams(args):
                 TAILMATTER,
                 version_label=f"{version_label}",
             )
-            key_filename = f"exam_v{v_index}_key.tex"
+            key_filename = output_dir / f"exam_v{v_index}_key.tex"
             with open(key_filename, "w", encoding="utf-8") as f:
                 f.write(key_tex)
 
@@ -423,4 +427,4 @@ def make_exams(args):
 
             version_answer_records.append((version_label, answers_in_order))
 
-        write_version_keys_csv(version_answer_records, output_path="exam_version_keys.csv")
+        write_version_keys_csv(version_answer_records, output_path=output_dir/"exam_version_keys.csv")

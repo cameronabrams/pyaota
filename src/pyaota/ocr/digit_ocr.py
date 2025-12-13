@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib.resources import files
 from pathlib import Path
 from typing import Tuple, Optional
 
@@ -13,7 +14,6 @@ load_model = tf.keras.models.load_model
 
 _MODEL: Optional[tf.keras.Model] = None
 
-
 def load_digit_model(model_path: str | Path | None = None) -> tf.keras.Model:
     """
     Load (or reuse) the MNIST-style digit classifier.
@@ -23,8 +23,9 @@ def load_digit_model(model_path: str | Path | None = None) -> tf.keras.Model:
     if _MODEL is not None:
         return _MODEL
     
-    PACKAGE_ROOT = Path(__file__).parents[2]
-    package_model_path = PACKAGE_ROOT / "data" / "models" / "mnist_digit_cnn.keras"
+    data_dir = files("pyaota") /  "data"
+    models_dir = data_dir / "models"
+    package_model_path = models_dir / "mnist_digit_cnn.keras"
     if model_path is None:
         model_path = package_model_path
     else:

@@ -29,7 +29,6 @@ def main(argv: list[str] | None = None) -> int:
     gen_parser.add_argument(
         "-od",
         "--output-dir",
-        required=True,
         help="Output directory",
     )
     gen_parser.add_argument(

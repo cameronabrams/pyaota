@@ -226,12 +226,12 @@ def render_mcq(
     topic = q.get("topic", "")
     choices = q.get("choices", [])
     choices_text = [choice.get("text", "") for choice in choices]
-    # save the text of the correct answer for later use
+    choices_keys = [choice.get("key", "") for choice in choices]
     correct_text = None
     # Save the text of the correct answer for later use
-    for choice_text in choices_text:
-        if choice.get("key") == correct_key:
-            correct_text = choice.get("text")
+    for choice_text, choice_key in zip(choices_text, choices_keys):
+        if choice_key == correct_key:
+            correct_text = choice_text
             break
     if scramble_choices:
         import random
