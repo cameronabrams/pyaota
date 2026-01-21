@@ -208,6 +208,15 @@ def render_choice(
     body = render_text(raw_text)
     return rf"  \choice[{label}]{{{body}}}"
 
+def render_question(
+    q: dict,
+    **kwargs) -> str:
+    qtype = q.get("type", "mcq").lower()
+    if qtype == "mcq":
+        return render_mcq(q, **kwargs)
+    elif qtype == "tf":
+        return render_tf(q, **kwargs)
+
 def render_mcq(
     q: dict,
     show_id: bool = False,
@@ -282,3 +291,63 @@ def render_mcq(
         r"\end{mcq}",
     ]
     return "\n".join(mcq_lines)
+
+def render_tf(
+    q: dict,
+    show_id: bool = False,
+    highlight_correct: bool = False,
+) -> str:
+    """
+    Render a single true/false question to LaTeX.
+
+    - show_id: if True, prefix the first text stem block with "(ID) ".
+    - highlight_correct: if True, visually mark the correct answer.
+    """
+    qid = q.get("id", "")
+    points = q.get("points", 1)
+    answer = q.get("correct")
+    correct_key = "T" if answer else "F"
+    topic = q.get("topic", "")
+
+    # Make a shallow copy of stem blocks so we don't mutate the original
+    stem_blocks = [dict(block) for block in q.get("stem", [])]
+
+    if show_id:
+        # Prepend "(ID)" to the *first* text block
+        for block in stem_blocks:
+            if block.get("type") == "text":
+                orig = block.get("text", "")
+                block["text"] = f"({qid}) " + orig
+                break
+
+    # Render stem
+    stem_lines: list[str] = []
+    for block in stem_blocks:
+        stem_lines.append(render_stem_block(block))
+        stem_lines.append("")  # blank line between blocks
+    stem_tex = "\n".join(stem_lines).rstrip()
+
+    # Render choices
+    choice_lines: list[str] = []
+    choice_lines.append(r"\begin{choices}")
+    for tf_key, tf_text in [("T", "True"), ("F", "False")]:
+        choice_dict = {"key": tf_key, "text": tf_text, "type": "text"}
+        choice_lines.append(
+            render_choice(
+                choice_dict,
+                correct_key=correct_key.upper(),
+                highlight_correct=highlight_correct,
+            )
+        )
+    choice_lines.append(r"\end{choices}")
+    choices_tex = "\n".join(choice_lines)
+
+    # Wrap in tf environment; third arg is still the correct key
+    tf_lines = [
+        rf"\begin{{tf}}{{{qid}}}{{{points}}}{{{correct_key}}}",
+        stem_tex,
+        "",
+        choices_tex,
+        r"\end{tf}",
+    ]
+    return "\n".join(tf_lines)

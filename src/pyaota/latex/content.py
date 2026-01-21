@@ -1,5 +1,5 @@
 HEADMATTER = r"""
-\documentclass[12pt]{article}
+\documentclass[12pt, letter]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{fancyhdr}
 \usepackage{setspace}
@@ -19,11 +19,8 @@ HEADMATTER = r"""
 \usepackage{qrcode}
 \usepackage{multicol}
 
-% Version label + QR macros (filled in by Python)
-\newcommand{\ExamVersionLabel}{<<VERSION_LABEL>>}
-\newcommand{\ExamQR}{\qrcode[height=1.5cm]{<<VERSION_QR_TEXT>>}}
-\newcommand{\Instructions}{<<INSTRUCTIONS>>}
-\definecolor{bubblegray}{gray}{0.45} 
+
+\definecolor{bubblegray}{gray}{0.4} 
 \newcommand{\circledletter}[1]{%
   \tikz[baseline=-0.6ex]{%
     \node[
@@ -39,14 +36,17 @@ HEADMATTER = r"""
   }%
 }
 
-\newcommand{\idbox}{%
+\newcommand{\idboxwbubbles}{%
   \tikz[baseline=-0.6ex]{
-    \node[draw, minimum width=0.7cm, minimum height=0.7cm] (box) {};
+    \node[draw, minimum width=0.7cm, minimum height=0.7cm] (box) at (0,0) {};
+    \foreach \i in {0,...,9} {
+      \node at (0, -0.7 - \i*0.5) {\circledletter{\i}};
+    }
   }%
 }
 
 \newcommand{\idboxes}[1][8]{%
-  \foreach \i in {1,...,#1}{\idbox\hspace{0.15cm}}%
+  \foreach \i in {1,...,#1}{\idboxwbubbles\hspace{0.15cm}}%
 }
 
 \newcommand{\correctlabel}[1]{%
@@ -87,16 +87,30 @@ HEADMATTER = r"""
 \newif\ifshowanswers
 \showanswersfalse
 
-\newcounter{mcq}
+\newcounter{question}
 
 \newenvironment{mcq}[3]{%
-  \refstepcounter{mcq}%
+  \refstepcounter{question}%
   \par\medskip
-  \def\mcqid{#1}%
-  \def\mcqpoints{#2}%
-  \def\mcqcorrect{#3}%
+  \def\questionid{#1}%
+  \def\questionpoints{#2}%
+  \def\questioncorrect{#3}%
   \noindent\begin{minipage}{\linewidth}%
-    \textbf{\themcq.}\enspace
+    \textbf{\thequestion.}\enspace
+}{%
+  \end{minipage}%
+  \par\bigskip
+  \par\bigskip
+}
+
+\newenvironment{tf}[3]{%
+  \refstepcounter{question}%
+  \par\medskip
+  \def\questionid{#1}%
+  \def\questionpoints{#2}%
+  \def\questioncorrect{#3}%
+  \noindent\begin{minipage}{\linewidth}%
+    \textbf{\thequestion.}\enspace
 }{%
   \end{minipage}%
   \par\bigskip
@@ -116,61 +130,62 @@ HEADMATTER = r"""
 \newcommand{\choicecode}[1][]{%
   \item[#1]
 }
+\setlength{\parindent}{0pt}
+"""
 
+DEFAULT_PAGESTYLES_TEMPLATE = r"""
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{Drexel University -- ENGR 131 --- Winter 2025-2026}
-\lhead{Midterm Exam}
+\rhead{<<<INSTITUTION>>> -- <<<COURSE>>> --- <<<TERM>>>}
+\lhead{<<<DOCUMENTNAME>>> {\footnotesize (ver. <<<VERSION>>>)}}
 \rfoot{\thepage}
 
 % Special pagestyle for answer sheet: same header, no footer / page number
 \fancypagestyle{answersheet}{%
   \fancyhf{}%
-  \rhead{Drexel University -- ENGR 131 --- Winter 2025-2026}%
-  \lhead{Midterm Exam}%
+  \rhead{<<<INSTITUTION>>> -- <<<COURSE>>> --- <<<TERM>>>}%
+  \lhead{<<<DOCUMENTNAME>>> {\footnotesize (ver. <<<VERSION>>>)}}%
+  \rfoot{}
 }
+"""
 
+BEGIN_DOCUMENT = r"""
 
 \begin{document}
 
 """
 
 DEFAULT_EXAM_INSTRUCTIONS = r"""
+INSTRUCTIONS:
 \begin{enumerate}
 \item \textbf{Carefully} detach the answer sheet from the back of this exam packet.
-\item Enter your name and student ID number on the answer sheet in the spaces provided.
-\item Fill in the bubbles on the answer sheet corresponding to your answers.  Use a \textbf{No. 2 pencil} only.
+\item Enter your name and student ID number on the answer sheet in the spaces provided, and fill in the corresponding bubbles for each digit of your student ID.
+\item Fill in the bubbles on the answer sheet corresponding to your answers.
 \item Time allowed: 50 minutes.
 \item No calculators, notes, textbooks, or other aids are permitted.
 \item \textbf{Turn in only your answer sheet}.  You should keep your exam packet.
 \end{enumerate}
+Questions begin on the next page.
+\clearpage
 """
+
 
 DEFAULT_ANSWER_SHEET_INSTRUCTIONS = r"""
-
-Your name: \underline{\hspace{9cm}}\\*[0.4em]
-
-Your Drexel Student ID: \idboxes[8]\\*[0.4em]
-
-Please fill in one bubble per question.  Make sure you turn this answer sheet in to a TA or instructor at the end of the exam.
+Your name: \underline{\hspace{12cm}}\\*[0.5em]
+\begin{minipage}[t]{0.4\linewidth}
+\raggedleft
+Your Drexel Student ID:\\
+Please fill in a bubble for each digit of your ID:\\*[0.5em]
+\begin{center}
+\qrcode[height=1cm]{<<<VERSION>>>}\\*[0.5em]
+{\footnotesize Version: <<<VERSION>>>}
+\end{center}
+\end{minipage}\ \ 
+\begin{minipage}[t]{0.6\linewidth}
+\idboxes[8]
+\end{minipage}
+Please fill in one bubble per question.  Give only this page to a TA or instructor at the end of the exam.
 """
-
-def make_qr_header_instructions(instructions: str = DEFAULT_EXAM_INSTRUCTIONS) -> str:
-    return r"""
-% ---- Version label + QR on first page ----
-\begin{minipage}{0.75\linewidth}
-\begin{flushleft}
-<<INSTRUCTIONS>>
-\end{flushleft}
-\end{minipage}
-\begin{minipage}{0.24\linewidth}
-\begin{flushright}
-  \textbf{Version: \ExamVersionLabel}\\[0.5em]
-  \ExamQR
-\end{flushright}
-\end{minipage}
-\vspace{1em}
-""".replace("<<INSTRUCTIONS>>", instructions)
 
 ENDMESSAGE = r"""
 \begin{center}
@@ -178,7 +193,6 @@ ENDMESSAGE = r"""
 \end{center}
 """
 
-TAILMATTER = r"""
-
+END_DOCUMENT = r"""
 \end{document}
 """

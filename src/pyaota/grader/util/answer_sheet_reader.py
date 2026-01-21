@@ -14,8 +14,7 @@ Pipeline:
 
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Sequence, Optional, Any
-
-
+from typing import Sequence
 import cv2
 import numpy as np
 import math
@@ -33,8 +32,6 @@ def get_digit_model():
 
 # ---------------- Layout configuration ----------------
 
-from dataclasses import dataclass
-from typing import Sequence
 
 @dataclass
 class TextBoxConfig:

@@ -24,6 +24,8 @@ Dependencies:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from typing import Dict, List, Optional, Tuple, Any
 
 import argparse
@@ -33,55 +35,130 @@ import tempfile
 
 from pdf2image import convert_from_path
 
-from ..util.answer_sheet_reader import LayoutConfig, read_answer_sheet, annotate_overlay
+from ..util.answer_sheet_reader import LayoutConfig, AnswerSheetReader
+from .answersheetreader import AnswerSheetReader
 
+class Autograder:
+    """
+    Autograder for multi-page PDF answer sheets.
+    """
+    def __init__(self, layout_config: LayoutConfig):
+        self.layout = layout_config
+        self.reader = AnswerSheetReader(layout_config)
+
+    def load_version_keys_csv(self, keys_csv_path: Path | str):
+        if not os.path.exists(keys_csv_path):
+            raise FileNotFoundError(f"Answer-key CSV not found: {keys_csv_path}")
+
+        self.version_keys: Dict[str, List[str]] = {}
+
+        with open(keys_csv_path, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            fieldnames = reader.fieldnames or []
+            # Identify question columns and sort them by number
+            qcols = [col for col in fieldnames if col.startswith("Q")]
+            qcols.sort(key=lambda name: int(name[1:]))  # "Q10" -> 10
+
+            for row in reader:
+                version_label = (row.get("version_label") or "").strip()
+                if not version_label:
+                    continue
+
+                answers: List[str] = []
+                for col in qcols:
+                    val = (row.get(col) or "").strip()
+                    answers.append(val.lower() if val else "")
+                self.version_keys[version_label] = answers
+
+    def grade_pdf(self, pdf_path: Path | str):
+        if isinstance(pdf_path, str):
+            pdf_path = Path(pdf_path)
+        if not pdf_path.exists():
+            raise FileNotFoundError(f"PDF not found: {pdf_path}")
+
+        pages = convert_from_path(str(pdf_path), dpi=300, fmt='png')
+
+        results: List[Dict[str, Any]] = []
+
+        for page_index, page in enumerate(pages, start=1):
+            img = np.array(page)
+            reader = AnswerSheetReader(img, layout_config=self.layout)
+
+            page_result: Dict[str, Any] = {
+                "page_index": page_index,
+                "version_label": read_results['version_label'],
+                "student_id": read_results['student_id'],
+                "answers_detected": read_results['answers'],
+                "answer_key": None,
+                "per_question": {},
+                "num_questions": None,
+                "num_correct": None,
+                "score_fraction": None,
+                "status": "ok",
+                "overlay_path": overlay_path,
+            }
+
+            # ... rest of grading logic unchanged ...
+            # (lookup version_key, compare, compute num_correct, etc.)
+            # make sure to keep page_result["overlay_path"] untouched
+
+            key = version_keys.get(read_results['version_label']) if read_results['version_label'] else None
+            if not read_results['version_label']:
+                page_result["status"] = "no_qr"
+                results.append(page_result)
+                continue
+            if key is None:
+                page_result["status"] = "unknown_version"
+                results.append(page_result)
+                continue
+
+            page_result["answer_key"] = key
+            num_q = len(key)
+            page_result["num_questions"] = num_q
+
+            num_correct = 0
+            per_q: Dict[int, Dict[str, Any]] = {}
+            for qnum in range(1, num_q + 1):
+                correct = (key[qnum - 1] or "").lower()
+                detected = read_results['answers'].get(qnum)
+                detected_norm = (detected or "").lower() if detected else ""
+                is_correct = bool(correct) and (detected_norm == correct)
+                if is_correct:
+                    num_correct += 1
+                per_q[qnum] = {
+                    "correct": correct or None,
+                    "detected": detected_norm or None,
+                    "is_correct": is_correct,
+                }
+
+            page_result["per_question"] = per_q
+            page_result["num_correct"] = num_correct
+            page_result["score_fraction"] = (
+                float(num_correct) / num_q if num_q > 0 else None
+            )
+            # Stamp score onto overlay image, if we created one
+            if overlay_path is not None:
+                annotate_overlay(
+                    warped_img=read_results['warped_image'],
+                    layout=layout,
+                    centers=read_results['centers'],
+                    student_id=read_results['student_id'],
+                    per_question=per_q,
+                    overlay_path=overlay_path,
+                    num_correct=num_correct,
+                    num_questions=num_q,
+                    score_fraction=page_result["score_fraction"],
+                )
+
+            results.append(page_result)
 
 # ----------------------------------------------------------------------
 # Load version → answer-key mapping from CSV
 # ----------------------------------------------------------------------
 
-def load_version_keys_csv(path: str) -> Dict[str, List[str]]:
-    """
-    Load a CSV of exam version answer keys.
-
-    Expected format:
-
-      version_label,Q1,Q2,Q3,...
-      01234567,a,b,c,d,...
-      98765432,c,c,b,d,...
-
-    Returns
-    -------
-    Dict[str, List[str]]
-        Mapping {version_label -> [ans_for_Q1, ans_for_Q2, ...]}.
-    """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Answer-key CSV not found: {path}")
-
-    mapping: Dict[str, List[str]] = {}
-
-    with open(path, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        fieldnames = reader.fieldnames or []
-        # Identify question columns and sort them by number
-        qcols = [col for col in fieldnames if col.startswith("Q")]
-        qcols.sort(key=lambda name: int(name[1:]))  # "Q10" -> 10
-
-        for row in reader:
-            version_label = (row.get("version_label") or "").strip()
-            if not version_label:
-                continue
-
-            answers: List[str] = []
-            for col in qcols:
-                val = (row.get(col) or "").strip()
-                answers.append(val.lower() if val else "")
-            mapping[version_label] = answers
-
-    return mapping
 
 
-# ----------------------------------------------------------------------
+
 # Grade a multi-page PDF
 # ----------------------------------------------------------------------
 
@@ -112,111 +189,6 @@ def grade_pdf(
 
     pages = convert_from_path(pdf_path, dpi=dpi)
 
-    results: List[Dict[str, Any]] = []
-
-    for page_index, page in enumerate(pages, start=1):
-        # temp PNG for this page
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
-            tmp_path = tmp_file.name
-            page.save(tmp_path, "PNG")
-
-        # Path for the overlay, if desired
-        if results_overlay_dir is not None:
-            overlay_path = os.path.join(
-                results_overlay_dir,
-                f"sheet_{page_index:03d}_overlay.png",
-            )
-        else:
-            overlay_path = None
-
-        if debug_overlay_dir is not None:
-            debug_overlay_path = os.path.join(
-                debug_overlay_dir,
-                f"sheet_{page_index:03d}_debug_overlay.png",
-            )
-        else:
-            debug_overlay_path = None
-
-        try:
-            read_results = read_answer_sheet(
-                tmp_path,
-                layout=layout,
-                warp_size=warp_size,
-                debug_overlay_path=debug_overlay_path,
-            )
-        finally:
-            try:
-                os.remove(tmp_path)
-            except OSError:
-                pass
-
-        page_result: Dict[str, Any] = {
-            "page_index": page_index,
-            "version_label": read_results['version_label'],
-            "student_id": read_results['student_id'],
-            "answers_detected": read_results['answers'],
-            "answer_key": None,
-            "per_question": {},
-            "num_questions": None,
-            "num_correct": None,
-            "score_fraction": None,
-            "status": "ok",
-            "overlay_path": overlay_path,
-        }
-
-        # ... rest of grading logic unchanged ...
-        # (lookup version_key, compare, compute num_correct, etc.)
-        # make sure to keep page_result["overlay_path"] untouched
-
-        key = version_keys.get(read_results['version_label']) if read_results['version_label'] else None
-        if not read_results['version_label']:
-            page_result["status"] = "no_qr"
-            results.append(page_result)
-            continue
-        if key is None:
-            page_result["status"] = "unknown_version"
-            results.append(page_result)
-            continue
-
-        page_result["answer_key"] = key
-        num_q = len(key)
-        page_result["num_questions"] = num_q
-
-        num_correct = 0
-        per_q: Dict[int, Dict[str, Any]] = {}
-        for qnum in range(1, num_q + 1):
-            correct = (key[qnum - 1] or "").lower()
-            detected = read_results['answers'].get(qnum)
-            detected_norm = (detected or "").lower() if detected else ""
-            is_correct = bool(correct) and (detected_norm == correct)
-            if is_correct:
-                num_correct += 1
-            per_q[qnum] = {
-                "correct": correct or None,
-                "detected": detected_norm or None,
-                "is_correct": is_correct,
-            }
-
-        page_result["per_question"] = per_q
-        page_result["num_correct"] = num_correct
-        page_result["score_fraction"] = (
-            float(num_correct) / num_q if num_q > 0 else None
-        )
-        # Stamp score onto overlay image, if we created one
-        if overlay_path is not None:
-            annotate_overlay(
-                warped_img=read_results['warped_image'],
-                layout=layout,
-                centers=read_results['centers'],
-                student_id=read_results['student_id'],
-                per_question=per_q,
-                overlay_path=overlay_path,
-                num_correct=num_correct,
-                num_questions=num_q,
-                score_fraction=page_result["score_fraction"],
-            )
-
-        results.append(page_result)
 
     return results
 

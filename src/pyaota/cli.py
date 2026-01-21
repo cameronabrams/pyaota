@@ -1,154 +1,301 @@
 from __future__ import annotations
 
-import argparse
-import sys
+import argparse as ap
+import sys, os, shutil
+import yaml
 
-from pyaota.generator.make_exams import make_exams
+from .generator.manager import make_answersheet_subcommand, make_exams_subcommand, compile_dump_subcommand, tune_answersheetreader_subcommand, autograde_subcommand
+from .util.text import banner, oxford
+
+import logging
+logger = logging.getLogger(__name__)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+def setup_logging(args):    
+    loglevel_numeric = getattr(logging, args.logging_level.upper())
+    if args.log:
+        if os.path.exists(args.log):
+            shutil.copyfile(args.log, args.log+'.bak')
+        logging.basicConfig(filename=args.log,
+                            filemode='w',
+                            format='%(asctime)s %(name)s %(message)s',
+                            level=loglevel_numeric
+        )
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(levelname)s> %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
+
+def save_args(args, filepath):
+    """Save argparse namespace including subcommand to YAML"""
+    args_dict = vars(args).copy()
+    args_dict.pop('func', None)
+    args_dict.pop('save_config', None)
+    args_dict.pop('config', None)
+    with open(filepath, 'w') as f:
+        yaml.dump(args_dict, f, default_flow_style=False)
+
+def load_args_from_yaml(filepath):
+    """Load args from YAML"""
+    with open(filepath, 'r') as f:
+        return yaml.safe_load(f)
 
 def main(argv: list[str] | None = None) -> int:
     """
     Entry point for the pyaota command-line interface.
     """
-    parser = argparse.ArgumentParser(
-        prog="pyaota",
-        description="pyaota: exam generation and grading toolkit",
+    subcommands = {
+        'build': dict(
+            func = make_exams_subcommand,
+            help = 'build documents',
+            ),
+        'answersheet': dict(
+            func = make_answersheet_subcommand,
+            help = 'make answer sheet document',
+        ),
+        'compile-dump': dict(
+            func = compile_dump_subcommand,
+            help = 'compile full dump of questions into a document',
+        ),
+        'grade': dict(
+            func = _cmd_grade,
+            help = 'grade exams from scanned answer sheets',
+        ),
+        'tune-answersheetreader': dict(
+            func = tune_answersheetreader_subcommand,
+            help = 'tune the answer sheet reader parameters',
+        ),
+    }
+    parser = ap.ArgumentParser(
+        prog='pyaota',
+        description='pyaota: build and grade multiple-choice exams',
+        epilog='(c) 2025-2026 Cameron F. Abrams <cfa22@drexel.edu>'
     )
+    parser.add_argument('--config', type=str, help='Load config from YAML')
+    parser.add_argument('--save-config', type=str, help='Save full config to YAML')
 
+    parser.add_argument(
+        '-b',
+        '--banner',
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help='toggle banner message'
+    )
+    parser.add_argument(
+        '--logging-level',
+        type=str,
+        default='debug',
+        choices=[None, 'info', 'debug', 'warning'],
+        help='Logging level for messages written to diagnostic log'
+    )
+    parser.add_argument(
+        '-l',
+        '--log',
+        type=str,
+        default='pyaota-diagnostics.log',
+        help='File to which diagnostic log messages are written'
+    )
     subparsers = parser.add_subparsers(
         title="subcommands",
-        dest="command",
-        metavar="<command>",
+        dest="subcommand",
+        metavar="<subcommand>",
         required=True,
     )
-
-    # ---- generate -------------------------------------------------
-    gen_parser = subparsers.add_parser(
-        "generate",
-        help="Generate one or more exams",
-    )
-    gen_parser.add_argument(
+    command_parsers={}
+    for k, specs in subcommands.items():
+        command_parsers[k] = subparsers.add_parser(
+            k,
+            help=specs['help'],
+            formatter_class=ap.RawDescriptionHelpFormatter
+        )
+        # command_parsers[k].set_defaults(func=specs['func'])
+    
+    command_parsers["build"].add_argument(
         "-od",
         "--output-dir",
         help="Output directory",
     )
-    gen_parser.add_argument(
+    command_parsers["build"].add_argument(
+        "--cleanup",
+        action=ap.BooleanOptionalAction,
+        help="Cleanup intermediate files after LaTeX compilation",
+    )
+    command_parsers["build"].add_argument(
         "--seed",
         type=int,
-        default=None,
         help="Random seed for reproducible generation",
     )
-    gen_parser.add_argument(
+    command_parsers["build"].add_argument(
         "-n",
         "--num-exams",
         type=int,
-        default=1,
         help="Number of exams to generate",
     )
-    gen_parser.add_argument(
+    command_parsers["build"].add_argument(
         "-t",
         "--topics",
         nargs="+",
-        default=[],
-        help="Topics to include in the exam",
+        help="Topics to include in the exam (questions will be drawn from these topics and distributed evenly)",
     )
-    gen_parser.add_argument(
-        "-qpt",
-        "--questions-per-topic",
+    command_parsers["build"].add_argument(
+        "-nq",
+        "--num-questions",
         type=int,
-        default=5,
-        help="Number of questions per topic",
+        help="Number of questions on each exam",
     )
-    gen_parser.add_argument(
+    command_parsers["build"].add_argument(
+        "-q",
+        "--question-banks",
+        nargs="+",
+        help="Paths to question banks (YAML/JSON)",
+    )
+    command_parsers["build"].add_argument(
+        "-nc",
+        "--num-cols",
+        type=int,
+        help="Number of columns in the answer sheet",
+    )
+    command_parsers["build"].add_argument(
+        "-sq",
+        "--shuffle-questions",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Shuffle question order on each exam",
+    )
+    command_parsers["build"].add_argument(
+        "-sc",
+        "--shuffle-choices",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Shuffle answer choice order on each exam",
+    )
+    command_parsers["build"].add_argument(
+        "-en",
+        "--exam-name",
+        type=str,
+        default="Exam",
+        help="Name of the exam (used in header)",
+    )
+    command_parsers["build"].add_argument(
+        "-ow",
+        "--overwrite",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Overwrite output directory if it exists",
+    )
+    command_parsers["compile-dump"].add_argument(
+        "-od",
+        "--output-dir",
+        default=".",
+        help="Output directory",
+    )
+    command_parsers["compile-dump"].add_argument(
         "-q",
         "--question-banks",
         nargs="+",
         default=[],
         help="Paths to question banks (YAML/JSON)",
     )
-    gen_parser.add_argument(
-        "-f",
-        "--full-dump",
-        action="store_true",
-        help="Generate all questions without selection",
-    )
-    gen_parser.set_defaults(func=_cmd_generate)
 
-    # # ---- ocr ------------------------------------------------------
-    # ocr_parser = subparsers.add_parser(
-    #     "ocr",
-    #     help="Run OCR on an exam scan",
-    # )
-    # ocr_parser.add_argument(
-    #     "image",
-    #     help="Path to scanned exam image",
-    # )
-    # ocr_parser.add_argument(
-    #     "--model",
-    #     default=None,
-    #     help="Path to OCR model (overrides default)",
-    # )
-    # ocr_parser.add_argument(
-    #     "--debug",
-    #     action="store_true",
-    #     help="Save intermediate OCR artifacts",
-    # )
-    # ocr_parser.set_defaults(func=_cmd_ocr)
-
-    # ---- grade ----------------------------------------------------
-    grade_parser = subparsers.add_parser(
-        "grade",
-        help="Grade exams",
+    command_parsers["answersheet"].add_argument(
+        "-od",
+        "--output-dir",
+        default=".",
+        help="Output directory",
     )
-    grade_parser.add_argument(
+    command_parsers["answersheet"].add_argument(
+        "-nq",
+        "--num-questions",
+        type=int,
+        default=50,
+        help="Number of questions on the answer sheet",
+    )
+    command_parsers["answersheet"].add_argument(
+        "-nc",
+        "--num-cols",
+        type=int,
+        default=3,
+        help="Number of columns in the answer sheet",
+    )
+    command_parsers["answersheet"].add_argument(
+        "--instructions",
+        type=str,
+        default=None,
+        help="Custom instructions for the answer sheet",
+    )
+
+    command_parsers["grade"].add_argument(
         "pdf",
         help="PDF containing one or more answer sheets (scantron-like)",
     )
-    grade_parser.add_argument(
+    command_parsers["grade"].add_argument(
         "keyfile",
         help="CSV file containing answer keys for each exam version",
     )
-    grade_parser.add_argument(
+    command_parsers["grade"].add_argument(
         "-o",
         "--output",
         required=True,
         default="grades.csv",
         help="Output grade report",
     )
-    grade_parser.set_defaults(func=_cmd_grade)
+    command_parsers["grade"].set_defaults(func=_cmd_grade)
+
+    command_parsers["tune-answersheetreader"].add_argument(
+        "-i",
+        "--sample-pdf",
+        help="Sample PDF for tuning results",
+    )
+    command_parsers["tune-answersheetreader"].add_argument(
+        "-nc",
+        "--num-cols",
+        type=int,
+        default=3,
+        help="Number of columns in the answer sheet",
+    )
+    command_parsers["tune-answersheetreader"].add_argument(
+        "--num-questions",
+        type=int,
+        default=50,
+        help="Number of questions on the answer sheet",
+    )
+
 
     # ---- dispatch ------------------------------------------------
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
-    try:
-        return args.func(args)
-    except Exception as exc:
-        parser.error(str(exc))
+    # If config specified, load and override
+    if args.config:
+        config_dict = load_args_from_yaml(args.config)
+        logger.debug(f'Loaded config from {args.config}')
+        logger.debug(f'Config contents: {config_dict}')
+        # Only override if not set on command line
+        for key, value in config_dict.items():
+            if not hasattr(args, key) or getattr(args, key) is None or isinstance(getattr(args, key), bool):
+                setattr(args, key, value)
+        logger.debug(f'Args after loading config: {args}')
+
+    # Save if requested
+    if args.save_config:
+        save_args(args, args.save_config)
+
+    setup_logging(args)
+
+    if args.banner:
+        banner(print)
+    func = subcommands.get(args.subcommand, {}).get('func', None)
+    if func:
+        return func(args)
+    else:
+        logger.debug(f'{args}')
+        my_list = oxford(list(subcommands.keys()))
+        print(f'No subcommand found. Expected one of {my_list}')
         return 1
+    logger.info('Thanks for using pyaota!')
 
 
-# =================================================================
-# Subcommand implementations (stubs for now)
-# =================================================================
-
-def _cmd_generate(args: argparse.Namespace) -> int:
-    make_exams(args)
-    return 0
-
-
-# def _cmd_ocr(args: argparse.Namespace) -> int:
-#     print("[ocr]")
-#     print(f"  image = {args.image}")
-#     print(f"  model = {args.model}")
-#     print(f"  debug = {args.debug}")
-#     # TODO: hook into pyaota.ocr pipeline
-#     return 0
-
-
-def _cmd_grade(args: argparse.Namespace) -> int:
+def _cmd_grade(args: ap.Namespace) -> int:
     print("[grade]")
-    print(f"  ocr_results = {args.ocr_results}")
-    print(f"  rubric      = {args.rubric}")
-    print(f"  output      = {args.output}")
     # TODO: hook into pyaota.grading
     return 0
 
