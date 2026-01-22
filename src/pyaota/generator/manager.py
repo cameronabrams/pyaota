@@ -8,14 +8,16 @@ import yaml
 import os
 import shutil
 from pathlib import Path
-from ..latex.latexcompiler import LatexCompiler
+from dataclasses import asdict
+
 from .yaml2tex import render_question, tex_escape
 from .questionset import QuestionSet
 from .document import Document, ExamDocument
-from .answersheet import AnswerSheetGenerator, LayoutConfig
+from .answersheet import AnswerSheetGenerator, LayoutConfig, TextBoxConfig
+from ..grader.grading.autograder import Autograder
 from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS, DEFAULT_EXAM_INSTRUCTIONS
+from ..latex.latexcompiler import LatexCompiler
 from ..util.collectors import on_rm_error
-from dataclasses import asdict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -111,7 +113,7 @@ def read_answer_sheet_layout_yaml(
     Read the answer sheet layout configuration from a YAML file.
     """
     with open(input_path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+        data = yaml.full_load(f)
         if 'id_echo_textbox' in data:
             data['id_echo_textbox'] = TextBoxConfig(**data['id_echo_textbox'])
         if 'score_textbox' in data:
@@ -232,52 +234,6 @@ def make_exams_subcommand(args):
     write_version_keys_csv(version_answer_records, output_path=output_dir/"exam_version_keys.csv")
     write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
 
-def make_answersheet_subcommand(args):
-    """
-        Generates a standalone answer sheet LaTeX document.  Used mostly for layout and reader testing.
-    """
-    from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS
-    from .answersheet import LayoutConfig, TextBoxConfig
-    output_dir = Path(args.output_dir)
-    if not output_dir.exists():
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-    latex_compiler = LatexCompiler(build_specs={
-        'paths': {
-            'pdflatex': 'pdflatex',
-            'build-dir': output_dir,
-        },
-        'job-name': 'answer_sheet',
-    })
-    layout = LayoutConfig(
-        num_cols = args.num_cols,
-        num_questions = args.num_questions,
-        choice_keys = 'abcd',
-    )
-
-    answer_sheet_generator = AnswerSheetGenerator(layout)
-
-    answer_sheet_tex = answer_sheet_generator.generate_tex()
-    logger.debug(f"Generated answer sheet LaTeX content: {answer_sheet_tex}")
-
-    answer_sheet = ExamDocument(document_specs=dict(
-        institution="Drexel University",
-        course="ENGR 131",
-        term="Winter 2025-2026",
-        documentname="Answer Sheet",
-        version="99887766",
-        instructions=args.instructions or DEFAULT_ANSWER_SHEET_INSTRUCTIONS,
-        extra_tex=answer_sheet_tex,)
-    )
-    lines = []
-    lines.append(rf"\newgeometry{{top={layout.page_top_margin_in}in,bottom={layout.page_bottom_margin_in}in,left={layout.page_left_margin_in}in,right={layout.page_right_margin_in}in}}")
-    lines.append(r"\thispagestyle{answersheet}")
-    # insert these lines after "\begin{document}" in answer_sheet.content
-    # find the index of "\begin{document}"
-    begin_doc_index = answer_sheet.content.find(r"\begin{document}")
-    answer_sheet.content = answer_sheet.content[:begin_doc_index + len(r"\begin{document}")] + '\n' + '\n'.join(lines) + '\n' + answer_sheet.content[begin_doc_index + len(r"\begin{document}"):]
-    latex_compiler.build_document(answer_sheet, cleanup=True)
-
 def tune_answersheetreader_subcommand(args):
     """
         Generates a tuning document for the answer sheet reader.
@@ -301,8 +257,7 @@ def tune_answersheetreader_subcommand(args):
 
     answersheetreader = AnswerSheetReader(img=img, layout_config=LayoutConfig(
         num_cols = args.num_cols,
-        num_questions = args.num_questions,
-        choice_keys = 'abcd',))
+        num_questions = args.num_questions))
 
     answersheetreader._find_indicials()
     answersheetreader._warp_to_canonical()
@@ -312,26 +267,25 @@ def tune_answersheetreader_subcommand(args):
     answersheetreader._read_bubbles()
     answersheetreader._diagnostic_overlay()
 
-    # logger.info("Bubbles read:")
-    # for qnum, choice in answersheetreader.results['bubbles'].items():
-    #     logger.info(f"  Q{qnum}: {choice}")
-    # logger.info(f"Version: {answersheetreader.results['version']}")
-    # logger.info(f"Student ID: {answersheetreader.results['student_id_bubbles']}")
-    # logger.info(f"Student ID OCR: {answersheetreader.results['student_id_ocr']}")
-
 def autograde_subcommand(args):
-    """
-        Autograde answer sheets given a keyfile.
-    """
-    from ..grader.grading.autograder import Autograder
-
-    pdf = args.pdf
+    pdf = args.input_pdf
     keyfile = args.keyfile
     answersheetlayoutyaml = args.answersheet_layout_yaml
-    output = args.output
+    output_dir_path = Path(args.output_dir)
+    debug_output_dir_path = Path(args.debug_output_dir)
+    gradesheet_output_csv_path = Path(args.gradesheet_output_csv)
+    question_tally_csv_path = Path(args.question_tally_output_csv)
+    if not output_dir_path.exists():
+        output_dir_path.mkdir(parents=True, exist_ok=True)
+    if not debug_output_dir_path.exists():
+        debug_output_dir_path.mkdir(parents=True, exist_ok=True)
 
+    logger.info(f"Autograding PDF {pdf} using keyfile {keyfile} and layout {answersheetlayoutyaml}")
     layout_config: LayoutConfig = read_answer_sheet_layout_yaml(answersheetlayoutyaml)
 
     autograder = Autograder(layout_config=layout_config)
     autograder.load_version_keys_csv(keyfile)
-    autograder.grade_pdf(pdf, output_path=output)
+    autograder.grade_pdf(pdf, output_dir_path=output_dir_path, 
+        debug_output_dir_path=debug_output_dir_path, 
+        gradesheet_output_csv_path=gradesheet_output_csv_path,
+        question_tally_csv_path=question_tally_csv_path)

@@ -1,7 +1,7 @@
 from pathlib import Path
 from ...generator.answersheet import LayoutConfig, TextBoxConfig
 from ...ocr.digit_ocr import ocr_digit_nn, load_digit_model
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
 import cv2
 import logging
@@ -193,12 +193,112 @@ class AnswerSheetReader:
         if set(centers.keys()) != {"nw", "ne", "sw", "se"}:
             raise RuntimeError("Failed to detect all four indicials.")
 
-    def _diagnostic_overlay(self):
+    def write_graded_annotations(self,
+                    per_question_results: List[Dict[str, Any]],
+                    score_fraction: float,
+                    overlay_path: [Path | str],
+                ):
+        """
+        Write an annotated overlay image showing correct/incorrect bubbles.
+
+        Parameters
+        ----------
+        per_question_results : List[Dict[str, Any]]
+            List of per-question result dictionaries as produced in read().
+        score_fraction : float
+            Overall score fraction (0.0 to 1.0).
+        overlay_path : Path or str
+            Path to write the overlay image to.
+        """
+        config = self.layout_config
+        out_img = self.img_original.copy()
+        in_img = self.img.copy()
+        bubble_radius = int(self.layout_config.bubble_radius_frac * min(in_img.shape[:2]) * 1.05)
+        centers = self.diagnostics['bubbles']
+        center_coords = list(centers.values())
+        pts_array = np.array(center_coords, dtype=np.float32).reshape(-1, 1, 2)
+        unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+        bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_center_coords]
+        bubble_keys = list(centers.keys())
+        for qnum in range(1, config.num_questions+1):
+            q_info = per_question_results[qnum]
+            correct_bubble_label = q_info["correct"]
+            detected_filled_bubble_label = q_info["detected"]
+            is_correct = q_info["is_correct"]
+            for key in 'abcd':
+                bubble_idx = bubble_keys.index((qnum, key))
+                bubble_center = bubble_result_tuples[bubble_idx]
+                x, y = bubble_center
+                if key == correct_bubble_label:
+                    cv2.circle(out_img, (x, y), bubble_radius, (0, 255, 0), 3)
+                elif key == detected_filled_bubble_label and not is_correct:
+                    cv2.circle(out_img, (x, y), bubble_radius, (0, 0, 255), 3)
+        id_bubble_color = (0, 165, 255)  # dark orange
+        id_bubble_region = self.diagnostics.get('id_bubble_region', None)
+        if id_bubble_region is not None:
+            id_detected = self.results['student_id_bubbles']
+            ul = id_bubble_region['upper_left']
+            lr = id_bubble_region['lower_right']
+            ur = (lr[0], ul[1])
+            ll = (ul[0], lr[1])
+            pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
+            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+            id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
+            u_ul, u_ur, u_lr, u_ll = id_bubble_result_tuples
+            cv2.putText(
+                out_img,
+                f"ID: {id_detected}",
+                (u_ur[0]+10, int(0.5*(u_ur[1] + u_lr[1]))),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.5,
+                id_bubble_color,
+                2,
+                cv2.LINE_AA,
+            )
+        qr_crop = self.diagnostics.get('qr_crop_region', None)
+        if qr_crop is not None:
+            version_detected = self.results.get('version', 'unknown')
+            qr_color = (139, 0, 0) # navy blue
+            ul = qr_crop['upper_left']
+            lr = qr_crop['lower_right']
+            ur = (lr[0], ul[1])
+            ll = (ul[0], lr[1])
+            pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
+            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+            qr_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
+            u_ul, u_ur, u_lr, u_ll = qr_result_tuples
+            cv2.putText(
+                out_img,
+                f"Score: {(score_fraction*100):.1f}%",
+                (u_ul[0] - 325, u_ll[1] + 200),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                4.0,
+                qr_color,
+                4,
+                cv2.LINE_AA,
+            )
+        logger.debug(f"Graded overlay written to {overlay_path}")
+        cv2.imwrite(str(overlay_path), out_img)         
+
+
+    def write_debug_output(self,
+        version_label: str = None,
+    ):
+        overlay_path = self.debug_output_path / f"debug_page_{version_label}.png"
+        overlay_img = self._diagnostic_overlay()
+        cv2.imwrite(str(overlay_path), overlay_img)
+        logger.debug(f"Debug overlay written to {overlay_path}")
+
+    def _diagnostic_overlay(self, version_str: str = None):
         config = self.layout_config
         out_img = self.img_original.copy()
         in_img = self.img.copy()
         bubble_radius = int(self.layout_config.bubble_radius_frac * min(in_img.shape[:2]))
 
+        local_version_str = version_str
+        if local_version_str is None:
+            local_version_str = self.results.get('version', None)
+    
         # indicials are located in the unwarped image
         for name, region in self.diagnostics['indicial_regions'].items():
             upper_left = region["upper_left"]
@@ -284,9 +384,8 @@ class AnswerSheetReader:
         id_bubble_color = (0, 165, 255)  # dark orange
         id_bubble_region = self.diagnostics.get('id_bubble_region', None)
         if id_bubble_region is not None:
-            id_detected_digitdict = self.results.get('student_id_bubbles', 'unknown')
-            id_digit_vals = list(id_detected_digitdict.values())
-            id_detected = ''.join([str(d) if d is not None else '?' for d in id_digit_vals])
+            id_detected_digitstr = self.results.get('student_id_bubbles', 'unknown')
+            id_detected = ''.join([str(d) if d is not None else '?' for d in id_detected_digitstr])
             ul = id_bubble_region['upper_left']
             lr = id_bubble_region['lower_right']
             ur = (lr[0], ul[1])
@@ -370,7 +469,7 @@ class AnswerSheetReader:
             vmin, vmax = 0.0, 1.0
         for (qnum, key), (cx, cy) in zip(centers.keys(), bubble_result_tuples):
             val = scores.get((qnum, key), 0.0)
-            logger.info(f"Bubble score Q{qnum}{key}: {val:.3f}")
+            # logger.info(f"Bubble score Q{qnum}{key}: {val:.3f}")
             t = (val - vmin) / (vmax - vmin)
             # t=0 => green, t=1 => red
             r = 0
@@ -386,9 +485,11 @@ class AnswerSheetReader:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA
                 )
 
-        out_path = self.debug_output_path / "overlay.png"
-        logger.debug(f"indicials overlay written to {out_path}")
-        cv2.imwrite(str(out_path), out_img)
+        return out_img
+        # out_img_file = "overlay.png" if local_version_str is None else f"overlay-{local_version_str}.png"
+        # out_path = self.debug_output_path / out_img_file
+        # logger.debug(f"indicials overlay written to {out_path}")
+        # cv2.imwrite(str(out_path), out_img)
 
     def _warp_to_canonical(self):
         base_width = self.layout_config.canonical_width_px
@@ -484,23 +585,6 @@ class AnswerSheetReader:
 
         self.diagnostics['bubbles'] = centers
 
-        # write a debug overlay
-        debug_img = self.img.copy()
-        for (qnum, key), (cx, cy) in centers.items():
-            cv2.circle(debug_img, (cx, cy), 15, (0, 255, 0), 2)
-            cv2.putText(
-                debug_img,
-                f"{qnum}{key}",
-                (cx + 10, cy - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 255, 0),
-                1,
-                cv2.LINE_AA,
-            )
-        out_path = self.debug_output_path / "bubble_centers_overlay.png"
-        cv2.imwrite(str(out_path), debug_img)
-
     def _measure_fill_ratio(
         self,
         gray: np.ndarray,
@@ -564,7 +648,6 @@ class AnswerSheetReader:
             items.sort(key=lambda kv: kv[1], reverse=True)
             top_key, top_score = items[0]
             runner_up_score = items[1][1] if len(items) > 1 else 0.0
-            # print(f"Q{qnum}: top {top_key}={top_score:.3f}, runner-up={runner_up_score:.3f}")
             if (
                 top_score >= config.fill_ratio_threshold
                 and top_score >= runner_up_score + config.runner_up_margin
@@ -575,37 +658,6 @@ class AnswerSheetReader:
 
         self.results['answers'] = answers
         self.diagnostics['bubble_scores'] = scores
-
-        # -- debug overlay ---
-        overlay_out_path = self.debug_output_path / "bubble_detection_overlay.png"
-        # Normalize scores to [0,1] for coloring
-        all_vals = list(scores.values())
-        if all_vals:
-            vmin, vmax = min(all_vals), max(all_vals)
-            if vmax == vmin:
-                vmax = vmin + 1e-6
-        else:
-            vmin, vmax = 0.0, 1.0
-        vis = self.img.copy()
-        for (qnum, key), (cx, cy) in centers.items():
-            val = scores.get((qnum, key), 0.0)
-            t = (val - vmin) / (vmax - vmin)
-            # t=0 => green, t=1 => red
-            r = int(255 * t)
-            g = int(255 * (1.0 - t))
-            b = 0
-            color = (b, g, r)
-
-            cv2.circle(vis, (cx, cy), 10, color, 2)
-            # label each first-choice bubble with qnum
-            if key == config.choice_keys[0]:
-                cv2.putText(
-                    vis, str(qnum), (cx - 15, cy - 12),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA
-                )
-
-        cv2.imwrite(overlay_out_path, vis)
-        logger.debug(f"Bubble-detection debug overlay written to {overlay_out_path}")
 
     def _read_qr(self):
         """
@@ -687,10 +739,6 @@ class AnswerSheetReader:
                 darkness = self._measure_fill_ratio(img_gray, id_bubble_centers_px[(i, str(j))], bubble_radius)
                 scores[(i, str(j))] = darkness
 
-        # if id_digits_lr_px[1] <= id_digits_ul_px[1] or id_digits_lr_px[0] <= id_digits_ul_px[0]:
-        #     # Misconfigured geometry
-        #     return None
-
         # Determine filled bubbles per digit position
         id_answers: Dict[int, Optional[str]] = {}
         by_position: Dict[int, List[Tuple[str, float]]] = {}
@@ -707,7 +755,7 @@ class AnswerSheetReader:
                 id_answers[pos] = top_digit
             else:
                 id_answers[pos] = None
-        self.results['student_id_bubbles'] = id_answers
+        self.results['student_id_bubbles'] = ''.join(x if x is not None else '?' for x in id_answers.values())
 
         debug_img = self.img.copy()
         # draw a rectangle around the id region
@@ -772,14 +820,14 @@ class AnswerSheetReader:
 
             # Run CNN OCR
             digit, conf = ocr_digit_nn(inner, model=model)
-            logger.debug(f"Digit {i}: pred={digit}, conf={conf:.3f}")
+            # logger.debug(f"Digit {i}: pred={digit}, conf={conf:.3f}")
             if conf < confidence_threshold:
                 digits.append("?")
                 if digit == '7':
                     # make a copy of the inner image and rotate it by 180 degrees
                     rotated_inner = cv2.rotate(inner, cv2.ROTATE_180)
                     digit_rot, conf_rot = ocr_digit_nn(rotated_inner, model=model)
-                    logger.debug(f"  Rotated check: pred={digit_rot}, conf={conf_rot:.3f}")
+                    # logger.debug(f"  Rotated check: pred={digit_rot}, conf={conf_rot:.3f}")
                     if conf_rot >= confidence_threshold and digit_rot == '6':
                         digits[-1] = '9'
             else:
@@ -788,7 +836,7 @@ class AnswerSheetReader:
                     # make a copy of the inner image and flip it horizontally
                     flipped_inner = cv2.flip(inner, 1)
                     digit_flp, conf_flp = ocr_digit_nn(flipped_inner, model=model)
-                    logger.debug(f"  Flipped check: pred={digit_flp}, conf={conf_flp:.3f}")
+                    # logger.debug(f"  Flipped check: pred={digit_flp}, conf={conf_flp:.3f}")
                     if conf_flp >= confidence_threshold and digit_flp == '8':
                         digit = '8'
                 digits.append(digit)
@@ -799,9 +847,9 @@ class AnswerSheetReader:
         else:
             self.results['student_id_ocr'] = "".join(d if d else "?" for d in digits)
 
-        # generate an overlay image for debugging
-        out_path = self.debug_output_path / "student_id_ocr_overlay.png"
-        debug_img = self.img.copy()
+        # # generate an overlay image for debugging
+        # out_path = self.debug_output_path / "student_id_ocr_overlay.png"
+        # debug_img = self.img.copy()
 
         self.diagnostics['id_digits_region'] = {
             'upper_left': id_digits_ul_px,

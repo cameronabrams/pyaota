@@ -32,11 +32,14 @@ import argparse
 import os
 import csv
 import tempfile
+import logging
+import numpy as np
 
 from pdf2image import convert_from_path
 
-from ..util.answer_sheet_reader import LayoutConfig, AnswerSheetReader
-from .answersheetreader import AnswerSheetReader
+from .answersheetreader import AnswerSheetReader, LayoutConfig
+
+logger = logging.getLogger(__name__)
 
 class Autograder:
     """
@@ -44,7 +47,6 @@ class Autograder:
     """
     def __init__(self, layout_config: LayoutConfig):
         self.layout = layout_config
-        self.reader = AnswerSheetReader(layout_config)
 
     def load_version_keys_csv(self, keys_csv_path: Path | str):
         if not os.path.exists(keys_csv_path):
@@ -66,28 +68,57 @@ class Autograder:
 
                 answers: List[str] = []
                 for col in qcols:
-                    val = (row.get(col) or "").strip()
-                    answers.append(val.lower() if val else "")
+                    val = row.get(col)
+                    if val == 'True':
+                        answers.append('a')
+                    elif val == 'False':
+                        answers.append('b')
+                    else:
+                        answers.append(val.lower() if val else "")
                 self.version_keys[version_label] = answers
+        logger.debug(f"Loaded version keys for {len(self.version_keys)} versions from {keys_csv_path}")
 
-    def grade_pdf(self, pdf_path: Path | str):
-        if isinstance(pdf_path, str):
-            pdf_path = Path(pdf_path)
-        if not pdf_path.exists():
-            raise FileNotFoundError(f"PDF not found: {pdf_path}")
+    def grade_pdf(self, 
+        pdf_file_path: Path | str, 
+        output_dir_path: [Path | str] = Path.cwd(),
+        gradesheet_output_csv_path: Optional[Path | str] = None,
+        question_tally_csv_path: Optional[Path | str] = None,
+        debug_output_dir_path: Optional[Path | str] = None):
+        """
+        Grade the given PDF of answer sheets.
+        
+        Parameters
+        ----------
+        pdf_file_path : Path | str
+            Path to the input PDF file.
+        output_dir_path : [Path | str]
+            Path of directory in which to save individual graded images and the output CSV report. If None, no file is written.
+        debug_output_dir_path : Optional[Path | str]
+            Directory to save debug output images. If None, no debug images are saved.
+        """
+        if isinstance(pdf_file_path, str):
+            pdf_file_path = Path(pdf_file_path)
+        if not pdf_file_path.exists():
+            raise FileNotFoundError(f"PDF not found: {pdf_file_path}")
 
-        pages = convert_from_path(str(pdf_path), dpi=300, fmt='png')
+        if debug_output_dir_path is not None:
+            debug_output_dir_path = Path(debug_output_dir_path)
+            if not debug_output_dir_path.exists():
+                debug_output_dir_path.mkdir(parents=True, exist_ok=True)
+
+        pages = convert_from_path(str(pdf_file_path), dpi=300, fmt='png')
 
         results: List[Dict[str, Any]] = []
 
         for page_index, page in enumerate(pages, start=1):
             img = np.array(page)
-            reader = AnswerSheetReader(img, layout_config=self.layout)
+            reader = AnswerSheetReader(img, layout_config=self.layout, debug_output_dir=debug_output_dir_path)
+            read_results = reader.read()
 
             page_result: Dict[str, Any] = {
                 "page_index": page_index,
-                "version_label": read_results['version_label'],
-                "student_id": read_results['student_id'],
+                "version_label": read_results['version'],
+                "student_id": read_results['student_id_bubbles'],
                 "answers_detected": read_results['answers'],
                 "answer_key": None,
                 "per_question": {},
@@ -95,15 +126,11 @@ class Autograder:
                 "num_correct": None,
                 "score_fraction": None,
                 "status": "ok",
-                "overlay_path": overlay_path,
+                "overlay_path": output_dir_path / f"graded_page_{page_index:03d}.png" if output_dir_path is not None else None,
             }
 
-            # ... rest of grading logic unchanged ...
-            # (lookup version_key, compare, compute num_correct, etc.)
-            # make sure to keep page_result["overlay_path"] untouched
-
-            key = version_keys.get(read_results['version_label']) if read_results['version_label'] else None
-            if not read_results['version_label']:
+            key = self.version_keys.get(read_results['version']) if read_results['version'] else None
+            if not read_results['version']:
                 page_result["status"] = "no_qr"
                 results.append(page_result)
                 continue
@@ -136,114 +163,63 @@ class Autograder:
             page_result["score_fraction"] = (
                 float(num_correct) / num_q if num_q > 0 else None
             )
-            # Stamp score onto overlay image, if we created one
-            if overlay_path is not None:
-                annotate_overlay(
-                    warped_img=read_results['warped_image'],
-                    layout=layout,
-                    centers=read_results['centers'],
-                    student_id=read_results['student_id'],
-                    per_question=per_q,
-                    overlay_path=overlay_path,
-                    num_correct=num_correct,
-                    num_questions=num_q,
+
+            if output_dir_path is not None:
+                reader.write_graded_annotations(
+                    per_question_results=per_q,
                     score_fraction=page_result["score_fraction"],
+                    overlay_path=output_dir_path / f"graded_page_{read_results['version']}.png",
+                )
+            if debug_output_dir_path is not None:
+                reader.write_debug_output(
+                    version_label=read_results['version'],
                 )
 
             results.append(page_result)
 
-# ----------------------------------------------------------------------
-# Load version → answer-key mapping from CSV
-# ----------------------------------------------------------------------
+        if gradesheet_output_csv_path is not None:
+            gradesheet_output_csv_path = Path(gradesheet_output_csv_path)
+            with open(gradesheet_output_csv_path, "w", newline="", encoding="utf-8") as f:
+                fieldnames = [
+                    "page_index",
+                    "version_label",
+                    "student_id",
+                    "num_questions",
+                    "num_correct",
+                    "score",
+                    "status",
+                ]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for res in results:
+                    writer.writerow({
+                        "page_index": res["page_index"],
+                        "version_label": res["version_label"],
+                        "student_id": res["student_id"],
+                        "num_questions": res["num_questions"],
+                        "num_correct": res["num_correct"],
+                        "score": f'{res["score_fraction"]*100:.1f}',
+                        "status": res["status"],
+                    })
+            logger.info(f"Wrote grading results CSV to {gradesheet_output_csv_path}")
 
-
-
-
-# Grade a multi-page PDF
-# ----------------------------------------------------------------------
-
-def grade_pdf(
-    pdf_path: str,
-    layout: LayoutConfig,
-    keys_csv_path: str,
-    dpi: int = 300,
-    warp_size: Tuple[int, int] = (1700, 2200),
-    results_overlay_dir: Optional[str] = None,
-    debug_overlay_dir: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """
-    Grade a multi-page PDF where each page contains one answer sheet.
-
-    New:
-      results_overlay_dir : if provided, save one overlay PNG per page in this dir
-                          and include its path in each page_result["overlay_path"].
-    """
-    if not os.path.exists(pdf_path):
-        raise FileNotFoundError(f"PDF not found: {pdf_path}")
-
-    version_keys = load_version_keys_csv(keys_csv_path)
-
-    # If we want overlays, ensure the directory exists
-    if results_overlay_dir is not None:
-        os.makedirs(results_overlay_dir, exist_ok=True)
-
-    pages = convert_from_path(pdf_path, dpi=dpi)
-
-
-    return results
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(
-        description="Autograde multi-page PDF answer sheets."
-    )
-    parser.add_argument("pdf_path", help="Path to the scanned PDF")
-    parser.add_argument(
-        "--num-questions", type=int, required=True, help="Number of questions"
-    )
-    parser.add_argument(
-        "--num-cols", type=int, default=3, help="Number of columns in the bubble grid"
-    )
-    parser.add_argument(
-        "--keys-csv",
-        default="exam_version_keys.csv",
-        help="Path to CSV with version_label and correct answers",
-    )
-    parser.add_argument(
-        "--debug-overlay-dir", type=str, default=None,
-        help="If provided, save debug overlay images to this directory")
-    parser.add_argument(
-        "--results-overlay-dir", type=str, default=None,
-        help="If provided, save annotated overlay images to this directory")
-    args = parser.parse_args()
-
-    # if the debug-overlay-dir is provided, ensure it exists
-    if args.results_overlay_dir is not None:
-        os.makedirs(args.results_overlay_dir, exist_ok=True)
-
-    if args.debug_overlay_dir is not None:
-        os.makedirs(args.debug_overlay_dir, exist_ok=True)
-
-    layout = LayoutConfig(
-        num_questions=args.num_questions,
-        num_cols=args.num_cols,
-        # The geometric parameters in LayoutConfig should already be tuned
-        # during your bubble overlay debugging phase.
-    )
-
-    results = grade_pdf(
-        pdf_path=args.pdf_path,
-        layout=layout,
-        keys_csv_path=args.keys_csv,
-        results_overlay_dir=args.results_overlay_dir,
-        debug_overlay_dir=args.debug_overlay_dir,
-    )
-
-    for r in results:
-        print(
-            r["page_index"],
-            r["student_id"],
-            r["version_label"],
-            r["num_correct"],
-            r["overlay_path"],
-        )
+        if question_tally_csv_path is not None:
+            # for each student ID, write a row that contains the exam version and their answers
+            question_tally_csv_path = Path(question_tally_csv_path)
+            with open(question_tally_csv_path, "w", newline="", encoding="utf-8") as f:
+                fieldnames = [
+                    "student_id",
+                    "version_label",
+                ] + [f"Q{qnum}" for qnum in range(1, max(len(res["answer_key"] or []) for res in results) + 1)]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for res in results:
+                    row = {
+                        "student_id": res["student_id"],
+                        "version_label": res["version_label"],
+                    }
+                    answers = res["answers_detected"]
+                    for qnum in range(1, len(res["answer_key"] or []) + 1):
+                        row[f"Q{qnum}"] = answers.get(qnum)
+                    writer.writerow(row)
+            logger.info(f"Wrote question tally CSV to {question_tally_csv_path}")

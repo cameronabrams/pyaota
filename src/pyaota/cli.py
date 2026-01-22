@@ -4,12 +4,18 @@ import argparse as ap
 import sys, os, shutil
 import yaml
 
-from .generator.manager import make_answersheet_subcommand, make_exams_subcommand, compile_dump_subcommand, tune_answersheetreader_subcommand, autograde_subcommand
+from .generator.manager import (
+    make_exams_subcommand, 
+    compile_dump_subcommand, 
+    tune_answersheetreader_subcommand, 
+    autograde_subcommand
+)
 from .util.text import banner, oxford
 
 import logging
 logger = logging.getLogger(__name__)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 def setup_logging(args):    
     loglevel_numeric = getattr(logging, args.logging_level.upper())
     if args.log:
@@ -49,16 +55,12 @@ def main(argv: list[str] | None = None) -> int:
             func = make_exams_subcommand,
             help = 'build documents',
             ),
-        'answersheet': dict(
-            func = make_answersheet_subcommand,
-            help = 'make answer sheet document',
-        ),
         'compile-dump': dict(
             func = compile_dump_subcommand,
             help = 'compile full dump of questions into a document',
         ),
         'grade': dict(
-            func = _cmd_grade,
+            func = autograde_subcommand,
             help = 'grade exams from scanned answer sheets',
         ),
         'tune-answersheetreader': dict(
@@ -197,49 +199,44 @@ def main(argv: list[str] | None = None) -> int:
         help="Paths to question banks (YAML/JSON)",
     )
 
-    command_parsers["answersheet"].add_argument(
-        "-od",
-        "--output-dir",
-        default=".",
-        help="Output directory",
-    )
-    command_parsers["answersheet"].add_argument(
-        "-nq",
-        "--num-questions",
-        type=int,
-        default=50,
-        help="Number of questions on the answer sheet",
-    )
-    command_parsers["answersheet"].add_argument(
-        "-nc",
-        "--num-cols",
-        type=int,
-        default=3,
-        help="Number of columns in the answer sheet",
-    )
-    command_parsers["answersheet"].add_argument(
-        "--instructions",
-        type=str,
-        default=None,
-        help="Custom instructions for the answer sheet",
-    )
-
     command_parsers["grade"].add_argument(
-        "pdf",
+        "-i",
+        "--input-pdf",
         help="PDF containing one or more answer sheets (scantron-like)",
     )
     command_parsers["grade"].add_argument(
-        "keyfile",
+        "-k",
+        "--keyfile",
         help="CSV file containing answer keys for each exam version",
     )
     command_parsers["grade"].add_argument(
-        "-o",
-        "--output",
-        required=True,
-        default="grades.csv",
-        help="Output grade report",
+        "-aly",
+        "--answersheet-layout-yaml",
+        help="YAML file specifying the answer sheet layout configuration",
     )
-    command_parsers["grade"].set_defaults(func=_cmd_grade)
+    command_parsers["grade"].add_argument(
+        "-od",
+        "--output-dir",
+        default=".",
+        help="Path to output directory for graded results",
+    )
+    command_parsers["grade"].add_argument(
+        "--debug-output-dir",
+        default = "debug-autograder",
+        help="Path to output directory for debug images",
+    )
+    command_parsers["grade"].add_argument(
+        "-og",
+        "--gradesheet-output-csv",
+        default="graded_results.csv",
+        help="Path to output CSV file summarizing results",
+    )
+    command_parsers["grade"].add_argument(
+        "-oq",
+        "--question-tally-output-csv",
+        default="question_tally.csv",
+        help="Path to output CSV file summarizing question tallies",
+    )
 
     command_parsers["tune-answersheetreader"].add_argument(
         "-i",
@@ -292,13 +289,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f'No subcommand found. Expected one of {my_list}')
         return 1
     logger.info('Thanks for using pyaota!')
-
-
-def _cmd_grade(args: ap.Namespace) -> int:
-    print("[grade]")
-    # TODO: hook into pyaota.grading
-    return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

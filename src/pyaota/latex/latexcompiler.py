@@ -1,6 +1,6 @@
 # Author: Cameron F. Abrams, <cfa22@drexel.edu>
 """
-LaTeX compilation functions for pygacity
+LaTeX compilation functions for pyaota
 """
 import logging
 

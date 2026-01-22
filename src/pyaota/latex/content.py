@@ -158,12 +158,13 @@ BEGIN_DOCUMENT = r"""
 DEFAULT_EXAM_INSTRUCTIONS = r"""
 INSTRUCTIONS:
 \begin{enumerate}
+\item Be sure you have a pencil and an eraser.
 \item \textbf{Carefully} detach the answer sheet from the back of this exam packet.
 \item Enter your name and student ID number on the answer sheet in the spaces provided, and fill in the corresponding bubbles for each digit of your student ID.
-\item Fill in the bubbles on the answer sheet corresponding to your answers.
-\item Time allowed: 50 minutes.
-\item No calculators, notes, textbooks, or other aids are permitted.
-\item \textbf{Turn in only your answer sheet}.  You should keep your exam packet.
+\item Fill in the bubbles on the answer sheet corresponding to your answers.  You only get one answer sheet so do not lose it or damage it!
+\item Time allowed: 60 minutes.
+\item Any use of phones, calculators, notes, textbooks, or other aids is strictly prohibited.
+\item \textbf{Turn in only your answer sheet}.  You should keep your exam packet for later review.
 \end{enumerate}
 Questions begin on the next page.
 \clearpage
