@@ -1,0 +1,1050 @@
+2026-01-23 16:25:31,067 pyaota.generator.questionset Topic 'integer addition': 40 questions available.
+2026-01-23 16:25:31,067 pyaota.generator.questionset Topic 'integer subtraction': 40 questions available.
+2026-01-23 16:25:31,067 pyaota.generator.questionset Topic 'integer multiplication': 20 questions available.
+2026-01-23 16:25:31,067 pyaota.generator.questionset Topic 'integer division': 20 questions available.
+2026-01-23 16:25:31,067 pyaota.generator.manager Preparing full compile of all questions in ../question\_banks/simple\_math.yaml
+2026-01-23 16:25:31,067 pyaota.generator.document Number of questions: 120
+2026-01-23 16:25:31,067 pyaota.generator.document Rendering question: 1 mcq
+2026-01-23 16:25:31,067 pyaota.generator.yaml2tex Rendering question ID=1 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,067 pyaota.generator.document Rendering question: 2 mcq
+2026-01-23 16:25:31,067 pyaota.generator.yaml2tex Rendering question ID=2 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 3 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=3 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 4 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=4 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 5 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=5 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 6 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=6 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 7 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=7 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 8 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=8 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 9 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=9 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 8 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=8 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 9 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=9 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 10 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=10 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 11 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=11 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 12 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=12 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 13 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=13 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 14 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=14 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 15 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=15 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 18 mcq
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=18 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 19 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=19 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,068 pyaota.generator.document Rendering question: 16 tf
+2026-01-23 16:25:31,068 pyaota.generator.yaml2tex Rendering question ID=16 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 17 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=17 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 18 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=18 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 19 tf
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=19 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 20 tf
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=20 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 21 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=21 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 22 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=22 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 23 tf
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=23 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 28 tf
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=28 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 29 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=29 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 24 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=24 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 25 tf
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=25 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 26 tf
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=26 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 27 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=27 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 28 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=28 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 29 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=29 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 30 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=30 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,069 pyaota.generator.document Rendering question: 31 mcq
+2026-01-23 16:25:31,069 pyaota.generator.yaml2tex Rendering question ID=31 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 38 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=38 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 39 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=39 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 32 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=32 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 33 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=33 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 34 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=34 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 35 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=35 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 36 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=36 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 37 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=37 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 38 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=38 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 39 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=39 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 48 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=48 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 49 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=49 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 40 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=40 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,070 pyaota.generator.document Rendering question: 41 mcq
+2026-01-23 16:25:31,070 pyaota.generator.yaml2tex Rendering question ID=41 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 42 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=42 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 43 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=43 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 44 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=44 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 45 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=45 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 46 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=46 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 47 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=47 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 58 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=58 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 59 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=59 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 48 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=48 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 49 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=49 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 50 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=50 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 51 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=51 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 52 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=52 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 53 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=53 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 54 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=54 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 55 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=55 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 68 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=68 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 69 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=69 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,071 pyaota.generator.document Rendering question: 56 mcq
+2026-01-23 16:25:31,071 pyaota.generator.yaml2tex Rendering question ID=56 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 57 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=57 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 58 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=58 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 59 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=59 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 60 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=60 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 61 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=61 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 62 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=62 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 63 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=63 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 78 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=78 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 79 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=79 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 80 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=80 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 81 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=81 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 82 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=82 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 83 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=83 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 84 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=84 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 85 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=85 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 86 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=86 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 87 mcq
+2026-01-23 16:25:31,072 pyaota.generator.yaml2tex Rendering question ID=87 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,072 pyaota.generator.document Rendering question: 88 mcq
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=88 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 89 mcq
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=89 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 90 mcq
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=90 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 91 mcq
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=91 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 92 mcq
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=92 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 93 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=93 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 94 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=94 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 95 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=95 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 96 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=96 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 97 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=97 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 98 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=98 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 99 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=99 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 64 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=64 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 65 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=65 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 66 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=66 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 67 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=67 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 68 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=68 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 69 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=69 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 70 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=70 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,073 pyaota.generator.document Rendering question: 71 tf
+2026-01-23 16:25:31,073 pyaota.generator.yaml2tex Rendering question ID=71 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 108 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=108 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 109 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=109 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 72 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=72 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 73 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=73 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 74 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=74 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 75 mcq
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=75 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 76 mcq
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=76 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 77 mcq
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=77 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 78 mcq
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=78 type=mcq kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 79 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=79 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 118 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=118 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 119 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=119 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,074 pyaota.generator.document Rendering question: 80 tf
+2026-01-23 16:25:31,074 pyaota.generator.yaml2tex Rendering question ID=80 type=tf kwargs={'show_id': True, 'highlight_correct': True}
+2026-01-23 16:25:31,075 pyaota.generator.document Wrote LaTeX source to banks_full_dump-0.tex
+2026-01-23 16:25:31,075 pyaota.latex.latexcompiler Running command: pdflatex -interaction=nonstopmode -file-line-error -jobname=banks_full_dump-0 -output-directory=math banks_full_dump-0.tex 
+2026-01-23 16:25:32,088 pyaota.latex.latexcompiler Command output:
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex.fmt)
+ restricted \write18 enabled.
+entering extended mode
+(banks_full_dump-0.tex
+LaTeX2e <2025-06-01> patch level 1
+L3 programming layer <2025-10-09>
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\size12.clo))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.sty))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.cfg))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/fancyhdr\fancyhdr.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/setspace\setspace.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/enumitem\enumitem.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/tools\verbatim.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstpatch.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstmisc.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.cfg))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\color.cfg)
+
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
+)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathcolor.ltx)
+) (C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\fontenc.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\inputenc.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\lmodern.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/upquote\upquote.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\textcomp.sty))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\helvet.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\pifont.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upzd.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upsy.fd))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/frontendlayer\tikz.
+sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgf.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfrcs.st
+y
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-common.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-latex.def)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfrcs.
+code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf\pgf.revision.tex)
+))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgfcore.
+sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.c
+fg)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/systemlayer\pgfsys.
+sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+libraryfiltered.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgf.c
+fg)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-pdftex.def
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-common-pdf.def)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+ssoftpath.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+sprotocol.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+e.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathutil.
+code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathparse
+r.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.basic.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.trigonometric.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.random.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.comparison.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.base.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.round.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.misc.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.integerarithmetics.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathcalc.
+code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfloat
+.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfint.code.
+tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epoints.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathconstruct.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathusage.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+escopes.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+egraphicstate.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransformations.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+equick.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eobjects.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathprocessing.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+earrows.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eshade.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eimage.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eexternal.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+elayers.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransparency.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epatterns.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+erdf.code.tex)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+shapes.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+plot.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-0-65.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-1-18.sty))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgffor.st
+y
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfkeys.s
+ty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/math\pgfmath.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgffor.
+code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z\tikz.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibr
+aryplothandlers.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+matrix.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarytopaths.code.tex)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarycalc.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/qrcode\qrcode.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/xkeyval\xkeyval.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkeyval.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkvutils.tex)
+))) (C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/tools\multicol.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\t1phv.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdf
+tex.def)
+
+LaTeX Warning: Unused global option(s):
+    [letter].
+
+No file banks_full_dump-0.aux.
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
+ii
+[Loading MPS to PDF converter (version 2006.09.02).]
+)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-b
+ase.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.c
+fg))
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[1{C:/Users/cfa22/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/cf
+a22/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}]
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\ot1lmr.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\omllmm.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\omslmsy.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\omxlmex.fd)
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[2]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[3]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[4]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[5]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[6]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[7]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[8]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[9]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[10]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[11]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[12]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[13]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[14]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[15]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[16]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[17]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[18]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[19]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[20]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[21]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[22]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[23]
+(C:\Users\cfa22\Git\pyaota\examples\rendered_banks\math\banks_full_dump-0.aux) 
+)<C:/Users/cfa22/AppData/Local/Programs/MiKTeX/fonts/type1/urw/helvetic/uhvb8a.
+pfb><C:/Users/cfa22/AppData/Local/Programs/MiKTeX/fonts/type1/urw/helvetic/uhvr
+8a.pfb>
+Output written on C:\Users\cfa22\Git\pyaota\examples\rendered_banks\math\banks_
+full_dump-0.pdf (23 pages, 48758 bytes).
+Transcript written on C:\Users\cfa22\Git\pyaota\examples\rendered_banks\math\ba
+nks_full_dump-0.log.
+
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler Command error:
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler 
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:32,089 pyaota.latex.latexcompiler Running command: pdflatex -interaction=nonstopmode -file-line-error -jobname=banks_full_dump-0 -output-directory=math banks_full_dump-0.tex 
+2026-01-23 16:25:33,091 pyaota.latex.latexcompiler Command output:
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex.fmt)
+ restricted \write18 enabled.
+entering extended mode
+(banks_full_dump-0.tex
+LaTeX2e <2025-06-01> patch level 1
+L3 programming layer <2025-10-09>
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\size12.clo))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.sty))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.cfg))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/fancyhdr\fancyhdr.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/setspace\setspace.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/enumitem\enumitem.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/tools\verbatim.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstpatch.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstmisc.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.cfg))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\color.cfg)
+
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
+)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathcolor.ltx)
+) (C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\fontenc.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\inputenc.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\lmodern.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/upquote\upquote.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/base\textcomp.sty))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\helvet.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\pifont.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upzd.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upsy.fd))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/frontendlayer\tikz.
+sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgf.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfrcs.st
+y
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-common.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-latex.def)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfrcs.
+code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf\pgf.revision.tex)
+))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgfcore.
+sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.c
+fg)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/systemlayer\pgfsys.
+sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+libraryfiltered.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgf.c
+fg)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-pdftex.def
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-common-pdf.def)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+ssoftpath.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+sprotocol.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+e.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathutil.
+code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathparse
+r.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.basic.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.trigonometric.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.random.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.comparison.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.base.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.round.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.misc.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.integerarithmetics.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathcalc.
+code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfloat
+.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfint.code.
+tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epoints.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathconstruct.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathusage.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+escopes.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+egraphicstate.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransformations.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+equick.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eobjects.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathprocessing.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+earrows.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eshade.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eimage.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eexternal.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+elayers.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransparency.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epatterns.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+erdf.code.tex)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+shapes.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+plot.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-0-65.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-1-18.sty))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgffor.st
+y
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfkeys.s
+ty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/pgf/math\pgfmath.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgffor.
+code.tex))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z\tikz.code.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibr
+aryplothandlers.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+matrix.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarytopaths.code.tex)))
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarycalc.code.tex)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/qrcode\qrcode.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/xkeyval\xkeyval.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkeyval.tex
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkvutils.tex)
+))) (C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/tools\multicol.sty)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\t1phv.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdf
+tex.def)
+
+LaTeX Warning: Unused global option(s):
+    [letter].
+
+(C:\Users\cfa22\Git\pyaota\examples\rendered_banks\math\banks_full_dump-0.aux)
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
+ii
+[Loading MPS to PDF converter (version 2006.09.02).]
+)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-b
+ase.sty
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.c
+fg))
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[1{C:/Users/cfa22/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/cf
+a22/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}]
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\ot1lmr.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\omllmm.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\omslmsy.fd)
+(C:\Users\cfa22\AppData\Local\Programs\MiKTeX\tex/latex/lm\omxlmex.fd)
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[2]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[3]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[4]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[5]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[6]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[7]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[8]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[9]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[10]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[11]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[12]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[13]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[14]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[15]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[16]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[17]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[18]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[19]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[20]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[21]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[22]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[23]
+(C:\Users\cfa22\Git\pyaota\examples\rendered_banks\math\banks_full_dump-0.aux) 
+)<C:/Users/cfa22/AppData/Local/Programs/MiKTeX/fonts/type1/urw/helvetic/uhvb8a.
+pfb><C:/Users/cfa22/AppData/Local/Programs/MiKTeX/fonts/type1/urw/helvetic/uhvr
+8a.pfb>
+Output written on C:\Users\cfa22\Git\pyaota\examples\rendered_banks\math\banks_
+full_dump-0.pdf (23 pages, 48758 bytes).
+Transcript written on C:\Users\cfa22\Git\pyaota\examples\rendered_banks\math\ba
+nks_full_dump-0.log.
+
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler Command error:
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler 
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler ================================================================================
+2026-01-23 16:25:33,092 pyaota.latex.latexcompiler Flushing 4 intermediate files.
+2026-01-23 16:25:33,092 pyaota.util.collectors Flushing file collector: 4 entries.
+2026-01-23 16:25:33,092 pyaota.util.collectors FileCollector.flush: path math/banks_full_dump-0.out does not exist.

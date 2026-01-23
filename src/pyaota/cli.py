@@ -138,6 +138,24 @@ def main(argv: list[str] | None = None) -> int:
         help="Output directory",
     )
     command_parsers["build"].add_argument(
+        "--institution",
+        type=str,
+        help="Institution name",
+        default="Drexel University"
+    )
+    command_parsers["build"].add_argument(
+        "--course",
+        type=str,
+        help="Course name",
+        default="ENGR-131"
+    )
+    command_parsers["build"].add_argument(
+        "--term",
+        type=str,
+        help="Term name",
+        default="202526"
+    )
+    command_parsers["build"].add_argument(
         "--cleanup",
         action=ap.BooleanOptionalAction,
         help="Cleanup intermediate files after LaTeX compilation",
@@ -218,6 +236,24 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="Paths to question banks (YAML/JSON)",
     )
+    command_parsers["compile-dump"].add_argument(
+        "--institution",
+        type=str,
+        help="Institution name",
+        default="Drexel University"
+    )
+    command_parsers["compile-dump"].add_argument(
+        "--course",
+        type=str,
+        help="Course name",
+        default="ENGR-131"
+    )
+    command_parsers["compile-dump"].add_argument(
+        "--term",
+        type=str,
+        help="Term name",
+        default="202526"
+    )
 
     command_parsers["grade"].add_argument(
         "-i",
@@ -271,12 +307,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Number of columns in the answer sheet",
     )
     command_parsers["tune-answersheetreader"].add_argument(
+        "-nq",
         "--num-questions",
         type=int,
         default=50,
         help="Number of questions on the answer sheet",
     )
-
+    command_parsers["tune-answersheetreader"].add_argument(
+        "-o",
+        "--output-image",
+        default="answersheetreader_tuning_overlay.png",
+        help="Path to output image file showing tuning overlay",
+    )
 
     # ---- dispatch ------------------------------------------------
     args = parser.parse_args()

@@ -4,6 +4,10 @@ LaTeX rendering helpers for pyaota.
 
 import re
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # ---------- Normalization helpers ----------
 
 def normalize_punctuation(s: str) -> str:
@@ -175,10 +179,10 @@ def render_choice(
     """
     Render a single choice dict to LaTeX.
 
-    - type: "text"  -> \choice[<label>]{<text>}
+    - type: "text"  -> \\choice[<label>]{<text>}
     - type: "code"  -> inline or block via render_code_block
     - highlight_correct: if True, the correct choice's LABEL is wrapped
-      in \correctlabel{...}, leaving the body (including \inl) untouched.
+      in \\correctlabel{...}, leaving the body (including \\inl) untouched.
     """
     key = choice["key"]
     raw_text = str(choice.get("text", ""))
@@ -221,6 +225,7 @@ def render_question(
     Render a single question dict to LaTeX, dispatching
     to the appropriate renderer based on question type.
     """
+    logger.debug(f"Rendering question ID={q.get('id','')} type={q.get('type','mcq')} kwargs={kwargs}")
     qtype = q.get("type", "mcq").lower()
     if qtype == "mcq":
         return render_mcq(q, **kwargs)

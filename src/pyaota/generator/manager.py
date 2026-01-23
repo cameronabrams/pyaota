@@ -7,15 +7,19 @@ import random
 import yaml
 import os
 import shutil
+import numpy as np
+import cv2
 from pathlib import Path
 from dataclasses import asdict
+from pdf2image import convert_from_path
 
 from .yaml2tex import render_question, tex_escape
 from .questionset import QuestionSet
 from .document import Document, ExamDocument
 from .answersheet import AnswerSheetGenerator, LayoutConfig, TextBoxConfig
-from ..grader.grading.autograder import Autograder
-from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS, DEFAULT_EXAM_INSTRUCTIONS
+from ..grader.answersheetreader import AnswerSheetReader
+from ..grader.autograder import Autograder
+from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS, DEFAULT_EXAM_INSTRUCTIONS, QUESTION_BANK_DUMP_INSTRUCTIONS
 from ..latex.latexcompiler import LatexCompiler
 from ..util.collectors import on_rm_error
 
@@ -125,35 +129,35 @@ def compile_dump_subcommand(args):
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
             'pdflatex': 'pdflatex',
-            'build-dir': 'build_dump',
+            'build-dir': args.output_dir,
         },
-        'job-name': 'exam_full_dump',
+        'job-name': 'banks_full_dump',
     })
     yaml_paths = args.question_banks
     output_dir = Path(args.output_dir)
 
     question_set = QuestionSet(question_banks=yaml_paths)
 
-    version_label = "00000000"
+    version_label = "0"
     bankfiles = tex_escape(", ".join(yaml_paths))
     logger.debug(f"Preparing full compile of all questions in {bankfiles}")
 
     selected_questions = question_set.raw_question_list
 
-    exam_doc = Document(
-        institution="Drexel University",
-        course="ENGR 131",
-        term="Winter 2025-2026",
-        examname="Full Question Dump",
+    exam_doc_specs = dict(
+        institution=args.institution,
+        course=args.course,
+        term=args.term,
+        examname="Banks: " + bankfiles,
         version=version_label,
-        question_renderer=lambda q: render_mcq(
-            q,
-            show_id=True,
-            highlight_correct=True,
-        ),
-        question_list=selected_questions,)
+        instructions=QUESTION_BANK_DUMP_INSTRUCTIONS,
+        question_renderer=lambda q: render_question(q, show_id=True, highlight_correct=True),
+        question_list=selected_questions,
+        endmessage="End of Exam\n\\clearpage",)
 
-    latex_compiler.build_document(exam_doc)
+    exam_doc = ExamDocument(document_specs=exam_doc_specs)
+    latex_compiler.build_document(exam_doc, cleanup=True)
+
 
 def make_exams_subcommand(args):
     latex_compiler = LatexCompiler(build_specs={
@@ -217,9 +221,9 @@ def make_exams_subcommand(args):
         answersheet_tex = answersheet_generator.generate_tex(DEFAULT_ANSWER_SHEET_INSTRUCTIONS)
 
         exam_doc_specs = dict(
-            institution="Drexel University",
-            course="ENGR 131",
-            term="Winter 2025-2026",
+            institution=args.institution,
+            course=args.course,
+            term=args.term,
             examname=args.exam_name,
             version=version_label,
             instructions=DEFAULT_EXAM_INSTRUCTIONS,
@@ -235,23 +239,13 @@ def make_exams_subcommand(args):
     write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
 
 def tune_answersheetreader_subcommand(args):
-    """
-        Generates a tuning document for the answer sheet reader.
-    """
-    from .answersheet import LayoutConfig
-    from ..grader.grading.answersheetreader import AnswerSheetReader
-
     pdf = args.sample_pdf
     # convert PDF to image
-    from pdf2image import convert_from_path
     images = convert_from_path(pdf, dpi=300, fmt='png')
     if not images:
         logger.error(f"Could not convert PDF {pdf} to image.")
         return
 
-    # should be a single image, convert to np.ndarray
-    import numpy as np
-    import cv2
     img = np.array(images[0])
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
@@ -265,7 +259,10 @@ def tune_answersheetreader_subcommand(args):
     answersheetreader._read_qr()
     answersheetreader._read_student_id()
     answersheetreader._read_bubbles()
-    answersheetreader._diagnostic_overlay()
+    img = answersheetreader._diagnostic_overlay()
+    output_path = Path(args.output_image)
+    cv2.imwrite(str(output_path), img)
+    logger.info(f"Wrote diagnostic overlay image to {output_path}")
 
 def autograde_subcommand(args):
     pdf = args.input_pdf

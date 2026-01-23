@@ -53,7 +53,7 @@ class ExamDocument(Document):
         self.term = self.specs.get('term', '')
         self.documentname = self.specs.get('examname', '')
         self.version = self.specs.get('version', '')
-        self.question_renderer = self.specs.get('question-renderer', render_question)
+        self.question_renderer = self.specs.get('question_renderer', render_question)
         self.question_list = self.specs.get('question_list', [])
         self.answersheet_tex = self.specs.get('answersheet-tex', '')
         if not self.answersheet_tex:

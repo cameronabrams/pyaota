@@ -174,6 +174,12 @@ Questions begin on the next page.
 \clearpage
 """
 
+QUESTION_BANK_DUMP_INSTRUCTIONS = r"""
+This document contains a full dump of all questions in the selected question banks.
+Questions begin on the next page.
+\clearpage
+"""
+
 
 DEFAULT_ANSWER_SHEET_INSTRUCTIONS = r"""
 Your name: \underline{\hspace{12cm}}\\*[0.5em]

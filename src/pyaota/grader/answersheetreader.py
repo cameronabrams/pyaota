@@ -89,36 +89,42 @@ class AnswerSheetReader:
 
         Raises RuntimeError if any indicial cannot be found.
         """
+        config = self.layout_config
         img = self.img.copy()
 
         h, w = img.shape[:2]
-        ftopvert = int(h*self.layout_config.indicial_top_vertical_margin_frac) # top of north indicials search regions
-        fbotvert = int(h*self.layout_config.indicial_bottom_vertical_margin_frac) # top of south indicial search regions
-        fhoriz = int(w*self.layout_config.indicial_horizontal_margin_frac) # width of indicial search regions, distance from respective edges
-        region_y = int(self.layout_config.indicial_vertical_size_frac * h) # height of indicial search regions
+        logger.debug(f"Image size for indicial detection: width={w}, height={h}")
+        # indicial_
+        # ftopvert = int(h*self.layout_config.indicial_top_vertical_margin_frac) # top of north indicials search regions
+        # fbotvert = int(h*self.layout_config.indicial_bottom_vertical_margin_frac) # top of south indicial search regions
+        # fhoriz = int(w*self.layout_config.indicial_horizontal_margin_frac) # width of indicial search regions, distance from respective edges
+        # region_y = int(self.layout_config.indicial_vertical_size_frac * h) # height of indicial search regions
         # Define small search windows near the *physical* page corners
         regions = {
             "nw": dict(
-                upper_left = (0, ftopvert),
-                lower_right = (fhoriz, ftopvert+region_y),
+                upper_left = config.indicial_nw_region_ul_px,
+                lower_right = (config.indicial_nw_region_ul_px[0] + config.indicial_region_width_px,
+                               config.indicial_nw_region_ul_px[1] + config.indicial_region_height_px),
             ),
             "ne": dict(
-                upper_left = (w - fhoriz, ftopvert),
-                lower_right = (w, ftopvert+region_y),
+                upper_left = config.indicial_ne_region_ul_px,
+                lower_right = (config.indicial_ne_region_ul_px[0] + config.indicial_region_width_px,
+                               config.indicial_ne_region_ul_px[1] + config.indicial_region_height_px),
             ),
             "sw": dict(
-                upper_left = (0, h - region_y),
-                lower_right = (fhoriz, h),
+                upper_left = config.indicial_sw_region_ul_px,
+                lower_right = (config.indicial_sw_region_ul_px[0] + config.indicial_region_width_px,
+                               config.indicial_sw_region_ul_px[1] + config.indicial_region_height_px),
             ),
             "se": dict(
-                upper_left = (w - fhoriz, h - region_y),
-                lower_right = (w, h),
+                upper_left = config.indicial_se_region_ul_px,
+                lower_right = (config.indicial_se_region_ul_px[0] + config.indicial_region_width_px,
+                               config.indicial_se_region_ul_px[1] + config.indicial_region_height_px),
             ),
         }
 
         # write a debug image showing the search regions
         self.diagnostics['indicial_regions'] = regions
-        debug_img = img.copy()
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # Light background, dark dots/text → invert for contour detection
@@ -304,7 +310,7 @@ class AnswerSheetReader:
             upper_left = region["upper_left"]
             lower_right = region["lower_right"]
             cv2.rectangle(
-                in_img,
+                out_img,
                 upper_left,
                 lower_right,
                 (255, 0, 0),
@@ -329,6 +335,46 @@ class AnswerSheetReader:
                 0.6,
                 color,
                 2,
+                cv2.LINE_AA,
+            )
+
+        # output a coordinate grid for debugging but in unwarped coordinates!
+        grid_color = (200, 200, 200)
+        h, w = out_img.shape[:2]
+        dpx = 300/2.54/2 # every 500 mm
+        for x in range(0, w, int(dpx)):
+            pts_array = np.array([[[x, 0]], [[x, h]]], dtype=np.float32)
+            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+            x_unwrapped_top = int(round(unwrapped_pts[0][0][0], 0))
+            x_unwrapped_bottom = int(round(unwrapped_pts[1][0][0], 0))
+            text_x = x_unwrapped_top
+            cv2.line(out_img, (x_unwrapped_top, 0), (x_unwrapped_bottom, h), grid_color, 1)
+            # cv2.line(out_img, (x, 0), (x, h), grid_color, 1)
+            cv2.putText(
+                out_img,
+                str(x),
+                (text_x + 2, 12),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.4,
+                grid_color,
+                1,
+                cv2.LINE_AA,
+            )
+        for y in range(0, h, int(dpx)):
+            pts_array = np.array([[[0, y]], [[w, y]]], dtype=np.float32)
+            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+            y_unwrapped_left = int(round(unwrapped_pts[0][0][1], 0))
+            y_unwrapped_right = int(round(unwrapped_pts[1][0][1], 0))
+            text_y = y_unwrapped_left
+            cv2.line(out_img, (0, y_unwrapped_left), (w, y_unwrapped_right), grid_color, 1)
+            cv2.putText(
+                out_img,
+                str(y),
+                (2, text_y - 2),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.4,
+                grid_color,
+                1,
                 cv2.LINE_AA,
             )
 
@@ -707,7 +753,7 @@ class AnswerSheetReader:
         # Convert normalized coordinates to pixels
 
         id_bubbles_ul_frac = config.id_bubbles_ul_frac
-        id_bubbles_lr_frac = config.id_bubbles_lr_frac
+        id_bubbles_lr_frac = (config.id_bubbles_ul_frac[0] + config.id_bubbles_size_frac[0], config.id_bubbles_ul_frac[1] + config.id_bubbles_size_frac[1])
         id_bubbles_ul_px = (int(id_bubbles_ul_frac[0] * w), int(id_bubbles_ul_frac[1] * h))
         id_bubbles_lr_px = (int(id_bubbles_lr_frac[0] * w), int(id_bubbles_lr_frac[1] * h))
         x0, y0 = id_bubbles_ul_px
@@ -774,7 +820,7 @@ class AnswerSheetReader:
         confidence_threshold = config.id_ocr_confidence_threshold
 
         id_digits_ul_frac = config.id_digits_ul_frac
-        id_digits_lr_frac = config.id_digits_lr_frac
+        id_digits_lr_frac = (config.id_digits_ul_frac[0] + config.id_digits_size_frac[0], config.id_digits_ul_frac[1] + config.id_digits_size_frac[1])
         id_digits_ul_px = (int(id_digits_ul_frac[0] * w), int(id_digits_ul_frac[1] * h))
         id_digits_lr_px = (int(id_digits_lr_frac[0] * w), int(id_digits_lr_frac[1] * h))
         x0, y0 = id_digits_ul_px

@@ -24,7 +24,6 @@ class TextBoxConfig:
 
 @dataclass
 class LayoutConfig:
-    ### bubble field layout parameters ###
     num_questions: int  # must be provided
     num_cols: int = 3
     rows_per_block: int = 5
@@ -47,12 +46,20 @@ class LayoutConfig:
     indicial_north_shift: str = "-2.7cm"
     indicial_south_shift: str = "1.0cm"
 
-    # indicial regions
-    indicial_top_vertical_margin_frac: float = 0.06
-    indicial_bottom_vertical_margin_frac: float = 0.05
-    indicial_horizontal_margin_frac: float = 0.05
-    indicial_horizontal_size_frac: float = 0.05
-    indicial_vertical_size_frac: float = 0.05
+    # expect 300 dpi resolution, 1 cm = 118 px, 8.5 in = 2550 px, 11 in = 3300 px
+
+    # define indicial search regions in terms of pixels
+    indicial_region_width_px: int = 200
+    indicial_region_height_px: int = 200
+    indicial_nw_region_ul_px: Tuple[int, int] = (0, 200)
+    indicial_ne_region_ul_px: Tuple[int, int] = (2550 - 200, 200)
+    indicial_sw_region_ul_px: Tuple[int, int] = (0, 3300 - 200)
+    indicial_se_region_ul_px: Tuple[int, int] = (2550 - 200, 3300 - 200)
+    # indicial_top_vertical_margin_frac: float = 0.06
+    # indicial_bottom_vertical_margin_frac: float = 0.05
+    # indicial_horizontal_margin_frac: float = 0.05
+    # indicial_horizontal_size_frac: float = 0.05
+    # indicial_vertical_size_frac: float = 0.05
 
     # bubble array for answer grid
     # --- Vertical structure ---
@@ -62,10 +69,27 @@ class LayoutConfig:
     majorrowsep: str = '2em'  # space between blocks
     intrarowsep: str = '0.5em'  # space between rows
 
-    # qr location
+    # qr location -- dictated by latex compilation using default exam instructions
     qr_upper_left_fracs: Tuple[float, float] = (0.214, 0.1)  # (x_frac, y_frac)
     qr_size_frac: float = 0.075  # size of QR square
 
+    # --- Student ID reading parameters ---
+    id_num_digits: int = 8
+    id_bubbles_ul_frac: Tuple[float, float] = (0.41, 0.047) 
+    id_bubbles_size_frac: Tuple[float, float] = (0.374, 0.227)
+    id_bubbles_internal_margin_frac: Tuple[float, float] = (0.02, 0.01)  # margin inside the bubble area box
+
+    id_digits_ul_frac: Tuple[float, float] = (0.428, 0.0265)
+    id_digits_size_frac: Tuple[float, float] = (0.344, 0.0249)
+    id_digits_gap_size_frac: float = 0.0300  # gap between cells as fraction of box width
+    id_digits_cell_margin_frac: float = 0.06  # margin inside each cell for OCR crop
+    id_ocr_upsample_factor: float = 3.0   # scale factor for resizing
+    id_ocr_dilate: bool = True            # whether to dilate strokes a bit
+    id_ocr_confidence_threshold: float = 0.7  # min confidence to accept OCR result
+
+    # --- Bubble overlay parameters ---
+    overlay_correct_choice_color: Tuple[int, int, int] = (0, 255, 0)  # green
+    overlay_incorrect_choice_color: Tuple[int, int, int] = (0, 0, 255)  # red
     # parameters used by the reader
 
     # y-coordinate of the first row's bubbles in *normalized* coordinates
@@ -99,46 +123,6 @@ class LayoutConfig:
 
     # runner up margin (relative) to call a bubble filled
     runner_up_margin: float = 0.09
-
-    # --- Student ID reading parameters ---
-    id_num_digits: int = 8
-    id_bubbles_ul_frac: Tuple[float, float] = (0.41, 0.047) 
-    id_bubbles_lr_frac: Tuple[float, float] = (0.784, 0.274)
-    id_bubbles_internal_margin_frac: Tuple[float, float] = (0.02, 0.01)  # margin inside the bubble area box
-
-    id_digits_ul_frac: Tuple[float, float] = (0.428, 0.0265)
-    id_digits_lr_frac: Tuple[float, float] = (0.772, 0.0514)
-    id_digits_gap_size_frac: float = 0.0300  # gap between cells as fraction of box width
-    id_digits_cell_margin_frac: float = 0.06  # margin inside each cell for OCR crop
-    id_ocr_upsample_factor: float = 3.0   # scale factor for resizing
-    id_ocr_dilate: bool = True            # whether to dilate strokes a bit
-    id_ocr_confidence_threshold: float = 0.7  # min confidence to accept OCR result
-    # --- Bubble overlay parameters ---
-    overlay_correct_choice_color: Tuple[int, int, int] = (0, 255, 0)  # green
-    overlay_incorrect_choice_color: Tuple[int, int, int] = (0, 0, 255)  # red
-
-    # --- Student ID echo overlay parameters ---
-    id_echo_textbox: TextBoxConfig = field(default_factory=lambda: TextBoxConfig(
-        box_origin_x_frac=0.2,
-        box_origin_y_frac=0.69,
-        background_color=(77, 41, 7),  # black
-        background_alpha=0.25,  # semi-transparent
-        text_color=(25, 230, 255),  # yellow
-        text_scale=2.5,
-        text_thickness=4,
-        box_margin_frac=0.04,  # margin inside box
-    ))
-
-    score_textbox: TextBoxConfig = field(default_factory=lambda: TextBoxConfig(
-        box_origin_x_frac=0.2,
-        box_origin_y_frac=0.75,
-        background_color=(77, 41, 7),  # black
-        background_alpha=0.25,  # semi-transparent
-        text_color=(255, 255, 255),  # white
-        text_scale=2.5,
-        text_thickness=4,
-        box_margin_frac=0.04,  # margin inside box
-    ))
 
 class AnswerSheetGenerator:
     def __init__(self, layout_config: LayoutConfig, question_list: Optional[List[dict]] = None):
