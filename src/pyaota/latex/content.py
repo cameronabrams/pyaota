@@ -1,3 +1,7 @@
+"""
+LaTeX content templates for pyaota.
+"""
+
 HEADMATTER = r"""
 \documentclass[12pt, letter]{article}
 \usepackage[margin=1in]{geometry}

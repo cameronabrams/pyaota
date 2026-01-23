@@ -1,3 +1,7 @@
+"""
+Command-line interface for pyaota: build and grade multiple-choice exams.
+"""
+
 from __future__ import annotations
 
 import argparse as ap
@@ -33,7 +37,16 @@ def setup_logging(args):
     logging.getLogger('').addHandler(console)
 
 def save_args(args, filepath):
-    """Save argparse namespace including subcommand to YAML"""
+    """
+    Save argparse namespace including subcommand to YAML
+    
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The argparse namespace to save.
+    filepath : str
+        The path to the YAML file to save the args to.
+    """
     args_dict = vars(args).copy()
     args_dict.pop('func', None)
     args_dict.pop('save_config', None)
@@ -42,7 +55,14 @@ def save_args(args, filepath):
         yaml.dump(args_dict, f, default_flow_style=False)
 
 def load_args_from_yaml(filepath):
-    """Load args from YAML"""
+    """
+    Load args from YAML
+    
+    Parameters
+    ----------
+    filepath : str
+        The path to the YAML file to load the args from.
+    """
     with open(filepath, 'r') as f:
         return yaml.safe_load(f)
 
@@ -70,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     parser = ap.ArgumentParser(
         prog='pyaota',
-        description='pyaota: build and grade multiple-choice exams',
+        description='pyaota: build and grade multiple-choice/true-false exams',
         epilog='(c) 2025-2026 Cameron F. Abrams <cfa22@drexel.edu>'
     )
     parser.add_argument('--config', type=str, help='Load config from YAML')

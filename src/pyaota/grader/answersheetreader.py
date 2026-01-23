@@ -1,6 +1,6 @@
 from pathlib import Path
-from ...generator.answersheet import LayoutConfig, TextBoxConfig
-from ...ocr.digit_ocr import ocr_digit_nn, load_digit_model
+from ..generator.answersheet import LayoutConfig, TextBoxConfig
+from ..ocr.digit_ocr import ocr_digit_nn, load_digit_model
 from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
 import cv2

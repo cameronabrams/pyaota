@@ -1,6 +1,6 @@
 # Author: Cameron F. Abrams, <cfa22@drexel.edu>
 """
-Document build functions for pygacity
+Document build functions for pyaota
 """
 
 import logging

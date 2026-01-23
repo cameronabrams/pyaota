@@ -1,4 +1,6 @@
-# digit_ocr.py
+"""
+MNIST-style digit OCR using a CNN.
+"""
 
 from __future__ import annotations
 

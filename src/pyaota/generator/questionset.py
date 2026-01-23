@@ -1,5 +1,9 @@
 # Author: Cameron F. Abrams <cfa22@drexel.edu>
 
+"""
+Question set management for pyaota
+"""
+
 import yaml
 import logging
 
@@ -8,6 +12,11 @@ import random
 from pathlib import Path
 
 class QuestionSet:
+    """
+    Class to manage a set of questions loaded from YAML files.
+    Supports loading from multiple files, organizing by topic,
+    and selecting random subsets of questions.
+    """
     def __init__(self, question_banks: list[str] = []):
         self.data = {}
         for yaml_file in question_banks:
@@ -49,6 +58,30 @@ class QuestionSet:
             rng: callable = None, 
             shuffle: bool = True, 
             shuffle_choices: bool = True) -> list[dict]:
+        """
+        Selects a random set of questions from the question set.
+
+        Parameters
+        ----------
+        num_questions : int
+            Total number of questions to select.
+        topics_order : list[str] | None
+            List of topics in the order to select questions from. 
+            If None, use all topics in arbitrary order.
+        seed : int
+            Seed for the random number generator.
+        rng : callable
+            Random number generator instance (e.g., random.Random).
+        shuffle : bool
+            If True, shuffle the selected questions before returning.
+        shuffle_choices : bool
+            If True, shuffle the choices within each multiple-choice question.
+
+        Returns
+        -------
+        list[dict]
+            List of selected question dictionaries.
+        """
 
         if rng is None:
             logger.debug(f'Using seed {seed} for question selection; no RNG provided.')
@@ -97,14 +130,14 @@ class QuestionSet:
             rng.shuffle(selected_questions)
 
         if shuffle_choices:
+            # shuffle choices only for multiple-choice questions
+            logger.debug('Shuffling choices within multiple-choice questions.')
             for question in selected_questions:
                 if not question['type'] == 'mcq':
                     continue
                 logger.debug(f'Shuffling choices for question ID {question.get("id", "N/A")}')
                 choices = question.get("choices", [])
                 choice_keys = [str(c.get("key", "")).strip() for c in choices if c.get("key", "") not in (None, "")]
-                if not choice_keys:
-                    choice_keys = ["a", "b", "c", "d"]
                 correct_old_key = str(question.get("correct", "")).strip()
                 new_choice_keys = choice_keys.copy()
                 rng.shuffle(new_choice_keys)

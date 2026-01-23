@@ -1,0 +1,1237 @@
+questions:
+- id: 1
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What is NaCl commonly known as?
+  choices:
+    - key: a
+      text: Water
+    - key: b
+      text: Salt
+    - key: c
+      text: Sugar
+    - key: d
+      text: Oxygen
+  correct: b
+- id: 2
+  type: tf
+  topic: Physics
+  stem: 
+   - type: text
+     text: The speed of light is approximately 3.0 x 10^8 meters per second.
+  answer: True
+- id: 3
+  type: mcq
+  topic: Biology
+  stem: 
+   - type: text
+     text: Which organelle is known as the powerhouse of the cell?
+  choices:
+    - key: a
+      text: Nucleus
+    - key: b
+      text: Mitochondria
+    - key: c
+      text: Ribosome
+    - key: d
+      text: Endoplasmic Reticulum
+  correct: b
+- id: 4
+  type: tf
+  topic: Earth Science
+  stem: 
+   - type: text
+     text: Earth is the third planet from the Sun in our solar system.
+  answer: True
+- id: 5
+  type: mcq
+  topic: General Science
+  stem: 
+   - type: text
+     text: What is the chemical symbol for gold?
+  choices:
+    - key: a
+      text: Au
+    - key: b
+      text: Ag
+    - key: c
+      text: Fe
+    - key: d
+      text: Pb
+  correct: a
+# generate 20 questions in the topic of Chemistry; 10 mcq and 10 tf
+- id: 8
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What is the atomic number of Carbon?
+  choices:
+    - key: a
+      text: 4
+    - key: b
+      text: 6
+    - key: c
+      text: 8
+    - key: d
+      text: 12
+  correct: b
+- id: 9
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Which element has the chemical symbol 'O'?
+  choices:
+    - key: a
+      text: Osmium
+    - key: b
+      text: Oxygen
+    - key: c
+      text: Oganesson
+    - key: d
+      text: Oxide
+  correct: b
+- id: 10
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What type of bond involves the sharing of electron pairs?
+  choices:
+    - key: a
+      text: Ionic bond
+    - key: b
+      text: Covalent bond
+    - key: c
+      text: Metallic bond
+    - key: d
+      text: Hydrogen bond
+  correct: b
+- id: 11
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What is the molecular formula for water?
+  choices:
+    - key: a
+      text: H2O
+    - key: b
+      text: CO2
+    - key: c
+      text: O2
+    - key: d
+      text: H2O2
+  correct: a
+- id: 12
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Which gas is most abundant in Earth's atmosphere?
+  choices:
+    - key: a
+      text: Oxygen
+    - key: b
+      text: Carbon Dioxide
+    - key: c
+      text: Nitrogen
+    - key: d
+      text: Hydrogen
+  correct: c
+- id: 13
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What is the name of the process where a solid turns directly into a gas?
+  choices:
+    - key: a
+      text: Evaporation
+    - key: b
+      text: Sublimation
+    - key: c
+      text: Condensation
+    - key: d
+      text: Deposition
+  correct: b
+- id: 14
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Which element is the most electronegative?
+  choices:
+    - key: a
+      text: Oxygen
+    - key: b
+      text: Fluorine
+    - key: c
+      text: Nitrogen
+    - key: d
+      text: Chlorine
+  correct: b
+- id: 15
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What is the molar mass of carbon dioxide (CO2)?
+  choices:
+    - key: a
+      text: 28 g/mol
+    - key: b
+      text: 32 g/mol
+    - key: c
+      text: 44 g/mol
+    - key: d
+      text: 64 g/mol
+  correct: c
+- id: 16
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Which of the following is a noble gas?
+  choices:
+    - key: a
+      text: Oxygen
+    - key: b
+      text: Nitrogen
+    - key: c
+      text: Helium
+    - key: d
+      text: Hydrogen
+  correct: c
+- id: 17
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What is the charge of a proton?
+  choices:
+    - key: a
+      text: Negative
+    - key: b
+      text: Positive
+    - key: c
+      text: Neutral
+    - key: d
+      text: Variable
+  correct: b
+- id: 18
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: The periodic table is arranged by increasing atomic mass.
+  answer: False
+- id: 19
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Hydrogen is the lightest element.
+  answer: True
+- id: 20
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Covalent bonds are formed by the transfer of electrons.
+  answer: False
+- id: 21
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Catalysts speed up chemical reactions without being consumed.
+  answer: True
+- id: 22
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: The noble gases are highly reactive.
+  answer: False
+- id: 23
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Water boils at 100 degrees Celsius at standard atmospheric pressure.
+  answer: True
+- id: 24
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Isotopes of an element have different numbers of protons.
+  answer: False
+- id: 25
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: A base has a pH level greater than 7.
+  answer: True
+- id: 26
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Electrons have a positive charge.
+  answer: False
+- id: 27
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: Carbon can form four covalent bonds.
+  answer: True
+- id: 6
+  type: mcq
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: What is the pH level of pure water?
+  choices:
+    - key: a
+      text: 5
+    - key: b
+      text: 7
+    - key: c
+      text: 9
+    - key: d
+      text: 11
+  correct: b
+- id: 7
+  type: tf
+  topic: Chemistry
+  stem: 
+   - type: text
+     text: An acid has a pH level less than 7.
+  answer: True
+- id: 28
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What is the SI unit of force?
+  choices:
+    - key: a
+      text: Joule
+    - key: b
+      text: Newton
+    - key: c
+      text: Watt
+    - key: d
+      text: Pascal
+  correct: b
+- id: 29
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What is the acceleration due to gravity on Earth?
+  choices:
+    - key: a
+      text: 8.9 m/s²
+    - key: b
+      text: 9.8 m/s²
+    - key: c
+      text: 10.8 m/s²
+    - key: d
+      text: 11.8 m/s²
+  correct: b
+- id: 30
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: Which law states that for every action there is an equal and opposite reaction?
+  choices:
+    - key: a
+      text: Newton's First Law
+    - key: b
+      text: Newton's Second Law
+    - key: c
+      text: Newton's Third Law
+    - key: d
+      text: Law of Conservation of Energy
+  correct: c
+- id: 31
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What is the SI unit of electric current?
+  choices:
+    - key: a
+      text: Volt
+    - key: b
+      text: Ampere
+    - key: c
+      text: Ohm
+    - key: d
+      text: Coulomb
+  correct: b
+- id: 32
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What type of energy is stored in a stretched spring?
+  choices:
+    - key: a
+      text: Kinetic energy
+    - key: b
+      text: Potential energy
+    - key: c
+      text: Thermal energy
+    - key: d
+      text: Chemical energy
+  correct: b
+- id: 33
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What is the formula for calculating kinetic energy?
+  choices:
+    - key: a
+      text: KE = mv
+    - key: b
+      text: KE = 1/2 mv²
+    - key: c
+      text: KE = mgh
+    - key: d
+      text: KE = Fd
+  correct: b
+- id: 34
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: Which particle in an atom has no electric charge?
+  choices:
+    - key: a
+      text: Proton
+    - key: b
+      text: Electron
+    - key: c
+      text: Neutron
+    - key: d
+      text: Photon
+  correct: c
+- id: 35
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What is the unit of electrical resistance?
+  choices:
+    - key: a
+      text: Ampere
+    - key: b
+      text: Volt
+    - key: c
+      text: Ohm
+    - key: d
+      text: Watt
+  correct: c
+- id: 36
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What phenomenon causes light to bend when passing from one medium to another?
+  choices:
+    - key: a
+      text: Reflection
+    - key: b
+      text: Refraction
+    - key: c
+      text: Diffraction
+    - key: d
+      text: Interference
+  correct: b
+- id: 37
+  type: mcq
+  topic: Physics
+  stem: 
+    - type: text
+      text: What is the frequency of a wave with a period of 0.5 seconds?
+  choices:
+    - key: a
+      text: 0.5 Hz
+    - key: b
+      text: 1 Hz
+    - key: c
+      text: 2 Hz
+    - key: d
+      text: 4 Hz
+  correct: c
+- id: 38
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: Energy can be created or destroyed according to the law of conservation of energy.
+  answer: False
+- id: 39
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: Sound waves require a medium to travel through.
+  answer: True
+- id: 40
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: The speed of sound is faster than the speed of light.
+  answer: False
+- id: 41
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: Momentum is conserved in a closed system.
+  answer: True
+- id: 42
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: A concave lens converges light rays.
+  answer: False
+- id: 43
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: Temperature is a measure of the average kinetic energy of particles.
+  answer: True
+- id: 44
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: An object at rest will remain at rest unless acted upon by an external force.
+  answer: True
+- id: 45
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: Magnetic field lines always form closed loops.
+  answer: True
+- id: 46
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: The wavelength of visible light is longer than that of radio waves.
+  answer: False
+- id: 47
+  type: tf
+  topic: Physics
+  stem: 
+    - type: text
+      text: Power is the rate at which work is done.
+  answer: True
+- id: 48
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: What is the basic unit of life?
+  choices:
+    - key: a
+      text: Atom
+    - key: b
+      text: Molecule
+    - key: c
+      text: Cell
+    - key: d
+      text: Organ
+  correct: c
+- id: 49
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: What is the process by which plants make their own food?
+  choices:
+    - key: a
+      text: Respiration
+    - key: b
+      text: Photosynthesis
+    - key: c
+      text: Fermentation
+    - key: d
+      text: Digestion
+  correct: b
+- id: 50
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: Which molecule carries genetic information?
+  choices:
+    - key: a
+      text: RNA
+    - key: b
+      text: Protein
+    - key: c
+      text: DNA
+    - key: d
+      text: Lipid
+  correct: c
+- id: 51
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: What type of organism is a mushroom?
+  choices:
+    - key: a
+      text: Plant
+    - key: b
+      text: Animal
+    - key: c
+      text: Fungus
+    - key: d
+      text: Bacteria
+  correct: c
+- id: 52
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: Which blood cells are responsible for carrying oxygen?
+  choices:
+    - key: a
+      text: White blood cells
+    - key: b
+      text: Red blood cells
+    - key: c
+      text: Platelets
+    - key: d
+      text: Plasma cells
+  correct: b
+- id: 53
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: What is the largest organ in the human body?
+  choices:
+    - key: a
+      text: Heart
+    - key: b
+      text: Liver
+    - key: c
+      text: Skin
+    - key: d
+      text: Brain
+  correct: c
+- id: 54
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: Which system is responsible for breaking down food?
+  choices:
+    - key: a
+      text: Respiratory system
+    - key: b
+      text: Circulatory system
+    - key: c
+      text: Digestive system
+    - key: d
+      text: Nervous system
+  correct: c
+- id: 55
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: What is the term for an organism that can make its own food?
+  choices:
+    - key: a
+      text: Heterotroph
+    - key: b
+      text: Autotroph
+    - key: c
+      text: Decomposer
+    - key: d
+      text: Consumer
+  correct: b
+- id: 56
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: Which part of the cell contains the genetic material?
+  choices:
+    - key: a
+      text: Cytoplasm
+    - key: b
+      text: Nucleus
+    - key: c
+      text: Cell membrane
+    - key: d
+      text: Vacuole
+  correct: b
+- id: 57
+  type: mcq
+  topic: Biology
+  stem: 
+    - type: text
+      text: What is the function of chlorophyll in plants?
+  choices:
+    - key: a
+      text: Water absorption
+    - key: b
+      text: Light absorption
+    - key: c
+      text: Oxygen production
+    - key: d
+      text: Nutrient storage
+  correct: b
+- id: 58
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: Humans have 46 chromosomes in each body cell.
+  answer: True
+- id: 59
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: Bacteria are eukaryotic organisms.
+  answer: False
+- id: 60
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: The heart pumps blood throughout the body.
+  answer: True
+- id: 61
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: All living organisms are made up of cells.
+  answer: True
+- id: 62
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: Mitosis results in four daughter cells.
+  answer: False
+- id: 63
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: Antibodies are produced by white blood cells.
+  answer: True
+- id: 64
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: Photosynthesis occurs in the mitochondria.
+  answer: False
+- id: 65
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: The brain is part of the central nervous system.
+  answer: True
+- id: 66
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: Enzymes are proteins that catalyze chemical reactions.
+  answer: True
+- id: 67
+  type: tf
+  topic: Biology
+  stem: 
+    - type: text
+      text: Viruses are considered living organisms.
+  answer: False
+- id: 68
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: What is the largest planet in our solar system?
+  choices:
+    - key: a
+      text: Saturn
+    - key: b
+      text: Jupiter
+    - key: c
+      text: Neptune
+    - key: d
+      text: Uranus
+  correct: b
+- id: 69
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: What is the name of Earth's natural satellite?
+  choices:
+    - key: a
+      text: Phobos
+    - key: b
+      text: Titan
+    - key: c
+      text: Moon
+    - key: d
+      text: Europa
+  correct: c
+- id: 70
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Which planet is known as the Red Planet?
+  choices:
+    - key: a
+      text: Venus
+    - key: b
+      text: Mars
+    - key: c
+      text: Mercury
+    - key: d
+      text: Jupiter
+  correct: b
+- id: 71
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: What is the closest star to Earth?
+  choices:
+    - key: a
+      text: Alpha Centauri
+    - key: b
+      text: Sirius
+    - key: c
+      text: The Sun
+    - key: d
+      text: Proxima Centauri
+  correct: c
+- id: 72
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: What type of galaxy is the Milky Way?
+  choices:
+    - key: a
+      text: Elliptical
+    - key: b
+      text: Spiral
+    - key: c
+      text: Irregular
+    - key: d
+      text: Lenticular
+  correct: b
+- id: 73
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: What is a light-year a measure of?
+  choices:
+    - key: a
+      text: Time
+    - key: b
+      text: Distance
+    - key: c
+      text: Speed
+    - key: d
+      text: Brightness
+  correct: b
+- id: 74
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Which planet has the most moons?
+  choices:
+    - key: a
+      text: Jupiter
+    - key: b
+      text: Saturn
+    - key: c
+      text: Uranus
+    - key: d
+      text: Neptune
+  correct: b
+- id: 75
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: What is the name of the force that keeps planets in orbit around the Sun?
+  choices:
+    - key: a
+      text: Magnetism
+    - key: b
+      text: Gravity
+    - key: c
+      text: Nuclear force
+    - key: d
+      text: Friction
+  correct: b
+- id: 76
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: What is a supernova?
+  choices:
+    - key: a
+      text: A new star
+    - key: b
+      text: An exploding star
+    - key: c
+      text: A black hole
+    - key: d
+      text: A nebula
+  correct: b
+- id: 77
+  type: mcq
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Which planet is tilted on its side?
+  choices:
+    - key: a
+      text: Saturn
+    - key: b
+      text: Neptune
+    - key: c
+      text: Uranus
+    - key: d
+      text: Venus
+  correct: c
+- id: 78
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: The Sun is a star.
+  answer: True
+- id: 79
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Mercury is the hottest planet in our solar system.
+  answer: False
+- id: 80
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: A lunar eclipse occurs when the Moon passes between the Earth and the Sun.
+  answer: False
+- id: 81
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Saturn is known for its prominent ring system.
+  answer: True
+- id: 82
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Black holes have such strong gravity that not even light can escape.
+  answer: True
+- id: 83
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: The asteroid belt is located between Mars and Jupiter.
+  answer: True
+- id: 84
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Pluto is still classified as a major planet.
+  answer: False
+- id: 85
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Comets are made of ice, dust, and rocky material.
+  answer: True
+- id: 86
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: The universe is approximately 13.8 billion years old.
+  answer: True
+- id: 87
+  type: tf
+  topic: Astronomy
+  stem: 
+    - type: text
+      text: Neptune is closer to the Sun than Uranus.
+  answer: False
+- id: 88
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: What is the largest organ in the human body?
+  choices:
+    - key: a
+      text: Liver
+    - key: b
+      text: Brain
+    - key: c
+      text: Skin
+    - key: d
+      text: Heart
+  correct: c
+- id: 89
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: What is the normal human body temperature in Celsius?
+  choices:
+    - key: a
+      text: 35°C
+    - key: b
+      text: 37°C
+    - key: c
+      text: 39°C
+    - key: d
+      text: 40°C
+  correct: b
+- id: 90
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Which vitamin is produced when skin is exposed to sunlight?
+  choices:
+    - key: a
+      text: Vitamin A
+    - key: b
+      text: Vitamin C
+    - key: c
+      text: Vitamin D
+    - key: d
+      text: Vitamin K
+  correct: c
+- id: 91
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: What is the medical term for high blood pressure?
+  choices:
+    - key: a
+      text: Hypotension
+    - key: b
+      text: Hypertension
+    - key: c
+      text: Hyperglycemia
+    - key: d
+      text: Hypoglycemia
+  correct: b
+- id: 92
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Which organ produces insulin?
+  choices:
+    - key: a
+      text: Liver
+    - key: b
+      text: Kidney
+    - key: c
+      text: Pancreas
+    - key: d
+      text: Stomach
+  correct: c
+- id: 93
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: What is the main function of red blood cells?
+  choices:
+    - key: a
+      text: Fighting infection
+    - key: b
+      text: Clotting blood
+    - key: c
+      text: Carrying oxygen
+    - key: d
+      text: Producing hormones
+  correct: c
+- id: 94
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Which part of the brain controls balance and coordination?
+  choices:
+    - key: a
+      text: Cerebrum
+    - key: b
+      text: Cerebellum
+    - key: c
+      text: Medulla
+    - key: d
+      text: Hypothalamus
+  correct: b
+- id: 95
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: What is the medical term for a heart attack?
+  choices:
+    - key: a
+      text: Cardiac arrest
+    - key: b
+      text: Myocardial infarction
+    - key: c
+      text: Angina pectoris
+    - key: d
+      text: Arrhythmia
+  correct: b
+- id: 96
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Which blood type is considered the universal donor?
+  choices:
+    - key: a
+      text: A
+    - key: b
+      text: B
+    - key: c
+      text: AB
+    - key: d
+      text: O
+  correct: d
+- id: 97
+  type: mcq
+  topic: Medicine
+  stem: 
+    - type: text
+      text: What is the main function of the kidneys?
+  choices:
+    - key: a
+      text: Digesting food
+    - key: b
+      text: Filtering blood
+    - key: c
+      text: Pumping blood
+    - key: d
+      text: Producing bile
+  correct: b
+- id: 98
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Antibiotics are effective against viral infections.
+  answer: False
+- id: 99
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: The human body has 206 bones in adulthood.
+  answer: True
+- id: 100
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Vaccination helps the body develop immunity to diseases.
+  answer: True
+- id: 101
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: The liver can regenerate itself.
+  answer: True
+- id: 102
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Type 1 diabetes is caused by lifestyle factors such as poor diet.
+  answer: False
+- id: 103
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: The appendix has no known function in the human body.
+  answer: False
+- id: 104
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Aspirin is commonly used to reduce pain and inflammation.
+  answer: True
+- id: 105
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: The spinal cord is part of the peripheral nervous system.
+  answer: False
+- id: 106
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Dehydration can cause fatigue and dizziness.
+  answer: True
+- id: 107
+  type: tf
+  topic: Medicine
+  stem: 
+    - type: text
+      text: Cholesterol is always harmful to the body.
+  answer: False

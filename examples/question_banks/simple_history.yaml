@@ -1,0 +1,254 @@
+questions:
+- id: 1
+  type: mcq
+  topic: Early western history
+  stem: 
+   - type: text
+     text: What was the teacher of Aristotle?
+  choices:
+    - key: a
+      text: Plato
+    - key: b
+      text: Socrates
+    - key: c
+      text: Alexander the Great
+    - key: d
+      text: Pythagoras
+  correct: a
+- id: 2
+  type: tf
+  topic: European history
+  stem: 
+   - type: text
+     text: The Renaissance began in Italy.
+  answer: True
+- id: 3
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Who painted the ceiling of the Sistine Chapel?
+  choices:
+    - key: a
+      text: Leonardo da Vinci
+    - key: b
+      text: Michelangelo
+    - key: c
+      text: Raphael
+    - key: d
+      text: Donatello
+  correct: b
+- id: 4
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: In which century did the Renaissance primarily occur?
+  choices:
+    - key: a
+      text: 12th-13th century
+    - key: b
+      text: 14th-17th century
+    - key: c
+      text: 18th-19th century
+    - key: d
+      text: 10th-11th century
+  correct: b
+- id: 5
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Who wrote "The Prince"?
+  choices:
+    - key: a
+      text: Dante Alighieri
+    - key: b
+      text: Niccolò Machiavelli
+    - key: c
+      text: Thomas More
+    - key: d
+      text: Erasmus
+  correct: b
+- id: 6
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Which family was the most powerful patron of the arts in Florence?
+  choices:
+    - key: a
+      text: Borgia
+    - key: b
+      text: Sforza
+    - key: c
+      text: Medici
+    - key: d
+      text: Visconti
+  correct: c
+- id: 7
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Who painted the Mona Lisa?
+  choices:
+    - key: a
+      text: Michelangelo
+    - key: b
+      text: Raphael
+    - key: c
+      text: Leonardo da Vinci
+    - key: d
+      text: Titian
+  correct: c
+- id: 8
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: What does "Renaissance" mean?
+  choices:
+    - key: a
+      text: Rebirth
+    - key: b
+      text: Revolution
+    - key: c
+      text: Reform
+    - key: d
+      text: Renewal
+  correct: a
+- id: 9
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Which invention greatly helped spread Renaissance ideas?
+  choices:
+    - key: a
+      text: The telescope
+    - key: b
+      text: The printing press
+    - key: c
+      text: The compass
+    - key: d
+      text: The steam engine
+  correct: b
+- id: 10
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Who sculpted the statue of David?
+  choices:
+    - key: a
+      text: Donatello
+    - key: b
+      text: Michelangelo
+    - key: c
+      text: Bernini
+    - key: d
+      text: Giotto
+  correct: b
+- id: 11
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Which Renaissance artist is known for "The School of Athens"?
+  choices:
+    - key: a
+      text: Leonardo da Vinci
+    - key: b
+      text: Michelangelo
+    - key: c
+      text: Raphael
+    - key: d
+      text: Botticelli
+  correct: c
+- id: 12
+  type: mcq
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: What was the primary focus of Renaissance humanism?
+  choices:
+    - key: a
+      text: Religious devotion
+    - key: b
+      text: Military conquest
+    - key: c
+      text: Classical learning and human potential
+    - key: d
+      text: Agricultural development
+  correct: c
+- id: 13
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: The Renaissance began in France.
+  answer: False
+- id: 14
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Leonardo da Vinci was both an artist and an inventor.
+  answer: True
+- id: 15
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: The Medici family ruled from Venice.
+  answer: False
+- id: 16
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Gutenberg invented the printing press during the Renaissance period.
+  answer: True
+- id: 17
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Renaissance artists focused primarily on abstract art.
+  answer: False
+- id: 18
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Humanism emphasized the study of classical texts from Greece and Rome.
+  answer: True
+- id: 19
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: The Renaissance had no impact on science and mathematics.
+  answer: False
+- id: 20
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Petrarch is considered one of the fathers of Renaissance humanism.
+  answer: True
+- id: 21
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: The Renaissance occurred before the Middle Ages.
+  answer: False
+- id: 22
+  type: tf
+  topic: Renaissance history
+  stem:
+    - type: text
+      text: Renaissance architecture drew inspiration from Roman and Greek designs.
+  answer: True

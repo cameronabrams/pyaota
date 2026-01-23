@@ -1,4 +1,6 @@
-
+"""
+Utility text functions for pyaota.
+"""
 
 def banner(printf: callable) -> None:
     printf(

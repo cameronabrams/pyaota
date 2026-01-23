@@ -1,3 +1,6 @@
+"""
+LaTeX rendering helpers for pyaota.
+"""
 
 import re
 
@@ -148,6 +151,9 @@ def render_code_block(text: str, style: str = "mypython", force_env: bool = True
 
 
 def render_stem_block(block: dict) -> str:
+    """
+    Render a single stem block (text or code) to LaTeX.
+    """
     btype = block.get("type", "text")
     if btype == "text":
         txt = block.get("text", "")
@@ -211,6 +217,10 @@ def render_choice(
 def render_question(
     q: dict,
     **kwargs) -> str:
+    """
+    Render a single question dict to LaTeX, dispatching
+    to the appropriate renderer based on question type.
+    """
     qtype = q.get("type", "mcq").lower()
     if qtype == "mcq":
         return render_mcq(q, **kwargs)
