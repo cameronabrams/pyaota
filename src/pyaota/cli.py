@@ -10,6 +10,7 @@ import yaml
 
 from .generator.manager import (
     make_exams_subcommand, 
+    make_answersheet_subcommand,
     compile_dump_subcommand, 
     tune_answersheetreader_subcommand, 
     autograde_subcommand
@@ -82,6 +83,10 @@ def main(argv: list[str] | None = None) -> int:
         'grade': dict(
             func = autograde_subcommand,
             help = 'grade exams from scanned answer sheets',
+        ),
+        'make-answersheet': dict(
+            func = make_answersheet_subcommand,
+            help = 'make a blank answer sheet PDF',
         ),
         'tune-answersheetreader': dict(
             func = tune_answersheetreader_subcommand,
@@ -292,6 +297,40 @@ def main(argv: list[str] | None = None) -> int:
         "--question-tally-output-csv",
         default="question_tally.csv",
         help="Path to output CSV file summarizing question tallies",
+    )
+
+    command_parsers["make-answersheet"].add_argument(
+        "-o",
+        "--output-pdf",
+        default="answersheet.pdf",
+        help="Path to output answer sheet PDF",
+    )
+    command_parsers["make-answersheet"].add_argument(
+        "-nc",
+        "--num-cols",
+        type=int,
+        default=3,
+        help="Number of columns in the answer sheet",
+    )
+    command_parsers["make-answersheet"].add_argument(
+        "-nq",
+        "--num-questions",
+        type=int,
+        default=50,
+        help="Number of questions on the answer sheet",
+    )
+    command_parsers["make-answersheet"].add_argument(
+        "-od",
+        "--output-dir",
+        default=".",
+        help="Output directory",
+    )
+    command_parsers["make-answersheet"].add_argument(
+        "-idl",
+        "--student-id-num-digits",
+        type=int,
+        default=8,
+        help="Number of digits in the student ID field",
     )
 
     command_parsers["tune-answersheetreader"].add_argument(

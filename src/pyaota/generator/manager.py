@@ -16,7 +16,7 @@ from pdf2image import convert_from_path
 from .yaml2tex import render_question, tex_escape
 from .questionset import QuestionSet
 from .document import Document, ExamDocument
-from .answersheet import AnswerSheetGenerator, LayoutConfig, TextBoxConfig
+from .answersheet import AnswerSheetGenerator, LayoutConfig
 from ..grader.answersheetreader import AnswerSheetReader
 from ..grader.autograder import Autograder
 from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS, DEFAULT_EXAM_INSTRUCTIONS, QUESTION_BANK_DUMP_INSTRUCTIONS
@@ -195,7 +195,7 @@ def make_exams_subcommand(args):
     question_set = QuestionSet(question_banks=yaml_paths)
     version_answer_records: list[tuple[str, list[str]]] = []
     answer_sheet_layout = LayoutConfig(
-        num_cols = args.num_cols,
+        bubble_field_num_cols = args.num_cols,
         num_questions = args.num_questions,
     )
     write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
@@ -238,6 +238,51 @@ def make_exams_subcommand(args):
     write_version_keys_csv(version_answer_records, output_path=output_dir/"exam_version_keys.csv")
     write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
 
+def make_answersheet_subcommand(args):
+    layout_config = LayoutConfig(
+        bubble_field_num_cols = args.num_cols,
+        num_questions = args.num_questions,
+        student_id_num_digits=args.student_id_num_digits
+    )
+    # let's gnerate a mock question list that only contains the type
+    # of question, and let's make half of them 'mcq' and half 'tf'
+    mock_question_list = []
+    num_mcq = args.num_questions // 2
+    num_tf = args.num_questions - num_mcq
+    for i in range(num_mcq):
+        mock_question_list.append({'type': 'mcq'})
+    for i in range(num_tf):
+        mock_question_list.append({'type': 'tf'})
+    random.shuffle(mock_question_list)
+    print(mock_question_list)
+    answersheet_generator = AnswerSheetGenerator(
+        layout_config=layout_config,
+        question_list=mock_question_list,
+    )
+    answersheet_tex = answersheet_generator.generate_tex(version_label="SAMPLE",)
+
+    latex_compiler = LatexCompiler(build_specs={
+        'paths': {
+            'pdflatex': 'pdflatex',
+            'build-dir': args.output_dir,
+        },
+        'job-name': 'answer_sheet_sample',
+    })
+    exam_doc_specs = dict(
+        institution="",
+        course="",
+        term="",
+        examname="Sample Answer Sheet",
+        version="SAMPLE",
+        instructions="",
+        question_renderer=render_question,
+        question_list=[],
+        answersheet_tex=answersheet_tex,
+        endmessage="End of Document\n\\clearpage",)
+
+    exam_doc = ExamDocument(document_specs=exam_doc_specs)
+    latex_compiler.build_document(exam_doc, cleanup=False)
+
 def tune_answersheetreader_subcommand(args):
     pdf = args.sample_pdf
     # convert PDF to image
@@ -246,19 +291,21 @@ def tune_answersheetreader_subcommand(args):
         logger.error(f"Could not convert PDF {pdf} to image.")
         return
 
-    img = np.array(images[0])
+    img = np.array(images[-1])
+    print(f'image shape: {img.shape}')
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     answersheetreader = AnswerSheetReader(img=img, layout_config=LayoutConfig(
-        num_cols = args.num_cols,
+        bubble_field_num_cols=args.num_cols,
         num_questions = args.num_questions))
 
     answersheetreader._find_indicials()
     answersheetreader._warp_to_canonical()
-    answersheetreader._compute_bubble_centers()
-    answersheetreader._read_qr()
+    # answersheetreader._compute_bubble_centers()
     answersheetreader._read_student_id()
-    answersheetreader._read_bubbles()
+    answersheetreader._read_qr()
+    answersheetreader._read_bubblefield()
+    # answersheetreader._read_bubbles()
     img = answersheetreader._diagnostic_overlay()
     output_path = Path(args.output_image)
     cv2.imwrite(str(output_path), img)

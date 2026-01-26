@@ -1,5 +1,5 @@
 from pathlib import Path
-from ..generator.answersheet import LayoutConfig, TextBoxConfig
+from ..generator.answersheet import LayoutConfig
 from ..ocr.digit_ocr import ocr_digit_nn, load_digit_model
 from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
@@ -63,13 +63,20 @@ def get_digit_model():
 class AnswerSheetReader:
     def __init__(self, img: np.ndarray, layout_config: LayoutConfig, debug_output_dir: Path = Path("debug")):
         self.rawimg = img.copy()
-        self.img = img
+        self.img = None
         self.layout_config = layout_config
         self.debug_output_path = debug_output_dir
         self.results = {}
-        self.diagnostics = {}
+        self.diagnostics = {'original_size': img.shape[:2]}  # (height, width)
+        self.diagnostics['debug_image'] = self.rawimg.copy()
         if not self.debug_output_path.exists():
             self.debug_output_path.mkdir(parents=True, exist_ok=True)
+
+    def _diagnostic_overlay(self):
+        # return self.img
+        unwarped = cv2.warpPerspective(self.diagnostics['debug_image'], self.diagnostics['warp_matrix_inv'], 
+        self.diagnostics['original_size'][::-1])
+        return unwarped
 
     def read(self) -> dict[str, Any]:
         self._find_indicials()
@@ -80,7 +87,6 @@ class AnswerSheetReader:
         return self.results
         
     def _find_indicials(self):
-
         """
         Detect indicial markers in the four corners of the answer sheet image.
 
@@ -90,114 +96,89 @@ class AnswerSheetReader:
         Raises RuntimeError if any indicial cannot be found.
         """
         config = self.layout_config
-        img = self.img.copy()
-
-        h, w = img.shape[:2]
-        logger.debug(f"Image size for indicial detection: width={w}, height={h}")
-        # indicial_
-        # ftopvert = int(h*self.layout_config.indicial_top_vertical_margin_frac) # top of north indicials search regions
-        # fbotvert = int(h*self.layout_config.indicial_bottom_vertical_margin_frac) # top of south indicial search regions
-        # fhoriz = int(w*self.layout_config.indicial_horizontal_margin_frac) # width of indicial search regions, distance from respective edges
-        # region_y = int(self.layout_config.indicial_vertical_size_frac * h) # height of indicial search regions
-        # Define small search windows near the *physical* page corners
-        regions = {
-            "nw": dict(
-                upper_left = config.indicial_nw_region_ul_px,
-                lower_right = (config.indicial_nw_region_ul_px[0] + config.indicial_region_width_px,
-                               config.indicial_nw_region_ul_px[1] + config.indicial_region_height_px),
-            ),
-            "ne": dict(
-                upper_left = config.indicial_ne_region_ul_px,
-                lower_right = (config.indicial_ne_region_ul_px[0] + config.indicial_region_width_px,
-                               config.indicial_ne_region_ul_px[1] + config.indicial_region_height_px),
-            ),
-            "sw": dict(
-                upper_left = config.indicial_sw_region_ul_px,
-                lower_right = (config.indicial_sw_region_ul_px[0] + config.indicial_region_width_px,
-                               config.indicial_sw_region_ul_px[1] + config.indicial_region_height_px),
-            ),
-            "se": dict(
-                upper_left = config.indicial_se_region_ul_px,
-                lower_right = (config.indicial_se_region_ul_px[0] + config.indicial_region_width_px,
-                               config.indicial_se_region_ul_px[1] + config.indicial_region_height_px),
-            ),
-        }
-
-        # write a debug image showing the search regions
-        self.diagnostics['indicial_regions'] = regions
-
+        img = self.rawimg.copy()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
         # Light background, dark dots/text → invert for contour detection
         _, bin_inv = cv2.threshold(
             gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
         )
 
-        centers: Dict[str, Tuple[int, int]] = {}
-
-        for name, region in regions.items():
-            upper_left = region["upper_left"]
-            lower_right = region["lower_right"]
-            sub = bin_inv[upper_left[1]:lower_right[1], upper_left[0]:lower_right[0]]
-            contours, _ = cv2.findContours(
-                sub, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
-            if not contours:
-                raise RuntimeError(f"No indicial candidate found in region {name}")
-
-            best_center = None
-            best_score = None
-
-            # Heuristic expected area range for the dot, relative to page
-            page_area = h * w
-            min_area = 0.00001 * page_area
-            max_area = 0.001 * page_area
-
+        h, w = img.shape[:2]
+        logger.debug(f"Image size for indicial detection: width={w}, height={h}")
+        
+        # Expected indicial radius in pixels (approximate, for validation)
+        expected_radius_px = config.indicial_sep.to('pxl').magnitude
+        min_radius = expected_radius_px * 0.5  # Allow 50% smaller
+        max_radius = expected_radius_px * 2.0  # Allow 2x larger
+        min_area = np.pi * min_radius**2
+        max_area = np.pi * max_radius**2
+        
+        search_regions = config.get_indicial_search_regions(img.shape[:2])
+        self.diagnostics['indicial_search_regions'] = search_regions
+        
+        indicials = {}
+        
+        for corner, (x1, y1, x2, y2) in search_regions.items():
+            logger.debug(f"Indicial search region {corner}: ({x1}, {y1}) to ({x2}, {y2})")
+            
+            # Extract search region
+            sub = bin_inv[y1:y2, x1:x2]
+            
+            # Find contours
+            contours, _ = cv2.findContours(sub, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            # Find the best circular blob
+            best_blob = None
+            best_circularity = 0
+            
             for cnt in contours:
                 area = cv2.contourArea(cnt)
-                if area <= 0:
+                
+                # Filter by area
+                if area < min_area or area > max_area:
                     continue
-
-                # Filter out huge contours (likely text/graphics) when possible
-                if not (min_area <= area <= max_area):
-                    # We'll *allow* them as a fallback, but we prefer the area window
-                    area_ok = False
-                else:
-                    area_ok = True
-
-                M = cv2.moments(cnt)
-                if M["m00"] == 0:
+                
+                # Check circularity
+                perimeter = cv2.arcLength(cnt, True)
+                if perimeter == 0:
                     continue
-                cx_sub = int(M["m10"] / M["m00"])
-                cy_sub = int(M["m01"] / M["m00"])
-
-                # Map back to full image coords
-                upper_left = region["upper_left"]
-                cx = upper_left[0] + cx_sub
-                cy = upper_left[1] + cy_sub
-                # Distance from the physical corner
-                dx = cx 
-                dy = cy 
-                dist2 = dx * dx + dy * dy
-
-                # Score: prioritize area in the expected range, then distance
-                if area_ok:
-                    score = dist2          # smaller is better
-                else:
-                    score = dist2 * 10.0   # penalize out-of-range areas
-
-                if best_score is None or score < best_score:
-                    best_score = score
-                    best_center = (cx, cy)
-
-            if best_center is None:
-                raise RuntimeError(f"No valid indicial found in region {name}")
-
-            centers[name] = best_center
-
-        self.diagnostics['indicials']  = centers
-
-        if set(centers.keys()) != {"nw", "ne", "sw", "se"}:
-            raise RuntimeError("Failed to detect all four indicials.")
+                
+                circularity = 4 * np.pi * area / (perimeter ** 2)
+                
+                # Good circles have circularity close to 1.0
+                if circularity > 0.7 and circularity > best_circularity:
+                    best_circularity = circularity
+                    best_blob = cnt
+            
+            if best_blob is None:
+                raise RuntimeError(f"Could not find indicial in {corner} corner")
+            
+            # Get centroid of the blob
+            M = cv2.moments(best_blob)
+            if M['m00'] == 0:
+                raise RuntimeError(f"Invalid indicial detected in {corner} corner")
+            
+            cx = int(M['m10'] / M['m00'])
+            cy = int(M['m01'] / M['m00'])
+            
+            # Convert to global image coordinates
+            global_x = x1 + cx
+            global_y = y1 + cy
+            
+            indicials[corner] = (global_x, global_y)
+            logger.debug(f"Found {corner} indicial at ({global_x}, {global_y}), circularity={best_circularity:.3f}")
+            
+            # Optional: draw on diagnostic image
+            if self.diagnostics.get('debug_image') is not None:
+                cv2.circle(self.diagnostics['debug_image'], (global_x, global_y), 
+                        int(expected_radius_px*2), (0, 255, 0), 4)
+        # save the image 
+        if self.diagnostics.get('debug_image') is not None:
+            debug_img_path = self.debug_output_path / f"indicials.png"
+            cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
+        self.diagnostics['indicials'] = indicials
+        return indicials
 
     def write_graded_annotations(self,
                     per_question_results: List[Dict[str, Any]],
@@ -295,285 +276,309 @@ class AnswerSheetReader:
         cv2.imwrite(str(overlay_path), overlay_img)
         logger.debug(f"Debug overlay written to {overlay_path}")
 
-    def _diagnostic_overlay(self, version_str: str = None):
-        config = self.layout_config
-        out_img = self.img_original.copy()
-        in_img = self.img.copy()
-        bubble_radius = int(self.layout_config.bubble_radius_frac * min(in_img.shape[:2]))
+    # def _diagnostic_overlay(self, version_str: str = None):
+    #     config = self.layout_config
+    #     out_img = self.img_original.copy()
+    #     in_img = self.img.copy()
+    #     bubble_radius = int(self.layout_config.bubble_radius_frac * min(in_img.shape[:2]))
 
-        local_version_str = version_str
-        if local_version_str is None:
-            local_version_str = self.results.get('version', None)
+    #     local_version_str = version_str
+    #     if local_version_str is None:
+    #         local_version_str = self.results.get('version', None)
     
-        # indicials are located in the unwarped image
-        for name, region in self.diagnostics['indicial_regions'].items():
-            upper_left = region["upper_left"]
-            lower_right = region["lower_right"]
-            cv2.rectangle(
-                out_img,
-                upper_left,
-                lower_right,
-                (255, 0, 0),
-                2,
-            )
+    #     # indicials are located in the unwarped image
+    #     for name, region in self.diagnostics['indicial_regions'].items():
+    #         upper_left = region["upper_left"]
+    #         lower_right = region["lower_right"]
+    #         cv2.rectangle(
+    #             out_img,
+    #             upper_left,
+    #             lower_right,
+    #             (255, 0, 0),
+    #             2,
+    #         )
 
-        colors = {
-            "nw": (0, 0, 255),   # red
-            "ne": (0, 255, 0),   # green
-            "se": (255, 0, 0),   # blue
-            "sw": (0, 165, 200), # orange
-        }
+    #     colors = {
+    #         "nw": (0, 0, 255),   # red
+    #         "ne": (0, 255, 0),   # green
+    #         "se": (255, 0, 0),   # blue
+    #         "sw": (0, 165, 200), # orange
+    #     }
 
-        for name, (x, y) in self.diagnostics['indicials'].items():
-            color = colors.get(name, (255, 255, 255))
-            cv2.circle(out_img, (x, y), 12, color, 3)
-            cv2.putText(
-                out_img,
-                name.upper(),
-                (x + 5, y - 5),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                color,
-                2,
-                cv2.LINE_AA,
-            )
+    #     for name, (x, y) in self.diagnostics['indicials'].items():
+    #         color = colors.get(name, (255, 255, 255))
+    #         cv2.circle(out_img, (x, y), 12, color, 3)
+    #         cv2.putText(
+    #             out_img,
+    #             name.upper(),
+    #             (x + 5, y - 5),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.6,
+    #             color,
+    #             2,
+    #             cv2.LINE_AA,
+    #         )
 
-        # output a coordinate grid for debugging but in unwarped coordinates!
-        grid_color = (200, 200, 200)
-        h, w = out_img.shape[:2]
-        dpx = 300/2.54/2 # every 500 mm
-        for x in range(0, w, int(dpx)):
-            pts_array = np.array([[[x, 0]], [[x, h]]], dtype=np.float32)
-            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            x_unwrapped_top = int(round(unwrapped_pts[0][0][0], 0))
-            x_unwrapped_bottom = int(round(unwrapped_pts[1][0][0], 0))
-            text_x = x_unwrapped_top
-            cv2.line(out_img, (x_unwrapped_top, 0), (x_unwrapped_bottom, h), grid_color, 1)
-            # cv2.line(out_img, (x, 0), (x, h), grid_color, 1)
-            cv2.putText(
-                out_img,
-                str(x),
-                (text_x + 2, 12),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.4,
-                grid_color,
-                1,
-                cv2.LINE_AA,
-            )
-        for y in range(0, h, int(dpx)):
-            pts_array = np.array([[[0, y]], [[w, y]]], dtype=np.float32)
-            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            y_unwrapped_left = int(round(unwrapped_pts[0][0][1], 0))
-            y_unwrapped_right = int(round(unwrapped_pts[1][0][1], 0))
-            text_y = y_unwrapped_left
-            cv2.line(out_img, (0, y_unwrapped_left), (w, y_unwrapped_right), grid_color, 1)
-            cv2.putText(
-                out_img,
-                str(y),
-                (2, text_y - 2),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.4,
-                grid_color,
-                1,
-                cv2.LINE_AA,
-            )
+    #     # output a coordinate grid for debugging but in unwarped coordinates!
+    #     grid_color = (200, 200, 200)
+    #     h, w = out_img.shape[:2]
+    #     dpx = 300/2.54/2 # every 500 mm
+    #     for x in range(0, w, int(dpx)):
+    #         pts_array = np.array([[[x, 0]], [[x, h]]], dtype=np.float32)
+    #         unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+    #         x_unwrapped_top = int(round(unwrapped_pts[0][0][0], 0))
+    #         x_unwrapped_bottom = int(round(unwrapped_pts[1][0][0], 0))
+    #         text_x = x_unwrapped_top
+    #         cv2.line(out_img, (x_unwrapped_top, 0), (x_unwrapped_bottom, h), grid_color, 1)
+    #         # cv2.line(out_img, (x, 0), (x, h), grid_color, 1)
+    #         cv2.putText(
+    #             out_img,
+    #             str(x),
+    #             (text_x + 2, 12),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.4,
+    #             grid_color,
+    #             1,
+    #             cv2.LINE_AA,
+    #         )
+    #     for y in range(0, h, int(dpx)):
+    #         pts_array = np.array([[[0, y]], [[w, y]]], dtype=np.float32)
+    #         unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+    #         y_unwrapped_left = int(round(unwrapped_pts[0][0][1], 0))
+    #         y_unwrapped_right = int(round(unwrapped_pts[1][0][1], 0))
+    #         text_y = y_unwrapped_left
+    #         cv2.line(out_img, (0, y_unwrapped_left), (w, y_unwrapped_right), grid_color, 1)
+    #         cv2.putText(
+    #             out_img,
+    #             str(y),
+    #             (2, text_y - 2),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.4,
+    #             grid_color,
+    #             1,
+    #             cv2.LINE_AA,
+    #         )
 
-        # bubble grid located in warped image, so have to unwarp the centers
-        centers = self.diagnostics['bubbles']
-        center_coords = list(centers.values())
-        pts_array = np.array(center_coords, dtype=np.float32).reshape(-1, 1, 2)
-        unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-        bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_center_coords]
-        for (qnum, key), (cx, cy) in zip(centers.keys(), bubble_result_tuples):
-            ucx, ucy = cx, cy
-            cv2.circle(out_img, (ucx, ucy), bubble_radius, (0, 255, 0), 2)
-            cv2.putText(
-                out_img,
-                f"{qnum}{key}",
-                (ucx + 10, ucy - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 255, 0),
-                1,
-                cv2.LINE_AA,
-            )
+    #     # bubble grid located in warped image, so have to unwarp the centers
+    #     centers = self.diagnostics['bubbles']
+    #     center_coords = list(centers.values())
+    #     pts_array = np.array(center_coords, dtype=np.float32).reshape(-1, 1, 2)
+    #     unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+    #     bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_center_coords]
+    #     for (qnum, key), (cx, cy) in zip(centers.keys(), bubble_result_tuples):
+    #         ucx, ucy = cx, cy
+    #         cv2.circle(out_img, (ucx, ucy), bubble_radius, (0, 255, 0), 2)
+    #         cv2.putText(
+    #             out_img,
+    #             f"{qnum}{key}",
+    #             (ucx + 10, ucy - 10),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.5,
+    #             (0, 255, 0),
+    #             1,
+    #             cv2.LINE_AA,
+    #         )
 
-        # qr region located in warped image, so have to unwarp the corners
-        qr_crop = self.diagnostics.get('qr_crop_region', None)
-        if qr_crop is not None:
-            version_detected = self.results.get('version', 'unknown')
-            qr_color = (139, 0, 0) # navy blue
-            ul = qr_crop['upper_left']
-            lr = qr_crop['lower_right']
-            ur = (lr[0], ul[1])
-            ll = (ul[0], lr[1])
-            pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
-            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            qr_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
-            u_ul, u_ur, u_lr, u_ll = qr_result_tuples
-            cv2.line(out_img, tuple(u_ul), tuple(u_ur), qr_color, 2)
-            cv2.line(out_img, tuple(u_ur), tuple(u_lr), qr_color, 2)
-            cv2.line(out_img, tuple(u_lr), tuple(u_ll), qr_color, 2)
-            cv2.line(out_img, tuple(u_ll), tuple(u_ul), qr_color, 2)
-            cv2.putText(
-                out_img,
-                f"v{version_detected}",
-                (u_ul[0], u_ul[1] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                qr_color,
-                2,
-                cv2.LINE_AA,
-            )
+    #     # qr region located in warped image, so have to unwarp the corners
+    #     qr_crop = self.diagnostics.get('qr_crop_region', None)
+    #     if qr_crop is not None:
+    #         version_detected = self.results.get('version', 'unknown')
+    #         qr_color = (139, 0, 0) # navy blue
+    #         ul = qr_crop['upper_left']
+    #         lr = qr_crop['lower_right']
+    #         ur = (lr[0], ul[1])
+    #         ll = (ul[0], lr[1])
+    #         pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
+    #         unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+    #         qr_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
+    #         u_ul, u_ur, u_lr, u_ll = qr_result_tuples
+    #         cv2.line(out_img, tuple(u_ul), tuple(u_ur), qr_color, 2)
+    #         cv2.line(out_img, tuple(u_ur), tuple(u_lr), qr_color, 2)
+    #         cv2.line(out_img, tuple(u_lr), tuple(u_ll), qr_color, 2)
+    #         cv2.line(out_img, tuple(u_ll), tuple(u_ul), qr_color, 2)
+    #         cv2.putText(
+    #             out_img,
+    #             f"v{version_detected}",
+    #             (u_ul[0], u_ul[1] - 10),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.7,
+    #             qr_color,
+    #             2,
+    #             cv2.LINE_AA,
+    #         )
 
-        # student id bubble region located in warped image, so have to unwarp the corners
-        id_bubble_color = (0, 165, 255)  # dark orange
-        id_bubble_region = self.diagnostics.get('id_bubble_region', None)
-        if id_bubble_region is not None:
-            id_detected_digitstr = self.results.get('student_id_bubbles', 'unknown')
-            id_detected = ''.join([str(d) if d is not None else '?' for d in id_detected_digitstr])
-            ul = id_bubble_region['upper_left']
-            lr = id_bubble_region['lower_right']
-            ur = (lr[0], ul[1])
-            ll = (ul[0], lr[1])
-            pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
-            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
-            u_ul, u_ur, u_lr, u_ll = id_bubble_result_tuples
-            cv2.line(out_img, tuple(u_ul), tuple(u_ur), id_bubble_color, 2)
-            cv2.line(out_img, tuple(u_ur), tuple(u_lr), id_bubble_color, 2)
-            cv2.line(out_img, tuple(u_lr), tuple(u_ll), id_bubble_color, 2)
-            cv2.line(out_img, tuple(u_ll), tuple(u_ul), id_bubble_color, 2)
-            cv2.putText(
-                out_img,
-                f"ID: {id_detected}",
-                (u_ur[0]+10, int(0.5*(u_ur[1] + u_lr[1]))),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.5,
-                id_bubble_color,
-                2,
-                cv2.LINE_AA,
-            )   
-        id_bubble_centers = self.diagnostics.get('id_bubble_centers', None)
-        if id_bubble_centers is not None:
-            center_coords = list(id_bubble_centers.values())
-            pts_array = np.array(center_coords, dtype=np.float32).reshape(-1, 1, 2)
-            unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_center_coords]
-            for (pos, digit), (cx, cy) in zip(id_bubble_centers.keys(), id_bubble_result_tuples):
-                u_cx, u_cy = cx, cy
-                cv2.circle(out_img, (u_cx, u_cy), bubble_radius, id_bubble_color, 2)
-                cv2.putText(
-                    out_img,
-                    f"{pos}{digit}",
-                    (u_cx + 10, u_cy - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    id_bubble_color,
-                    1,
-                    cv2.LINE_AA,
-                )
+    #     # student id bubble region located in warped image, so have to unwarp the corners
+    #     id_bubble_color = (0, 165, 255)  # dark orange
+    #     id_bubble_region = self.diagnostics.get('id_bubble_region', None)
+    #     if id_bubble_region is not None:
+    #         id_detected_digitstr = self.results.get('student_id_bubbles', 'unknown')
+    #         id_detected = ''.join([str(d) if d is not None else '?' for d in id_detected_digitstr])
+    #         ul = id_bubble_region['upper_left']
+    #         lr = id_bubble_region['lower_right']
+    #         ur = (lr[0], ul[1])
+    #         ll = (ul[0], lr[1])
+    #         pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
+    #         unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+    #         id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
+    #         u_ul, u_ur, u_lr, u_ll = id_bubble_result_tuples
+    #         cv2.line(out_img, tuple(u_ul), tuple(u_ur), id_bubble_color, 2)
+    #         cv2.line(out_img, tuple(u_ur), tuple(u_lr), id_bubble_color, 2)
+    #         cv2.line(out_img, tuple(u_lr), tuple(u_ll), id_bubble_color, 2)
+    #         cv2.line(out_img, tuple(u_ll), tuple(u_ul), id_bubble_color, 2)
+    #         cv2.putText(
+    #             out_img,
+    #             f"ID: {id_detected}",
+    #             (u_ur[0]+10, int(0.5*(u_ur[1] + u_lr[1]))),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             1.5,
+    #             id_bubble_color,
+    #             2,
+    #             cv2.LINE_AA,
+    #         )   
+    #     id_bubble_centers = self.diagnostics.get('id_bubble_centers', None)
+    #     if id_bubble_centers is not None:
+    #         center_coords = list(id_bubble_centers.values())
+    #         pts_array = np.array(center_coords, dtype=np.float32).reshape(-1, 1, 2)
+    #         unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+    #         id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_center_coords]
+    #         for (pos, digit), (cx, cy) in zip(id_bubble_centers.keys(), id_bubble_result_tuples):
+    #             u_cx, u_cy = cx, cy
+    #             cv2.circle(out_img, (u_cx, u_cy), bubble_radius, id_bubble_color, 2)
+    #             cv2.putText(
+    #                 out_img,
+    #                 f"{pos}{digit}",
+    #                 (u_cx + 10, u_cy - 10),
+    #                 cv2.FONT_HERSHEY_SIMPLEX,
+    #                 0.5,
+    #                 id_bubble_color,
+    #                 1,
+    #                 cv2.LINE_AA,
+    #             )
 
-        # student id digit boxes located in warped image, so have to unwarp the corners
-        id_digit_boxes = self.diagnostics.get('id_digit_boxes', None)
-        if id_digit_boxes is not None:
-            id_digits_ocr = self.results.get('student_id_ocr', "")
-            id_digits_color = (0, 0, 139)  # dark red
-            for i, (cx0, cy0, cx1, cy1) in id_digit_boxes.items():
-                pts_array = np.array(
-                    [(cx0, cy0), (cx1, cy0), (cx1, cy1), (cx0, cy1)],
-                    dtype=np.float32
-                ).reshape(-1, 1, 2)
-                unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-                id_digits_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
-                u_ul, u_ur, u_lr, u_ll = id_digits_result_tuples
-                cv2.line(out_img, tuple(u_ul), tuple(u_ur), id_digits_color, 2)
-                cv2.line(out_img, tuple(u_ur), tuple(u_lr), id_digits_color, 2)
-                cv2.line(out_img, tuple(u_lr), tuple(u_ll), id_digits_color, 2)
-                cv2.line(out_img, tuple(u_ll), tuple(u_ul), id_digits_color, 2)
-                # put text
-                cv2.putText(
-                    out_img,
-                    f"{id_digits_ocr[i] if i < len(id_digits_ocr) else '?'}",
-                    (u_ul[0] + 5, u_ul[1] + 25),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    id_digits_color,
-                    1,
-                    cv2.LINE_AA,
-                )
+    #     # student id digit boxes located in warped image, so have to unwarp the corners
+    #     id_digit_boxes = self.diagnostics.get('id_digit_boxes', None)
+    #     if id_digit_boxes is not None:
+    #         id_digits_ocr = self.results.get('student_id_ocr', "")
+    #         id_digits_color = (0, 0, 139)  # dark red
+    #         for i, (cx0, cy0, cx1, cy1) in id_digit_boxes.items():
+    #             pts_array = np.array(
+    #                 [(cx0, cy0), (cx1, cy0), (cx1, cy1), (cx0, cy1)],
+    #                 dtype=np.float32
+    #             ).reshape(-1, 1, 2)
+    #             unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+    #             id_digits_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
+    #             u_ul, u_ur, u_lr, u_ll = id_digits_result_tuples
+    #             cv2.line(out_img, tuple(u_ul), tuple(u_ur), id_digits_color, 2)
+    #             cv2.line(out_img, tuple(u_ur), tuple(u_lr), id_digits_color, 2)
+    #             cv2.line(out_img, tuple(u_lr), tuple(u_ll), id_digits_color, 2)
+    #             cv2.line(out_img, tuple(u_ll), tuple(u_ul), id_digits_color, 2)
+    #             # put text
+    #             cv2.putText(
+    #                 out_img,
+    #                 f"{id_digits_ocr[i] if i < len(id_digits_ocr) else '?'}",
+    #                 (u_ul[0] + 5, u_ul[1] + 25),
+    #                 cv2.FONT_HERSHEY_SIMPLEX,
+    #                 0.5,
+    #                 id_digits_color,
+    #                 1,
+    #                 cv2.LINE_AA,
+    #             )
 
-        # bubble scores overlay in warped image, so unwarp the centers
-        scores = self.diagnostics.get('bubble_scores', {})
-        # print(f"Bubble scores: {scores}")
-        all_vals = list(scores.values())
-        if all_vals:
-            vmin, vmax = min(all_vals), max(all_vals)
-            if vmax == vmin:
-                vmax = vmin + 1e-6
-        else:
-            vmin, vmax = 0.0, 1.0
-        for (qnum, key), (cx, cy) in zip(centers.keys(), bubble_result_tuples):
-            val = scores.get((qnum, key), 0.0)
-            # logger.info(f"Bubble score Q{qnum}{key}: {val:.3f}")
-            t = (val - vmin) / (vmax - vmin)
-            # t=0 => green, t=1 => red
-            r = 0
-            g = int(255 * (1.0 - t))
-            b = int(255 * t)
-            color = (b, g, r)
+    #     # bubble scores overlay in warped image, so unwarp the centers
+    #     scores = self.diagnostics.get('bubble_scores', {})
+    #     # print(f"Bubble scores: {scores}")
+    #     all_vals = list(scores.values())
+    #     if all_vals:
+    #         vmin, vmax = min(all_vals), max(all_vals)
+    #         if vmax == vmin:
+    #             vmax = vmin + 1e-6
+    #     else:
+    #         vmin, vmax = 0.0, 1.0
+    #     for (qnum, key), (cx, cy) in zip(centers.keys(), bubble_result_tuples):
+    #         val = scores.get((qnum, key), 0.0)
+    #         # logger.info(f"Bubble score Q{qnum}{key}: {val:.3f}")
+    #         t = (val - vmin) / (vmax - vmin)
+    #         # t=0 => green, t=1 => red
+    #         r = 0
+    #         g = int(255 * (1.0 - t))
+    #         b = int(255 * t)
+    #         color = (b, g, r)
 
-            cv2.circle(out_img, (cx, cy), int(bubble_radius*1.05), color, 3)
-            # label each first-choice bubble with qnum
-            if key == config.choice_keys[0]:
-                cv2.putText(
-                    out_img, str(qnum), (cx - 15, cy - 12),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA
-                )
+    #         cv2.circle(out_img, (cx, cy), int(bubble_radius*1.05), color, 3)
+    #         # label each first-choice bubble with qnum
+    #         if key == config.choice_keys[0]:
+    #             cv2.putText(
+    #                 out_img, str(qnum), (cx - 15, cy - 12),
+    #                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1, cv2.LINE_AA
+    #             )
 
-        return out_img
-        # out_img_file = "overlay.png" if local_version_str is None else f"overlay-{local_version_str}.png"
-        # out_path = self.debug_output_path / out_img_file
-        # logger.debug(f"indicials overlay written to {out_path}")
-        # cv2.imwrite(str(out_path), out_img)
+    #     return out_img
+    #     # out_img_file = "overlay.png" if local_version_str is None else f"overlay-{local_version_str}.png"
+    #     # out_path = self.debug_output_path / out_img_file
+    #     # logger.debug(f"indicials overlay written to {out_path}")
+    #     # cv2.imwrite(str(out_path), out_img)
 
     def _warp_to_canonical(self):
-        base_width = self.layout_config.canonical_width_px
-        img = self.img
+        img = self.rawimg
         self.img_original = img.copy()
         self.original_size = img.shape[:2]  # (height, width)
         indicials = self.diagnostics['indicials']
 
+        # Source points: detected indicials in image coordinates
         (nw, ne, sw, se) = indicials['nw'], indicials['ne'], indicials['sw'], indicials['se']
         pts_src = np.float32([nw, ne, sw, se])
+        print(f'WARP TO CANONICAL: source indicials = {pts_src}')
+        # Destination points: known indicial positions in page coordinates (pixels)
+        config = self.layout_config
+        
+        # Convert indicial positions from physical units to pixels
+        nw_page = (
+            config.indicial_nw_location[0].to('pxl').magnitude,
+            config.indicial_nw_location[1].to('pxl').magnitude
+        )
+        ne_page = (
+            config.indicial_ne_location[0].to('pxl').magnitude,
+            config.indicial_ne_location[1].to('pxl').magnitude
+        )
+        sw_page = (
+            config.indicial_sw_location[0].to('pxl').magnitude,
+            config.indicial_sw_location[1].to('pxl').magnitude
+        )
+        se_page = (
+            config.indicial_se_location[0].to('pxl').magnitude,
+            config.indicial_se_location[1].to('pxl').magnitude
+        )
+        
+        pts_dst = np.float32([nw_page, ne_page, sw_page, se_page])
+        print(f'WARP TO CANONICAL: dest indicials = {pts_dst}')
+        # Output size: full page dimensions in pixels
+        page_width_px = int(config.canonical_width.to('pxl').magnitude)
+        page_height_px = int(config.canonical_height.to('pxl').magnitude)
+        print(f'WARP TO CANONICAL: page size = {page_width_px} x {page_height_px} px')
+        out_w = page_width_px
+        out_h = page_height_px
 
-        # approximate physical width/height from the indicials
-        width_top  = np.linalg.norm(np.array(ne) - np.array(nw))
-        width_bot  = np.linalg.norm(np.array(se) - np.array(sw))
-        width      = max(width_top, width_bot)
-
-        height_left  = np.linalg.norm(np.array(sw) - np.array(nw))
-        height_right = np.linalg.norm(np.array(se) - np.array(ne))
-        height       = max(height_left, height_right)
-
-        aspect = height / width if width > 0 else 1.0
-
-        out_w = base_width
-        out_h = int(base_width * aspect)
-
-        pts_dst = np.float32([
-            [0,      0],
-            [out_w-1, 0],
-            [0,      out_h-1],
-            [out_w-1, out_h-1],
-        ])
-
+        # Compute transformation
         M = cv2.getPerspectiveTransform(pts_src, pts_dst)
         M_inv = cv2.getPerspectiveTransform(pts_dst, pts_src)
+        
+        # Apply warp
+        warped = cv2.warpPerspective(img, M, (out_w, out_h))
+        
+        self.img = warped
+        debug_img_path = self.debug_output_path / "warped_page.png"
+        cv2.imwrite(str(debug_img_path), self.img)
+        # warp the debug image as well, if present
+        if self.diagnostics.get('debug_image') is not None:
+            debug_warped = cv2.warpPerspective(
+                self.diagnostics['debug_image'], M, (out_w, out_h)
+            )
+            self.diagnostics['debug_image'] = debug_warped
+            debug_img_path = self.debug_output_path / "indicials_warped.png"
+            cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
         self.diagnostics['warp_matrix'] = M
         self.diagnostics['warp_matrix_inv'] = M_inv
         self.diagnostics['warped_size'] = (out_h, out_w)
-        self.img = cv2.warpPerspective(img, M, (out_w, out_h))
 
     def _compute_bubble_centers(self):
         """
@@ -669,7 +674,180 @@ class AnswerSheetReader:
         darkness = 1.0 - float(np.mean(roi_float))
         return darkness
 
-    def _read_bubbles(self) -> Dict[int, str]:
+
+    def _read_bubblefield(self):
+        """
+        Read all question answers from the bubble field.
+        
+        Returns a list of answers, one per question.
+        Each answer is either a choice key ('a', 'b', 'c', 'd', 'T', 'F') or '?' for unclear/unmarked.
+        """
+        config = self.layout_config
+        
+        # Image is already warped to canonical page coordinates
+        img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        
+        # Convert layout positions to pixels
+        field_ul_px = (
+            int(config.bubble_field_ul[0].to('pxl').magnitude),
+            int(config.bubble_field_ul[1].to('pxl').magnitude)
+        )
+        
+        blocksize = config.bubble_field_num_questions_per_block
+        block_gap_px = (
+            int(config.bubble_field_block_gap[0].to('pxl').magnitude),
+            int(config.bubble_field_block_gap[1].to('pxl').magnitude)
+        )
+        num_cols = config.bubble_field_num_cols
+        block_row_gap_px = int(config.intrablock_row_gap.to('pxl').magnitude)
+        block_choice_gap_px = int(config.intrablock_choice_gap.to('pxl').magnitude)
+        block_numbering_gap_px = int(config.intrablock_numbering_gap.to('pxl').magnitude)
+        bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
+        
+        num_questions = config.num_questions
+        choice_keys = {'mcq': ["a", "b", "c", "d"], 'tf': ["T", "F"]}
+        
+        # Calculate block/column layout (matches placement logic)
+        n_whole_blocks = num_questions // blocksize
+        n_partial_block = 1 if (num_questions % blocksize) > 0 else 0
+        total_blocks = n_whole_blocks + n_partial_block
+        
+        n_blocks_per_column = total_blocks // num_cols
+        total_columns = total_blocks // n_blocks_per_column + (1 if (total_blocks % num_cols) > 0 else 0)
+        
+        max_len_choice_keys = max(len(v) for v in choice_keys.values())
+        
+        answers = []
+        qidx = 0
+        
+        debug_image = self.diagnostics.get('debug_image', None)
+
+        for col in range(total_columns):
+            # Calculate column x position (matches placement)
+            x_col_px = field_ul_px[0] + col * (
+                block_numbering_gap_px + 
+                (bubble_radius_px * 2 + block_choice_gap_px) * max_len_choice_keys + 
+                block_gap_px[0]
+            )
+            
+            for block in range(n_blocks_per_column):
+                # Calculate block start y position
+                y_block_start_px = field_ul_px[1] + block * (
+                    block_row_gap_px * blocksize + block_gap_px[1]
+                )
+                # write an X at the block origin for debugging
+                if debug_image is not None:
+                    cv2.line(
+                        debug_image,
+                        (x_col_px - 10, y_block_start_px - 10),
+                        (x_col_px + 10, y_block_start_px + 10),
+                        (255, 0, 0),
+                        2
+                    )
+                    cv2.line(
+                        debug_image,
+                        (x_col_px - 10, y_block_start_px + 10),
+                        (x_col_px + 10, y_block_start_px - 10),
+                        (255, 0, 0),
+                        2
+                    )   
+                for row in range(blocksize):
+                    if qidx >= num_questions:
+                        break
+                    
+                    # Get question type from question list if available
+                    if hasattr(config, 'question_list') and config.question_list:
+                        q = config.question_list[qidx]
+                        qtyp = q.get("type", "mcq").lower()
+                    else:
+                        qtyp = "mcq"  # Default
+                    
+                    choices = choice_keys[qtyp]
+                    
+                    # Calculate row y position
+                    y_base_px = y_block_start_px + row * block_row_gap_px
+                    
+                    # Starting x for choices
+                    x_choices_px = x_col_px + block_numbering_gap_px
+                    
+                    # draw an X in the debug image at the center of the first choice bubble
+                    if debug_image is not None:
+                        cv2.line(
+                            debug_image,
+                            (x_choices_px - 10, y_base_px - 10),
+                            (x_choices_px + 10, y_base_px + 10),
+                            (0, 0, 255),
+                            2
+                        )
+                        cv2.line(
+                            debug_image,
+                            (x_choices_px - 10, y_base_px + 10),
+                            (x_choices_px + 10, y_base_px - 10),
+                            (0, 0, 255),
+                            2
+                        )
+
+                    # Check each bubble for this question
+                    bubble_fills = []  # (choice_key, fill_percentage)
+                    
+                    for i, key in enumerate(choices):
+                        # Calculate bubble center position
+                        x_bubble_px = x_choices_px + i * (block_choice_gap_px + bubble_radius_px * 2)
+                        y_bubble_px = y_base_px
+                        
+                        if debug_image is not None:
+                            cv2.circle(
+                                debug_image,
+                                (x_bubble_px, y_bubble_px),
+                                bubble_radius_px,
+                                (0, 255, 0),
+                                2
+                            )
+
+                        # Extract circular region
+                        x1 = x_bubble_px - bubble_radius_px
+                        x2 = x_bubble_px + bubble_radius_px
+                        y1 = y_bubble_px - bubble_radius_px
+                        y2 = y_bubble_px + bubble_radius_px
+                        
+                        if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
+                            continue
+                        
+                        bubble_roi = img_gray[y1:y2, x1:x2]
+                        
+                        # Create circular mask
+                        mask = np.zeros_like(bubble_roi, dtype=np.uint8)
+                        cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
+                        
+                        # Calculate fill percentage
+                        masked_pixels = bubble_roi[mask > 0]
+                        if len(masked_pixels) == 0:
+                            continue
+                        
+                        # Threshold and count dark pixels
+                        _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
+                        fill_pct = np.sum(binary > 0) / len(masked_pixels)
+                        bubble_fills.append((key, fill_pct))
+                    
+                    # Determine answer based on filled bubbles
+                    threshold = config.fill_ratio_threshold
+                    filled = [(choice, pct) for choice, pct in bubble_fills if pct >= threshold]
+                    
+                    if len(filled) == 0:
+                        answers.append("?")  # No bubble filled
+                    elif len(filled) == 1:
+                        answers.append(filled[0][0])
+                    else:
+                        # Multiple bubbles filled - pick darkest one
+                        filled.sort(key=lambda x: x[1], reverse=True)
+                        answers.append(filled[0][0])
+                    
+                    qidx += 1
+        
+        self.results['answers'] = answers
+        return answers
+
+    def _read_bubble_field(self) -> Dict[int, str]:
         config = self.layout_config
         gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
 
@@ -712,15 +890,29 @@ class AnswerSheetReader:
         config = self.layout_config
         detector = cv2.QRCodeDetector()
         h, w = self.img.shape[:2]
-        qr_ul = config.qr_upper_left_fracs
-        qr_lr = qr_ul[0] + config.qr_size_frac, qr_ul[1] + config.qr_size_frac
+        qr_ul_pxl = (
+            int(config.qr_ul[0].to('pxl').magnitude),
+            int(config.qr_ul[1].to('pxl').magnitude),
+        )
+        qr_lr = qr_ul_pxl[0] + int(config.qr_size.to('pxl').magnitude), qr_ul_pxl[1] + int(config.qr_size.to('pxl').magnitude)
         # shift qr_lr so that aspect ratio is 1:1
-        x0, x1 = int(qr_ul[0] * w), int(qr_lr[0] * w)
-        y0, y1 = int(qr_ul[1] * h), int(qr_lr[1] * h)
+        x0, x1 = qr_ul_pxl[0], qr_lr[0]
+        y0, y1 = qr_ul_pxl[1], qr_lr[1]
         # readjust x1, y1 to ensure square region
         side_len = min(x1 - x0, y1 - y0)
         x1 = x0 + side_len
         y1 = y0 + side_len
+
+        # draw the crop region on the debug image for diagnostics
+        debug_image = self.diagnostics.get('debug_image', None)
+        if debug_image is not None:
+            cv2.rectangle(
+                debug_image,
+                (x0, y0),
+                (x1, y1),
+                (255, 0, 99),
+                3,
+            )
 
         self.diagnostics['qr_crop_region'] = {
             'upper_left': (x0, y0),
@@ -741,148 +933,221 @@ class AnswerSheetReader:
                 self.results['version'] = data.strip()
             else:
                 raise RuntimeError("Failed to read QR code from answer sheet.")
+        if debug_image is not None and points is not None:
+            # echo the qr value
+            cv2.putText(
+                debug_image,
+                f"v{self.results['version']}",
+                (x0, y0 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (139, 0, 0),
+                2,
+                cv2.LINE_AA,
+            )
 
     def _read_student_id_bubbles(self):
         config = self.layout_config
-        num_digits = config.id_num_digits
-        h, w = self.img.shape[:2]
+        num_digits = config.student_id_num_digits
+        
+        # Image is already warped to canonical page coordinates
         img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-
-        bubble_radius = int(config.bubble_radius_frac * min(w, h))
-
-        # Convert normalized coordinates to pixels
-
-        id_bubbles_ul_frac = config.id_bubbles_ul_frac
-        id_bubbles_lr_frac = (config.id_bubbles_ul_frac[0] + config.id_bubbles_size_frac[0], config.id_bubbles_ul_frac[1] + config.id_bubbles_size_frac[1])
-        id_bubbles_ul_px = (int(id_bubbles_ul_frac[0] * w), int(id_bubbles_ul_frac[1] * h))
-        id_bubbles_lr_px = (int(id_bubbles_lr_frac[0] * w), int(id_bubbles_lr_frac[1] * h))
-        x0, y0 = id_bubbles_ul_px
-        x1, y1 = id_bubbles_lr_px
-        bw = x1 - x0
-        bh = y1 - y0
-        id_bubbles_internal_margin_frac = config.id_bubbles_internal_margin_frac
-        id_bubbles_internal_ul_px = (
-            int((id_bubbles_ul_frac[0] + id_bubbles_internal_margin_frac[0]) * w),
-            int((id_bubbles_ul_frac[1] + id_bubbles_internal_margin_frac[1]) * h),
-        )
-        id_bubbles_internal_lr_px = (
-            int((id_bubbles_lr_frac[0] - id_bubbles_internal_margin_frac[0]) * w),
-            int((id_bubbles_lr_frac[1] - id_bubbles_internal_margin_frac[1]) * h),
-        )
-        ix0, iy0 = id_bubbles_internal_ul_px
-        ix1, iy1 = id_bubbles_internal_lr_px
-        iw = ix1 - ix0
-        ih = iy1 - iy0
-        id_bubbles_column_interval_px = int(iw/(num_digits-0.5))
-        id_bubbles_row_interval_px = int(ih / 10)
-        id_bubble_centers_px: Dict[Tuple[int, str], Tuple[int, int]] = {}
-        scores: Dict[Tuple[int, str], float] = {}
-        for i in range(num_digits):
-            cx = bubble_radius + id_bubbles_internal_ul_px[0] + i * id_bubbles_column_interval_px
+        
+        # Convert layout positions from physical units to pixels
+        # Match the TikZ coordinate system
+        ul_x_px = int(config.student_id_digit_boxes_ul[0].to('pxl').magnitude)
+        ul_y_px = int(config.student_id_digit_boxes_ul[1].to('pxl').magnitude)
+        box_width_px = int(config.student_id_digit_boxes_box_size[0].to('pxl').magnitude)
+        box_height_px = int(config.student_id_digit_boxes_box_size[1].to('pxl').magnitude)
+        gap_px = int(config.student_id_digit_boxes_horiz_gap.to('pxl').magnitude)
+        vgap_px = int(config.bubble_column_vert_gap.to('pxl').magnitude)
+        bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
+        
+        # Spacing between bubble centers (matches TikZ: 2*radius + vgap)
+        spacing_px = 2 * bubble_radius_px + vgap_px
+        
+        id_digits: list[str] = []
+        id_bubble_centers_px: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        # For each column (i = 1 to num_digits in TikZ)
+        for i in range(1, num_digits + 1):
+            # Calculate column center x position (matches TikZ: ul_x + (i - 0.5)*(gap+box_width) - bubble_radius)
+            col_center_x = ul_x_px + int(round((i-1) * (gap_px + box_width_px))) + int(np.round(0.5 * box_width_px))
+            
+            # Check each bubble (0-9) in this column
+            bubble_fills: list[Tuple[int, float]] = []  # (digit, fill_percentage)
+            
             for j in range(10):
-                cy = bubble_radius + id_bubbles_internal_ul_px[1] + j * id_bubbles_row_interval_px
-                id_bubble_centers_px[(i, str(j))] = (cx, cy)
-                darkness = self._measure_fill_ratio(img_gray, id_bubble_centers_px[(i, str(j))], bubble_radius)
-                scores[(i, str(j))] = darkness
+                # Calculate bubble center y position (matches TikZ: ul_y - box_height - spacing * j)
+                bubble_center_y = ul_y_px + box_height_px + vgap_px + bubble_radius_px + spacing_px * j
+                
+                # draw a circle at the bubble center for diagnostics
+                debug_image = self.diagnostics.get('debug_image', None)
+                if debug_image is not None:
+                    cv2.circle(
+                        debug_image,
+                        (col_center_x, bubble_center_y),
+                        bubble_radius_px,
+                        (0, 255, 0),
+                        1,
+                    )
 
-        # Determine filled bubbles per digit position
-        id_answers: Dict[int, Optional[str]] = {}
-        by_position: Dict[int, List[Tuple[str, float]]] = {}
-        for (pos, digit), dark in scores.items():
-            by_position.setdefault(pos, []).append((digit, dark))
-        for pos, items in by_position.items():
-            items.sort(key=lambda kv: kv[1], reverse=True)
-            top_digit, top_score = items[0]
-            runner_up_score = items[1][1] if len(items) > 1 else 0.0
-            if (
-                top_score >= config.fill_ratio_threshold
-                and top_score >= runner_up_score + config.runner_up_margin
-            ):
-                id_answers[pos] = top_digit
+                id_bubble_centers_px[(i, j)] = (col_center_x, bubble_center_y)
+
+                # Extract circular region around bubble center
+                x1 = col_center_x - bubble_radius_px
+                x2 = col_center_x + bubble_radius_px
+                y1 = bubble_center_y - bubble_radius_px
+                y2 = bubble_center_y + bubble_radius_px
+                
+                if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
+                    continue
+                    
+                bubble_roi = img_gray[y1:y2, x1:x2]
+                
+                # Create circular mask
+                mask = np.zeros_like(bubble_roi, dtype=np.uint8)
+                cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
+                
+                # Calculate fill percentage (darker = more filled)
+                masked_pixels = bubble_roi[mask > 0]
+                if len(masked_pixels) == 0:
+                    continue
+                
+                # Threshold and count dark pixels
+                _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
+                fill_pct = np.sum(binary > 0) / len(masked_pixels)
+                bubble_fills.append((j, fill_pct))
+            
+            # Find most filled bubble above threshold
+            threshold = config.fill_ratio_threshold
+            filled = [(d, f) for d, f in bubble_fills if f >= threshold]
+            
+            if len(filled) == 0:
+                id_digits.append("?")  # No bubble filled
+            elif len(filled) == 1:
+                id_digits.append(str(filled[0][0]))
             else:
-                id_answers[pos] = None
-        self.results['student_id_bubbles'] = ''.join(x if x is not None else '?' for x in id_answers.values())
+                # Multiple bubbles filled - pick darkest one
+                filled.sort(key=lambda x: x[1], reverse=True)
+                id_digits.append(str(filled[0][0]))
+        
+        # If all blanks, treat as no ID
+        if all(d == "?" for d in id_digits):
+            self.results['student_id_bubbles'] = None
+        else:
+            self.results['student_id_bubbles'] = "".join(id_digits)
 
-        debug_img = self.img.copy()
-        # draw a rectangle around the id region
-        self.diagnostics['id_bubble_region'] = {
-            'upper_left': id_bubbles_ul_px,
-            'lower_right': id_bubbles_lr_px,
-        }
         self.diagnostics['id_bubble_centers'] = id_bubble_centers_px
 
     def _read_student_id_ocr(self):
         config = self.layout_config
-        num_digits = config.id_num_digits
+        num_digits = config.student_id_num_digits
         model = get_digit_model()
-        h, w = self.img.shape[:2]
+        
+        # Image is already warped to canonical page coordinates
         img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        confidence_threshold = config.id_ocr_confidence_threshold
+        confidence_threshold = config.student_id_ocr_confidence_threshold
 
-        id_digits_ul_frac = config.id_digits_ul_frac
-        id_digits_lr_frac = (config.id_digits_ul_frac[0] + config.id_digits_size_frac[0], config.id_digits_ul_frac[1] + config.id_digits_size_frac[1])
-        id_digits_ul_px = (int(id_digits_ul_frac[0] * w), int(id_digits_ul_frac[1] * h))
-        id_digits_lr_px = (int(id_digits_lr_frac[0] * w), int(id_digits_lr_frac[1] * h))
-        x0, y0 = id_digits_ul_px
-        x1, y1 = id_digits_lr_px
-        digits_strip = self.img[y0:y1, x0:x1]
-        digits_img_gray = cv2.cvtColor(digits_strip, cv2.COLOR_BGR2GRAY)
-
-        # strip is horizontally divided into num_digits cells, with gaps between them, and no margins
-        strip_h, strip_w = digits_img_gray.shape
-        gap_size = int(config.id_digits_gap_size_frac * strip_w)
-        total_gap_size = int(gap_size * (num_digits - 1))
-        cell_w = int((strip_w - total_gap_size) / max(num_digits, 1))
-        cell_plus_gap_w = cell_w + gap_size
-
+        # Convert layout positions from physical units to pixels
+        id_box_ul_px = (
+            int(config.student_id_digit_boxes_ul[0].to('pxl').magnitude),
+            int(config.student_id_digit_boxes_ul[1].to('pxl').magnitude)
+        )
+        # write an X at the upper-left corner for diagnostics
+        debug_image = self.diagnostics.get('debug_image', None)
+        if debug_image is not None:
+            cv2.line(
+                debug_image,
+                (id_box_ul_px[0] - 10, id_box_ul_px[1] - 10),
+                (id_box_ul_px[0] + 10, id_box_ul_px[1] + 10),
+                (34, 122, 255),
+                3,
+            )
+            cv2.line(
+                debug_image,
+                (id_box_ul_px[0] - 10, id_box_ul_px[1] + 10),
+                (id_box_ul_px[0] + 10, id_box_ul_px[1] - 10),
+                (34, 122, 255),
+                3,
+            )
+        box_width_px = int(config.student_id_digit_boxes_box_size[0].to('pxl').magnitude)
+        box_height_px = int(config.student_id_digit_boxes_box_size[1].to('pxl').magnitude)
+        gap_px = int(config.student_id_digit_boxes_horiz_gap.to('pxl').magnitude)
+        
+        x0, y0 = id_box_ul_px
+        
         digits: list[str] = []
 
-        for i in range(num_digits):
-            # Bounds of this box in the strip
-            cx0 = int(i * cell_plus_gap_w)
-            cx1 = int(cx0 + cell_w)
-            cell = digits_img_gray[:, cx0:cx1]
+        outer_boxes = []
+        inner_boxes = []
 
+        for i in range(num_digits):
+            # Calculate this box's position
+            box_x0 = x0 + i * (box_width_px + gap_px)
+            box_x1 = box_x0 + box_width_px
+            box_y0 = y0
+            box_y1 = y0 + box_height_px
+            # draw this box for diagnostics
+            debug_image = self.diagnostics.get('debug_image', None)
+            if debug_image is not None:
+                cv2.rectangle(
+                    debug_image,
+                    (box_x0, box_y0),
+                    (box_x1, box_y1),
+                    (255, 0, 0),
+                    3,
+                )
+            outer_boxes.append((box_x0, box_y0, box_x1, box_y1))
+            # Extract cell
+            cell = img_gray[box_y0:box_y1, box_x0:box_x1]
+            
             ch, cw = cell.shape
             if ch <= 0 or cw <= 0:
                 digits.append("")
                 continue
 
-            # *** Aggressive inner crop to avoid borders ***
-            # Ignore 30% margins; adjust if needed.
-            margin_y = int(config.id_digits_cell_margin_frac * ch)
-            margin_x = int(config.id_digits_cell_margin_frac * cw)
-            iy0 = margin_y
-            iy1 = ch - margin_y
-            ix0 = margin_x
-            ix1 = cw - margin_x
+            # Inner crop to avoid borders
+            margin_y = int(config.student_id_digits_cell_margin_frac * ch)
+            margin_x = int(config.student_id_digits_cell_margin_frac * cw)
+            iy0 = box_y0 + margin_y
+            iy1 = box_y0 + ch - margin_y
+            ix0 = box_x0 + margin_x
+            ix1 = box_x0 + cw - margin_x
 
             if iy1 <= iy0 or ix1 <= ix0:
                 digits.append("")
                 continue
 
-            inner = cell[iy0:iy1, ix0:ix1]
+            inner = img_gray[iy0:iy1, ix0:ix1]
+            inner_boxes.append((ix0, iy0, ix1, iy1))
+            debug_image = self.diagnostics.get('debug_image', None)
+            if debug_image is not None:
+                print(f'ID OCR: digit {i+1}, outer box=({box_x0},{box_y0})-({box_x1},{box_y1}), inner box=({ix0},{iy0})-({ix1},{iy1})')
+                cv2.rectangle(
+                    debug_image,
+                    (ix0, iy0),
+                    (ix1, iy1),
+                    (0, 0, 255),
+                    3,
+                )
             inner = get_centered_padded_digit(inner, pad=5)
 
             # Run CNN OCR
             digit, conf = ocr_digit_nn(inner, model=model)
-            # logger.debug(f"Digit {i}: pred={digit}, conf={conf:.3f}")
+            
             if conf < confidence_threshold:
                 digits.append("?")
                 if digit == '7':
-                    # make a copy of the inner image and rotate it by 180 degrees
+                    # Check if it's actually a 9 written upside down
                     rotated_inner = cv2.rotate(inner, cv2.ROTATE_180)
                     digit_rot, conf_rot = ocr_digit_nn(rotated_inner, model=model)
-                    # logger.debug(f"  Rotated check: pred={digit_rot}, conf={conf_rot:.3f}")
                     if conf_rot >= confidence_threshold and digit_rot == '6':
                         digits[-1] = '9'
             else:
                 if digit == '3':
-                    # might be an 8 with gaps
-                    # make a copy of the inner image and flip it horizontally
+                    # Might be an 8 with gaps
                     flipped_inner = cv2.flip(inner, 1)
                     digit_flp, conf_flp = ocr_digit_nn(flipped_inner, model=model)
-                    # logger.debug(f"  Flipped check: pred={digit_flp}, conf={conf_flp:.3f}")
                     if conf_flp >= confidence_threshold and digit_flp == '8':
                         digit = '8'
                 digits.append(digit)
@@ -893,35 +1158,8 @@ class AnswerSheetReader:
         else:
             self.results['student_id_ocr'] = "".join(d if d else "?" for d in digits)
 
-        # # generate an overlay image for debugging
-        # out_path = self.debug_output_path / "student_id_ocr_overlay.png"
-        # debug_img = self.img.copy()
-
-        self.diagnostics['id_digits_region'] = {
-            'upper_left': id_digits_ul_px,
-            'lower_right': id_digits_lr_px,
-        }   
-
-        # draw a rectangle around the id region
-        # cv2.rectangle(debug_img, id_digits_ul_px, id_digits_lr_px, (0, 255, 0), 2)
-        # annotate each digit box with the recognized digit
-        id_boxes = {}
-        for i in range(num_digits):
-            cx0 = int(x0 + i * (cell_w + gap_size))
-            cx1 = int(cx0 + cell_w)
-            cy0 = y0
-            cy1 = y1
-            id_boxes[i] = (cx0, cy0, cx1, cy1)
-            # digit = self.results.get('student_id_ocr')
-            # digit_char = digit[i] if digit and i < len(digit) else "?"
-            # cv2.rectangle(debug_img, (cx0, cy0), (cx1, cy1), (0, 255, 0), 1)
-            # cv2.putText(
-            #     debug_img, digit_char, (cx0 + 5, cy0 + 25),
-            #     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA
-            # )
-        # cv2.imwrite(str(out_path), debug_img)
-
-        self.diagnostics['id_digit_boxes'] = id_boxes
+        self.diagnostics['id_digit_outer_boxes'] = outer_boxes
+        self.diagnostics['id_digit_inner_boxes'] = inner_boxes
 
     def _read_student_id(self):
         """
