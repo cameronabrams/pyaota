@@ -273,9 +273,9 @@ def main(argv: list[str] | None = None) -> int:
         help="CSV file(s) containing answer keys for each exam version",
     )
     command_parsers["grade"].add_argument(
-        "-aly",
-        "--answersheet-layout-yaml",
-        help="YAML file specifying the answer sheet layout configuration",
+        "-alj",
+        "--answersheet-layout-json",
+        help="JSON file specifying the answer sheet layout configuration",
     )
     command_parsers["grade"].add_argument(
         "-od",

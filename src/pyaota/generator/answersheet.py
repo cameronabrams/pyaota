@@ -8,31 +8,35 @@ from pathlib import Path
 import logging
 from dataclasses import dataclass, field
 import pint
+import pickle
 
-_ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit = True)
+def setup_ureg() -> pint.UnitRegistry:
+    ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit = True)
 
-# make a custom unit for pixel (300 per inch)
-_ureg.define('pxl = inch / 300 = [length]')
-# pixel quantities must be integers
-# monkey-patch pint's Quantity to enforce integer pixels
-@property
-def pxls(self) -> int:
-    if not self.check('[length]'):
-        raise AttributeError("pixels property only valid for length quantities")
-    px_value = self.to(_ureg.pxl).magnitude
-    return int(round(px_value))
+    # make a custom unit for pixel (300 per inch)
+    ureg.define('pxl = inch / 300 = [length]')
+    # pixel quantities must be integers
+    # monkey-patch pint's Quantity to enforce integer pixels
+    @property
+    def pxls(self) -> int:
+        if not self.check('[length]'):
+            raise AttributeError("pixels property only valid for length quantities")
+        px_value = self.to(ureg.pxl).magnitude
+        return int(round(px_value))
 
-_ureg.Quantity.pxls = pxls
+    ureg.Quantity.pxls = pxls
 
-_ureg.define('texpt = inch / 72.27 = pt_tex')
-def define_em(font_size_pt: int = 10) -> None:
-    _ureg.define(f'em = {font_size_pt} * texpt')
+    ureg.define('texpt = inch / 72.27 = pt_tex')
+    def define_em(font_size_pt: int = 10) -> None:
+        ureg.define(f'em = {font_size_pt} * texpt')
 
-define_em(11)  # default 11pt font size
+    define_em(11)  # default 11pt font size
+    return ureg
+
+_ureg = setup_ureg()
 
 logger = logging.getLogger(__name__)
 # ---------------- Layout configuration ----------------
-
 @dataclass
 class LayoutConfig:
     num_questions: int  # must be provided
@@ -146,6 +150,10 @@ class LayoutConfig:
     intrablock_row_gap: pint.Quantity = 60 * _ureg.pxl
     intrablock_choice_gap: pint.Quantity = 10 * _ureg.pxl
     intrablock_numbering_gap: pint.Quantity = 30 * _ureg.pxl
+
+    id_report_position: Tuple[pint.Quantity, pint.Quantity] = (6.5 * _ureg.inch, 0.45 * _ureg.inch)
+    version_report_position: Tuple[pint.Quantity, pint.Quantity] = (0.5 * _ureg.inch, 0.45 * _ureg.inch)
+    score_report_position: Tuple[pint.Quantity, pint.Quantity] = (4.25 * _ureg.inch, 9.5 * _ureg.inch)
 
 class AnswerSheetGenerator:
     def __init__(self, layout_config: LayoutConfig, question_list: Optional[List[dict]] = None):

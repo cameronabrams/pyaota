@@ -131,6 +131,8 @@ class Autograder:
             }
 
             key = self.version_keys.get(read_results['version']) if read_results['version'] else None
+            logger.debug(f"Grading page {page_index}: version={read_results['version']}, student_id={read_results['student_id_bubbles']}, key_found={key is not None}")
+            logger.debug(f'key={key}, detected_answers={read_results["answers"]}')
             if not read_results['version']:
                 page_result["status"] = "no_qr"
                 results.append(page_result)
@@ -158,6 +160,7 @@ class Autograder:
                     "detected": detected_norm or None,
                     "is_correct": is_correct,
                 }
+                logger.debug(f' Q{qnum}: correct="{correct}", detected="{detected_norm}", is_correct={is_correct}')
 
             page_result["per_question"] = per_q
             page_result["num_correct"] = num_correct
@@ -165,62 +168,90 @@ class Autograder:
                 float(num_correct) / num_q if num_q > 0 else None
             )
 
+            logger.debug(f' Graded page {page_index}: num_correct={num_correct}/{num_q}, score_fraction={page_result["score_fraction"]}')
+            logger.debug(f' Writing graded overlay image for page {page_index} to {output_dir_path / f"graded_{read_results["student_id_bubbles"]}_{read_results["version"]}.png"}...')
             if output_dir_path is not None:
                 reader.write_graded_annotations(
                     per_question_results=per_q,
                     score_fraction=page_result["score_fraction"],
-                    overlay_path=output_dir_path / f"graded_page_{read_results['version']}.png",
-                )
-            if debug_output_dir_path is not None:
-                reader.write_debug_output(
-                    version_label=read_results['version'],
+                    overlay_path=output_dir_path / f"graded_{read_results['student_id_bubbles']}_{read_results['version']}.png",
                 )
 
             results.append(page_result)
 
         if gradesheet_output_csv_path is not None:
             gradesheet_output_csv_path = Path(gradesheet_output_csv_path)
-            with open(gradesheet_output_csv_path, "w", newline="", encoding="utf-8") as f:
-                fieldnames = [
-                    "page_index",
-                    "version_label",
-                    "student_id",
-                    "num_questions",
-                    "num_correct",
-                    "score",
-                    "status",
-                ]
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
+            # if this file exists, read it in and append to it if this ID-version combo is not already present
+            if gradesheet_output_csv_path.exists():
+                existing_rows: List[Dict[str, Any]] = []
+                with open(gradesheet_output_csv_path, "r", newline="", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        existing_rows.append(row)
+                existing_combos = set((row["student_id"], row["version_label"]) for row in existing_rows)
+                new_results = []
                 for res in results:
-                    writer.writerow({
-                        "page_index": res["page_index"],
-                        "version_label": res["version_label"],
-                        "student_id": res["student_id"],
-                        "num_questions": res["num_questions"],
-                        "num_correct": res["num_correct"],
-                        "score": f'{res["score_fraction"]*100:.1f}',
-                        "status": res["status"],
-                    })
-            logger.info(f"Wrote grading results CSV to {gradesheet_output_csv_path}")
+                    combo = (res["student_id"], res["version_label"])
+                    if combo not in existing_combos:
+                        new_results.append(res)
+                results = existing_rows + new_results
+            if len(new_results) > 0:
+                with open(gradesheet_output_csv_path, "w", newline="", encoding="utf-8") as f:
+                    fieldnames = [
+                        "page_index",
+                        "version_label",
+                        "student_id",
+                        "num_questions",
+                        "num_correct",
+                        "score",
+                        "status",
+                    ]
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    for res in results:
+                        writer.writerow({
+                            "page_index": res["page_index"],
+                            "version_label": res["version_label"],
+                            "student_id": res["student_id"],
+                            "num_questions": res["num_questions"],
+                            "num_correct": res["num_correct"],
+                            "score": f'{res["score_fraction"]*100:.1f}',
+                            "status": res["status"],
+                        })
+                logger.info(f"Wrote grading results CSV to {gradesheet_output_csv_path}")
 
         if question_tally_csv_path is not None:
             # for each student ID, write a row that contains the exam version and their answers
             question_tally_csv_path = Path(question_tally_csv_path)
-            with open(question_tally_csv_path, "w", newline="", encoding="utf-8") as f:
-                fieldnames = [
-                    "student_id",
-                    "version_label",
-                ] + [f"Q{qnum}" for qnum in range(1, max(len(res["answer_key"] or []) for res in results) + 1)]
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
+            if question_tally_csv_path.exists():
+                # read existing rows and append only new ones
+                existing_rows: List[Dict[str, Any]] = []
+                with open(question_tally_csv_path, "r", newline="", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        existing_rows.append(row)
+                existing_combos = set((row["student_id"], row["version_label"]) for row in existing_rows)
+                new_results = []
                 for res in results:
-                    row = {
-                        "student_id": res["student_id"],
-                        "version_label": res["version_label"],
-                    }
-                    answers = res["answers_detected"]
-                    for qnum in range(1, len(res["answer_key"] or []) + 1):
-                        row[f"Q{qnum}"] = answers.get(qnum)
-                    writer.writerow(row)
-            logger.info(f"Wrote question tally CSV to {question_tally_csv_path}")
+                    combo = (res["student_id"], res["version_label"])
+                    if combo not in existing_combos:
+                        new_results.append(res)
+                results = existing_rows + new_results
+            if len(new_results) > 0:
+                with open(question_tally_csv_path, "w", newline="", encoding="utf-8") as f:
+                    fieldnames = [
+                        "student_id",
+                        "version_label",
+                    ] + [f"Q{qnum}" for qnum in range(1, max(len(res["answer_key"] or []) for res in results) + 1)]
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    for res in results:
+                        row = {
+                            "student_id": res["student_id"],
+                            "version_label": res["version_label"],
+                        }
+                        answers = res["answers_detected"]
+                        for qnum in range(1, len(res["answer_key"] or []) + 1):
+                            row[f"Q{qnum}"] = answers.get(qnum)
+                        writer.writerow(row)
+                logger.info(f"Wrote question tally CSV to {question_tally_csv_path}")

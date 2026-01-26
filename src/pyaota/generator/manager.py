@@ -7,6 +7,7 @@ import random
 import yaml
 import os
 import shutil
+import pickle
 import numpy as np
 import cv2
 from pathlib import Path
@@ -16,7 +17,8 @@ from pdf2image import convert_from_path
 from .yaml2tex import render_question, tex_escape
 from .questionset import QuestionSet
 from .document import Document, ExamDocument
-from .answersheet import AnswerSheetGenerator, LayoutConfig
+from .answersheet import AnswerSheetGenerator, LayoutConfig, _ureg
+from .layout_config_serialization import save_layout_config, load_layout_config
 from ..grader.answersheetreader import AnswerSheetReader
 from ..grader.autograder import Autograder
 from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS, DEFAULT_EXAM_INSTRUCTIONS, QUESTION_BANK_DUMP_INSTRUCTIONS
@@ -100,31 +102,6 @@ def write_version_keys_csv(
                 row[f"Q{i}"] = ans
             writer.writerow(row)
 
-def write_answer_sheet_layout_yaml(
-    layout_config: LayoutConfig,
-    output_path: str = "answer_sheet_layout.yaml",
-) -> None:
-    """
-    Write the answer sheet layout configuration to a YAML file.
-    """
-    with open(output_path, "w", encoding="utf-8") as f:
-        yaml.dump(asdict(layout_config), f, default_flow_style=False)
-
-def read_answer_sheet_layout_yaml(
-    input_path: str,
-) -> LayoutConfig:
-    """
-    Read the answer sheet layout configuration from a YAML file.
-    """
-    with open(input_path, "r", encoding="utf-8") as f:
-        data = yaml.full_load(f)
-        if 'id_echo_textbox' in data:
-            data['id_echo_textbox'] = TextBoxConfig(**data['id_echo_textbox'])
-        if 'score_textbox' in data:
-            data['score_textbox'] = TextBoxConfig(**data['score_textbox'])
-    config = LayoutConfig(**data)
-    return config
-
 def compile_dump_subcommand(args):
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
@@ -198,7 +175,10 @@ def make_exams_subcommand(args):
         bubble_field_num_cols = args.num_cols,
         num_questions = args.num_questions,
     )
-    write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
+    json_answersheet_layout_path = output_dir/"answersheet_layout.json"
+    save_layout_config(answer_sheet_layout, json_answersheet_layout_path, _ureg)
+    logger.info(f'Wrote JSON answer sheet layout config to {json_answersheet_layout_path}')
+    # write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
     # generate the list of version numbers as 8-byte hexadecimal strings
 
     for version_label in hex_strings:
@@ -236,7 +216,6 @@ def make_exams_subcommand(args):
         latex_compiler.build_document(exam_doc, cleanup=args.cleanup)
 
     write_version_keys_csv(version_answer_records, output_path=output_dir/"exam_version_keys.csv")
-    write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
 
 def make_answersheet_subcommand(args):
     layout_config = LayoutConfig(
@@ -309,9 +288,10 @@ def tune_answersheetreader_subcommand(args):
     logger.info(f"Wrote diagnostic overlay image to {output_path}")
 
 def autograde_subcommand(args):
+    global _ureg
     pdf = args.input_pdf
     keyfiles = args.keyfiles
-    answersheetlayoutyaml = args.answersheet_layout_yaml
+    answersheetlayoutjson = args.answersheet_layout_json
     output_dir_path = Path(args.output_dir)
     debug_output_dir_path = Path(args.debug_output_dir)
     gradesheet_output_csv_path = Path(args.gradesheet_output_csv)
@@ -321,13 +301,13 @@ def autograde_subcommand(args):
     if not debug_output_dir_path.exists():
         debug_output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Autograding PDF {pdf} using keyfiles {keyfiles} and layout {answersheetlayoutyaml}")
-    layout_config: LayoutConfig = read_answer_sheet_layout_yaml(answersheetlayoutyaml)
+    logger.info(f"Autograding PDF {pdf} using keyfiles {keyfiles} and layout {answersheetlayoutjson}")
+    layout_config = load_layout_config(answersheetlayoutjson, LayoutConfig, _ureg)
 
     autograder = Autograder(layout_config=layout_config)
     for keyfile in keyfiles:
         autograder.load_version_keys_csv(keyfile)
-        
+
     autograder.grade_pdf(pdf, output_dir_path=output_dir_path, 
         debug_output_dir_path=debug_output_dir_path, 
         gradesheet_output_csv_path=gradesheet_output_csv_path,
