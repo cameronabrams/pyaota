@@ -24,7 +24,8 @@ HEADMATTER = r"""
 \usepackage{multicol}
 
 
-\definecolor{bubblegray}{gray}{0.4} 
+\definecolor{bubblegray}{gray}{0.3}
+
 \newcommand{\circledletter}[1]{%
   \tikz[baseline=-0.6ex]{%
     \node[

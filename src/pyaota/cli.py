@@ -266,9 +266,11 @@ def main(argv: list[str] | None = None) -> int:
         help="PDF containing one or more answer sheets (scantron-like)",
     )
     command_parsers["grade"].add_argument(
+        # can handle multiple files
         "-k",
-        "--keyfile",
-        help="CSV file containing answer keys for each exam version",
+        "--keyfiles",
+        nargs="+",
+        help="CSV file(s) containing answer keys for each exam version",
     )
     command_parsers["grade"].add_argument(
         "-aly",
@@ -302,7 +304,7 @@ def main(argv: list[str] | None = None) -> int:
     command_parsers["make-answersheet"].add_argument(
         "-o",
         "--output-pdf",
-        default="answersheet.pdf",
+        default="answersheet",
         help="Path to output answer sheet PDF",
     )
     command_parsers["make-answersheet"].add_argument(

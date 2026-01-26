@@ -1,0 +1,1047 @@
+questions:
+- id: 1
+  type: mcq
+  topic: Basics
+  stem:
+    - type: text
+      text: What is the output of the following JavaScript code?
+    - type: code
+      text: |
+        console.log(typeof null);
+  choices:
+    - key: a
+      text: '``object``'
+    - key: b
+      text: '``null``'
+    - key: c
+      text: '``undefined``'
+    - key: d
+      text: '``boolean``'
+  answer: a
+- id: 2
+  type: tf
+  topic: Basics
+  stem:
+    - type: text
+      text: "In JavaScript, an empty string is considered falsy."
+  answer: true
+
+- id: 3
+  type: tf
+  topic: Basics
+  stem:
+    - type: text
+      text: "The ``let`` keyword allows variable redeclaration in the same scope."
+  answer: false
+
+- id: 4
+  type: tf
+  topic: Basics
+  stem:
+    - type: text
+      text: "JavaScript arrays are objects."
+  answer: true
+
+- id: 5
+  type: tf
+  topic: Basics
+  stem:
+    - type: text
+      text: "``NaN === NaN`` evaluates to true."
+  answer: false
+
+- id: 6
+  type: tf
+  topic: Basics
+  stem:
+    - type: text
+      text: "The ``const`` keyword prevents mutation of objects assigned to it."
+  answer: false
+
+- id: 7
+  type: mcq
+  topic: Basics
+  stem:
+    - type: text
+      text: "What does ``'5' + 3`` return in JavaScript?"
+  choices:
+    - key: a
+      text: "``8``"
+    - key: b
+      text: "``'53'``"
+    - key: c
+      text: "``undefined``"
+    - key: d
+      text: "error"
+  answer: b
+
+- id: 8
+  type: mcq
+  topic: Basics
+  stem:
+    - type: text
+      text: "Which method removes the last element from an array?"
+  choices:
+    - key: a
+      text: "``shift()``"
+    - key: b
+      text: "``pop()``"
+    - key: c
+      text: "``slice()``"
+    - key: d
+      text: "``splice()``"
+  answer: b
+
+- id: 9
+  type: mcq
+  topic: Basics
+  stem:
+    - type: text
+      text: "What is the result of ``Boolean(0)``?"
+  choices:
+    - key: a
+      text: "``true``"
+    - key: b
+      text: "``false``"
+    - key: c
+      text: "``null``"
+    - key: d
+      text: "undefined"
+  answer: b
+
+- id: 10
+  type: mcq
+  topic: Basics
+  stem:
+    - type: text
+      text: "Which keyword is used to declare a variable with block scope?"
+  choices:
+    - key: a
+      text: "``var``"
+    - key: b
+      text: "``let``"
+    - key: c
+      text: "``const``"
+    - key: d
+      text: "both b and c"
+  answer: d
+
+- id: 11
+  type: mcq
+  topic: Data types
+  stem:
+    - type: text
+      text: "What data type is returned by the ``typeof`` operator when applied to an array?"
+  choices:
+    - key: a
+      text: "``array``"
+    - key: b
+      text: "``object``"
+    - key: c
+      text: "``undefined``"
+    - key: d
+      text: "``null``"
+  answer: b
+
+- id: 12
+  type: tf
+  topic: Data types
+  stem:
+    - type: text
+      text: "In JavaScript, ``NaN`` is considered a number."
+  answer: true
+
+- id: 13
+  type: mcq
+  topic: Data types
+  stem:
+    - type: text
+      text: "Which of the following is not a primitive data type in JavaScript?"
+  choices:
+    - key: a
+      text: "``String``"
+    - key: b
+      text: "``Number``"
+    - key: c
+      text: "``Object``"
+    - key: d
+      text: "``Boolean``"
+  answer: c
+
+- id: 14
+  type: mcq
+  topic: Data types
+  stem:
+    - type: text
+      text: "What will be the output of ``typeof null``?"
+  choices:
+    - key: a
+      text: "``null``"
+    - key: b
+      text: "``object``"
+    - key: c
+      text: "``undefined``"
+    - key: d
+      text: "error"
+  answer: b
+
+- id: 15
+  type: tf
+  topic: Data types
+  stem:
+    - type: text
+      text: "All objects in JavaScript are mutable."
+  answer: true
+
+- id: 16
+  type: mcq
+  topic: Data types
+  stem:
+    - type: text
+      text: "Which of the following is a falsy value in JavaScript?"
+  choices:
+    - key: a
+      text: "``1``"
+    - key: b
+      text: "``'0'``"
+    - key: c
+      text: "``false``"
+    - key: d
+      text: "``'false'``"
+  answer: c
+
+- id: 17
+  type: mcq
+  topic: Data types
+  stem:
+    - type: text
+      text: "What is the result of ``Boolean('')``?"
+  choices:
+    - key: a
+      text: "``true``"
+    - key: b
+      text: "``false``"
+    - key: c
+      text: "``null``"
+    - key: d
+      text: "undefined"
+  answer: b
+
+- id: 18
+  type: tf
+  topic: Data types
+  stem:
+    - type: text
+      text: "The ``typeof`` operator can be used to check the data type of a variable."
+  answer: true
+
+- id: 19
+  type: mcq
+  topic: Data types
+  stem:
+    - type: text
+      text: "Which of the following is a valid way to create a string in JavaScript?"
+  choices:
+    - key: a
+      text: "``String('Hello')``"
+    - key: b
+      text: "``new String('Hello')``"
+    - key: c
+      text: "``'Hello'``"
+    - key: d
+      text: "All of the above"
+  answer: d
+
+- id: 20
+  type: mcq
+  topic: Data types
+  stem:
+    - type: text
+      text: "What will be the output of ``typeof []``?"
+  choices:
+    - key: a
+      text: "``array``"
+    - key: b
+      text: "``object``"
+    - key: c
+      text: "``undefined``"
+    - key: d
+      text: "error"
+  answer: b
+
+- id: 21
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "What method adds one or more elements to the end of an array?"
+  choices:
+    - key: a
+      text: "``push()``"
+    - key: b
+      text: "``pop()``"
+    - key: c
+      text: "``shift()``"
+    - key: d
+      text: "``unshift()``"
+  answer: a
+
+- id: 22
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "Which method returns the number of elements in an array?"
+  choices:
+    - key: a
+      text: "``length()``"
+    - key: b
+      text: "``size()``"
+    - key: c
+      text: "``count()``"
+    - key: d
+      text: "``length``"
+  answer: d
+
+- id: 23
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "What will be the output of ``Array.isArray([])``?"
+  choices:
+    - key: a
+      text: "``true``"
+    - key: b
+      text: "``false``"
+    - key: c
+      text: "``undefined``"
+    - key: d
+      text: "error"
+  answer: a
+
+- id: 24
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "Which method creates a new array with all elements that pass the test implemented by the provided function?"
+  choices:
+    - key: a
+      text: "``filter()``"
+    - key: b
+      text: "``map()``"
+    - key: c
+      text: "``reduce()``"
+    - key: d
+      text: "``forEach()``"
+  answer: a
+
+- id: 25
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "What does the ``splice()`` method do?"
+  choices:
+    - key: a
+      text: "Adds elements to an array"
+    - key: b
+      text: "Removes elements from an array"
+    - key: c
+      text: "Both a and b"
+    - key: d
+      text: "Returns a shallow copy of a portion of an array"
+  answer: c
+
+- id: 26
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "Which method reverses the elements of an array in place?"
+  choices:
+    - key: a
+      text: "``reverse()``"
+    - key: b
+      text: "``sort()``"
+    - key: c
+      text: "``flip()``"
+    - key: d
+      text: "``invert()``"
+  answer: a
+
+- id: 27
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "What will be the output of ``['a', 'b', 'c'].join('-')``?"
+  choices:
+    - key: a
+      text: "``abc``"
+    - key: b
+      text: "``a-b-c``"
+    - key: c
+      text: "``['a', 'b', 'c']``"
+    - key: d
+      text: "error"
+  answer: b
+
+- id: 28
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "Which method removes the first element from an array?"
+  choices:
+    - key: a
+      text: "``pop()``"
+    - key: b
+      text: "``shift()``"
+    - key: c
+      text: "``slice()``"
+    - key: d
+      text: "``splice()``"
+  answer: b
+
+- id: 29
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "What will be the output of ``['a', 'b', 'c'].slice(1, 2)``?"
+  choices:
+    - key: a
+      text: "``['b']``"
+    - key: b
+      text: "``['a', 'b']``"
+    - key: c
+      text: "``['b', 'c']``"
+    - key: d
+      text: "``['a', 'b', 'c']``"
+  answer: a
+
+- id: 30
+  type: mcq
+  topic: Arrays
+  stem:
+    - type: text
+      text: "Which method combines two or more arrays?"
+  choices:
+    - key: a
+      text: "``concat()``"
+    - key: b
+      text: "``merge()``"
+    - key: c
+      text: "``combine()``"
+    - key: d
+      text: "``join()``"
+  answer: a
+
+- id: 31
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "What is the correct way to create a dictionary in JavaScript?"
+  choices:
+    - key: a
+      text: "``{}``"
+    - key: b
+      text: "``[]``"
+    - key: c
+      text: "``new Dictionary()``"
+    - key: d
+      text: "``()``"
+  answer: a
+
+- id: 32
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "How do you access the value associated with a key in a dictionary?"
+  choices:
+    - key: a
+      text: "``dict.key``"
+    - key: b
+      text: "``dict[key]``"
+    - key: c
+      text: "``dict.get(key)``"
+    - key: d
+      text: "All of the above"
+  answer: d
+
+- id: 33
+  type: tf
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "In JavaScript, dictionaries are also known as objects."
+  answer: true
+
+- id: 34
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "Which method can be used to check if a key exists in a dictionary?"
+  choices:
+    - key: a
+      text: "``hasOwnProperty()``"
+    - key: b
+      text: "``in``"
+    - key: c
+      text: "``exists()``"
+    - key: d
+      text: "Both a and b"
+  answer: d
+
+- id: 35
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "What will be the output of ``Object.keys({a: 1, b: 2})``?"
+  choices:
+    - key: a
+      text: "``['a', 'b']``"
+    - key: b
+      text: "``['1', '2']``"
+    - key: c
+      text: "``['a', 'b', 'c']``"
+    - key: d
+      text: "``{a: 1, b: 2}``"
+  answer: a
+
+- id: 36
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "How do you add a new key-value pair to a dictionary?"
+  choices:
+    - key: a
+      text: "``dict.newKey = value``"
+    - key: b
+      text: "``dict['newKey'] = value``"
+    - key: c
+      text: "``dict.set('newKey', value)``"
+    - key: d
+      text: "Both a and b"
+  answer: d
+
+- id: 37
+  type: tf
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "Dictionaries in JavaScript can have keys of any data type."
+  answer: true
+
+- id: 38
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "What will be the output of ``delete dict.key``?"
+  choices:
+    - key: a
+      text: "Removes the key from the dictionary"
+    - key: b
+      text: "Returns the value of the key"
+    - key: c
+      text: "Throws an error"
+    - key: d
+      text: "Does nothing"
+  answer: a
+
+- id: 39
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "Which of the following is a valid way to create a dictionary with initial values?"
+  choices:
+    - key: a
+      text: "``{key1: value1, key2: value2}``"
+    - key: b
+      text: "``new Object({key1: value1, key2: value2})``"
+    - key: c
+      text: "``Object.assign({}, {key1: value1, key2: value2})``"
+    - key: d
+      text: "All of the above"
+  answer: d
+
+- id: 40
+  type: mcq
+  topic: Dictionaries
+  stem:
+    - type: text
+      text: "What is the output of ``Object.entries({a: 1, b: 2})``?"
+  choices:
+    - key: a
+      text: "``[['a', 1], ['b', 2]]``"
+    - key: b
+      text: "``[['a', 'b'], [1, 2]]``"
+    - key: c
+      text: "``{a: 1, b: 2}``"
+    - key: d
+      text: "``['a', 'b']``"
+  answer: a
+
+- id: 41
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "What is an abstract data type (ADT)?"
+  choices:
+    - key: a
+      text: "A data type defined by its behavior from the point of view of a user"
+    - key: b
+      text: "A data type that can only be used in specific programming languages"
+    - key: c
+      text: "A data type that is implemented using primitive data types"
+    - key: d
+      text: "A data type that cannot be modified"
+  answer: a
+
+- id: 42
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "Which of the following is an example of an abstract data type?"
+  choices:
+    - key: a
+      text: "Array"
+    - key: b
+      text: "Stack"
+    - key: c
+      text: "Integer"
+    - key: d
+      text: "String"
+  answer: b
+
+- id: 43
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "What is the main advantage of using abstract data types?"
+  choices:
+    - key: a
+      text: "They are faster than primitive data types"
+    - key: b
+      text: "They provide a clear separation between interface and implementation"
+    - key: c
+      text: "They require less memory"
+    - key: d
+      text: "They are easier to implement"
+  answer: b
+
+- id: 44
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "Which of the following operations is typically associated with a queue ADT?"
+  choices:
+    - key: a
+      text: "Push"
+    - key: b
+      text: "Pop"
+    - key: c
+      text: "Enqueue"
+    - key: d
+      text: "Insert"
+  answer: c
+
+- id: 45
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "In a stack ADT, which operation removes the top element?"
+  choices:
+    - key: a
+      text: "Add"
+    - key: b
+      text: "Pop"
+    - key: c
+      text: "Remove"
+    - key: d
+      text: "Delete"
+  answer: b
+
+- id: 46
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "Which of the following best describes a linked list?"
+  choices:
+    - key: a
+      text: "A collection of elements stored in contiguous memory locations"
+    - key: b
+      text: "A collection of elements where each element points to the next"
+    - key: c
+      text: "A fixed-size data structure"
+    - key: d
+      text: "A data structure that only allows insertion"
+  answer: b
+
+- id: 47
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "What is the primary characteristic of a tree ADT?"
+  choices:
+    - key: a
+      text: "It is a linear data structure"
+    - key: b
+      text: "It consists of nodes connected by edges"
+    - key: c
+      text: "It can only store numeric values"
+    - key: d
+      text: "It is a type of array"
+  answer: b
+
+- id: 48
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "Which operation is commonly associated with a priority queue?"
+  choices:
+    - key: a
+      text: "Dequeue"
+    - key: b
+      text: "Sort"
+    - key: c
+      text: "Insert with priority"
+    - key: d
+      text: "Remove last"
+  answer: c
+
+- id: 49
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "What is the main difference between a stack and a queue?"
+  choices:
+    - key: a
+      text: "Stack is FIFO, Queue is LIFO"
+    - key: b
+      text: "Stack is LIFO, Queue is FIFO"
+    - key: c
+      text: "Both are the same"
+    - key: d
+      text: "Stack allows duplicates, Queue does not"
+  answer: b
+
+- id: 50
+  type: mcq
+  topic: Abstract Data Types
+  stem:
+    - type: text
+      text: "Which of the following is NOT an abstract data type?"
+  choices:
+    - key: a
+      text: "Graph"
+    - key: b
+      text: "Hash Table"
+    - key: c
+      text: "Integer"
+    - key: d
+      text: "Set"
+  answer: c
+- id: 51
+  type: mcq
+  topic: Databases
+  stem:
+    - type: text
+      text: "What does SQL stand for?"
+  choices:
+    - key: a
+      text: "Structured Query Language"
+    - key: b
+      text: "Simple Query Language"
+    - key: c
+      text: "Standard Query Language"
+    - key: d
+      text: "Sequential Query Language"
+  answer: a
+
+- id: 52
+  type: mcq
+  topic: Databases
+  stem:
+    - type: text
+      text: "Which of the following is a relational database?"
+  choices:
+    - key: a
+      text: "MongoDB"
+    - key: b
+      text: "MySQL"
+    - key: c
+      text: "Redis"
+    - key: d
+      text: "Cassandra"
+  answer: b
+
+- id: 53
+  type: tf
+  topic: Databases
+  stem:
+    - type: text
+      text: "A primary key uniquely identifies each record in a table."
+  answer: true
+
+- id: 54
+  type: mcq
+  topic: Databases
+  stem:
+    - type: text
+      text: "What is a foreign key used for?"
+  choices:
+    - key: a
+      text: "To uniquely identify a record"
+    - key: b
+      text: "To establish a relationship between two tables"
+    - key: c
+      text: "To sort records"
+    - key: d
+      text: "To filter records"
+  answer: b
+
+- id: 55
+  type: mcq
+  topic: Databases
+  stem:
+    - type: text
+      text: "Which SQL keyword is used to retrieve data from a database?"
+  choices:
+    - key: a
+      text: "GET"
+    - key: b
+      text: "RETRIEVE"
+    - key: c
+      text: "SELECT"
+    - key: d
+      text: "FETCH"
+  answer: c
+
+- id: 56
+  type: tf
+  topic: Databases
+  stem:
+    - type: text
+      text: "NoSQL databases store data in a structured table format."
+  answer: false
+
+- id: 57
+  type: mcq
+  topic: Databases
+  stem:
+    - type: text
+      text: "What does ACID stand for in database transactions?"
+  choices:
+    - key: a
+      text: "Atomicity, Consistency, Isolation, Durability"
+    - key: b
+      text: "Availability, Consistency, Isolation, Distribution"
+    - key: c
+      text: "Atomicity, Compliance, Isolation, Distribution"
+    - key: d
+      text: "Availability, Consistency, Integration, Durability"
+  answer: a
+
+- id: 58
+  type: mcq
+  topic: Databases
+  stem:
+    - type: text
+      text: "Which type of join returns only matching records from both tables?"
+  choices:
+    - key: a
+      text: "LEFT JOIN"
+    - key: b
+      text: "INNER JOIN"
+    - key: c
+      text: "FULL OUTER JOIN"
+    - key: d
+      text: "CROSS JOIN"
+  answer: b
+
+- id: 59
+  type: tf
+  topic: Databases
+  stem:
+    - type: text
+      text: "An index in a database can improve query performance."
+  answer: true
+
+- id: 60
+  type: mcq
+  topic: Databases
+  stem:
+    - type: text
+      text: "What is database normalization used for?"
+  choices:
+    - key: a
+      text: "To increase database size"
+    - key: b
+      text: "To reduce data redundancy and improve data integrity"
+    - key: c
+      text: "To make queries faster"
+    - key: d
+      text: "To encrypt database records"
+  answer: b
+
+- id: 61
+  type: mcq
+  topic: Baking
+  stem:
+    - type: text
+      text: "What is the primary purpose of baking soda in baking?"
+  choices:
+    - key: a
+      text: "To add flavor"
+    - key: b
+      text: "To act as a leavening agent"
+    - key: c
+      text: "To preserve moisture"
+    - key: d
+      text: "To prevent browning"
+  answer: b
+
+- id: 62
+  type: mcq
+  topic: Baking
+  stem:
+    - type: text
+      text: "Which ingredient is essential for creating structure in baked goods?"
+  choices:
+    - key: a
+      text: "Sugar"
+    - key: b
+      text: "Flour"
+    - key: c
+      text: "Butter"
+    - key: d
+      text: "Eggs"
+  answer: b
+
+- id: 63
+  type: tf
+  topic: Baking
+  stem:
+    - type: text
+      text: "Room temperature ingredients mix more easily than cold ingredients."
+  answer: true
+
+- id: 64
+  type: mcq
+  topic: Baking
+  stem:
+    - type: text
+      text: "What does gluten do in baking?"
+  choices:
+    - key: a
+      text: "Adds sweetness"
+    - key: b
+      text: "Provides elasticity and structure"
+    - key: c
+      text: "Prevents burning"
+    - key: d
+      text: "Reduces calories"
+  answer: b
+
+- id: 65
+  type: mcq
+  topic: Baking
+  stem:
+    - type: text
+      text: "At what temperature are most cookies typically baked?"
+  choices:
+    - key: a
+      text: "250°F"
+    - key: b
+      text: "350°F"
+    - key: c
+      text: "450°F"
+    - key: d
+      text: "500°F"
+  answer: b
+
+- id: 66
+  type: tf
+  topic: Baking
+  stem:
+    - type: text
+      text: "Overmixing cake batter results in a tender, fluffy cake."
+  answer: false
+
+- id: 67
+  type: mcq
+  topic: Baking
+  stem:
+    - type: text
+      text: "Which type of flour has the highest protein content?"
+  choices:
+    - key: a
+      text: "All-purpose flour"
+    - key: b
+      text: "Cake flour"
+    - key: c
+      text: "Bread flour"
+    - key: d
+      text: "Pastry flour"
+  answer: c
+
+- id: 68
+  type: mcq
+  topic: Baking
+  stem:
+    - type: text
+      text: "What is the purpose of tempering chocolate in baking?"
+  choices:
+    - key: a
+      text: "To cool it down"
+    - key: b
+      text: "To achieve a smooth finish and proper snap"
+    - key: c
+      text: "To make it sweeter"
+    - key: d
+      text: "To reduce calories"
+  answer: b
+
+- id: 69
+  type: tf
+  topic: Baking
+  stem:
+    - type: text
+      text: "Baking is more forgiving than cooking since measurements don't need to be precise."
+  answer: false
+
+- id: 70
+  type: mcq
+  topic: Baking
+  stem:
+    - type: text
+      text: "Which ingredient helps retain moisture in baked goods?"
+  choices:
+    - key: a
+      text: "Vanilla extract"
+    - key: b
+      text: "Eggs"
+    - key: c
+      text: "Salt"
+    - key: d
+      text: "Baking powder"
+  answer: b

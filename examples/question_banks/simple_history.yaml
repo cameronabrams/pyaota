@@ -1,27 +1,4 @@
 questions:
-- id: 1
-  type: mcq
-  topic: Early western history
-  stem: 
-   - type: text
-     text: What was the teacher of Aristotle?
-  choices:
-    - key: a
-      text: Plato
-    - key: b
-      text: Socrates
-    - key: c
-      text: Alexander the Great
-    - key: d
-      text: Pythagoras
-  correct: a
-- id: 2
-  type: tf
-  topic: European history
-  stem: 
-   - type: text
-     text: The Renaissance began in Italy.
-  answer: True
 - id: 3
   type: mcq
   topic: Renaissance history
@@ -251,4 +228,858 @@ questions:
   stem:
     - type: text
       text: Renaissance architecture drew inspiration from Roman and Greek designs.
+  answer: True
+- id: 23
+  type: mcq
+  topic: American Revolution
+  stem:
+    - type: text
+      text: In which year did the American Revolution begin?
+  choices:
+    - key: a
+      text: 1773
+    - key: b
+      text: 1775
+    - key: c
+      text: 1776
+    - key: d
+      text: 1781
+  correct: b
+- id: 24
+  type: mcq
+  topic: American Revolution
+  stem:
+    - type: text
+      text: Who was the first President of the United States?
+  choices:
+    - key: a
+      text: Thomas Jefferson
+    - key: b
+      text: Benjamin Franklin
+    - key: c
+      text: George Washington
+    - key: d
+      text: John Adams
+  correct: c
+- id: 25
+  type: mcq
+  topic: American Revolution
+  stem:
+    - type: text
+      text: What was the primary cause of the American Revolution?
+  choices:
+    - key: a
+      text: Religious persecution
+    - key: b
+      text: British taxation without representation
+    - key: c
+      text: Trade disputes with France
+    - key: d
+      text: Competition for land
+  correct: b
+- id: 26
+  type: tf
+  topic: American Revolution
+  stem:
+    - type: text
+      text: The Declaration of Independence was signed in 1776.
+  answer: True
+- id: 27
+  type: mcq
+  topic: American Revolution
+  stem:
+    - type: text
+      text: Which document declared the colonies' independence from Britain?
+  choices:
+    - key: a
+      text: The Constitution
+    - key: b
+      text: The Declaration of Independence
+    - key: c
+      text: The Mayflower Compact
+    - key: d
+      text: The Bill of Rights
+  correct: b
+- id: 28
+  type: tf
+  topic: American Revolution
+  stem:
+    - type: text
+      text: France supported the American colonies during the Revolution.
+  answer: True
+- id: 29
+  type: mcq
+  topic: American Revolution
+  stem:
+    - type: text
+      text: Which battle is considered the turning point of the American Revolution?
+  choices:
+    - key: a
+      text: Battle of Lexington and Concord
+    - key: b
+      text: Battle of Yorktown
+    - key: c
+      text: Battle of Saratoga
+    - key: d
+      text: Battle of Bunker Hill
+  correct: c
+- id: 30
+  type: tf
+  topic: American Revolution
+  stem:
+    - type: text
+      text: The Treaty of Paris ended the American Revolutionary War in 1783.
+  answer: True
+- id: 31
+  type: mcq
+  topic: French Revolution
+  stem:
+    - type: text
+      text: In which year did the French Revolution begin?
+  choices:
+    - key: a
+      text: 1789
+    - key: b
+      text: 1792
+    - key: c
+      text: 1793
+    - key: d
+      text: 1799
+  correct: a
+- id: 32
+  type: mcq
+  topic: French Revolution
+  stem:
+    - type: text
+      text: What was the primary cause of the French Revolution?
+  choices:
+    - key: a
+      text: Religious conflict
+    - key: b
+      text: Economic crisis and social inequality
+    - key: c
+      text: Foreign invasion
+    - key: d
+      text: Military rebellion
+  correct: b
+- id: 33
+  type: mcq
+  topic: French Revolution
+  stem:
+    - type: text
+      text: Which event marked the beginning of radical violence in the French Revolution?
+  choices:
+    - key: a
+      text: Storming of the Bastille
+    - key: b
+      text: Reign of Terror
+    - key: c
+      text: Declaration of the Rights of Man
+    - key: d
+      text: Women's March on Versailles
+  correct: a
+- id: 34
+  type: tf
+  topic: French Revolution
+  stem:
+    - type: text
+      text: King Louis XVI was executed during the French Revolution.
+  answer: True
+- id: 35
+  type: mcq
+  topic: French Revolution
+  stem:
+    - type: text
+      text: Who was the military leader that rose to power after the French Revolution?
+  choices:
+    - key: a
+      text: Georges Danton
+    - key: b
+      text: Maximilien Robespierre
+    - key: c
+      text: Napoleon Bonaparte
+    - key: d
+      text: Jean-Paul Marat
+  correct: c
+- id: 36
+  type: tf
+  topic: French Revolution
+  stem:
+    - type: text
+      text: The Declaration of the Rights of Man was adopted in 1789.
+  answer: True
+- id: 37
+  type: mcq
+  topic: French Revolution
+  stem:
+    - type: text
+      text: What was the Reign of Terror?
+  choices:
+    - key: a
+      text: A period of foreign invasion
+    - key: b
+      text: A period of mass executions and political purges
+    - key: c
+      text: A religious movement
+    - key: d
+      text: A military campaign
+  correct: b
+- id: 38
+  type: tf
+  topic: French Revolution
+  stem:
+    - type: text
+      text: Marie Antoinette was the wife of King Louis XVI.
+  answer: True
+- id: 39
+  type: mcq
+  topic: French Revolution
+  stem:
+    - type: text
+      text: Which social class initiated the French Revolution?
+  choices:
+    - key: a
+      text: The nobility
+    - key: b
+      text: The clergy
+    - key: c
+      text: The Third Estate (common people)
+    - key: d
+      text: The monarchy
+  correct: c
+- id: 40
+  type: tf
+  topic: French Revolution
+  stem:
+    - type: text
+      text: The French Revolution led to the abolition of feudalism.
+  answer: True
+- id: 41
+  type: mcq
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Which explorer is credited with discovering America in 1492?
+  choices:
+    - key: a
+      text: Leif Erikson
+    - key: b
+      text: Christopher Columbus
+    - key: c
+      text: Vasco da Gama
+    - key: d
+      text: Ferdinand Magellan
+  correct: b
+- id: 42
+  type: mcq
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Who was the first European to reach the coast of Brazil?
+  choices:
+    - key: a
+      text: Christopher Columbus
+    - key: b
+      text: Pedro Álvares Cabral
+    - key: c
+      text: Bartolomeu Dias
+    - key: d
+      text: Vasco da Gama
+  correct: b
+- id: 43
+  type: mcq
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Which Spanish conquistador conquered the Aztec Empire?
+  choices:
+    - key: a
+      text: Francisco Pizarro
+    - key: b
+      text: Hernán Cortés
+    - key: c
+      text: Diego Velázquez
+    - key: d
+      text: Álvar Núñez Cabeza de Vaca
+  correct: b
+- id: 44
+  type: mcq
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Who led the first expedition to circumnavigate the globe?
+  choices:
+    - key: a
+      text: Christopher Columbus
+    - key: b
+      text: Vasco da Gama
+    - key: c
+      text: Ferdinand Magellan
+    - key: d
+      text: John Cabot
+  correct: c
+- id: 45
+  type: tf
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Christopher Columbus was Italian by birth.
+  answer: True
+- id: 46
+  type: mcq
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Which explorer established the first European settlement in North America?
+  choices:
+    - key: a
+      text: Leif Erikson
+    - key: b
+      text: Jacques Cartier
+    - key: c
+      text: Henry Hudson
+    - key: d
+      text: John Smith
+  correct: a
+- id: 47
+  type: tf
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Francisco Pizarro conquered the Inca Empire in South America.
+  answer: True
+- id: 48
+  type: mcq
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: What was the primary motivation for most New World explorations?
+  choices:
+    - key: a
+      text: Scientific curiosity
+    - key: b
+      text: Wealth, spices, and trade routes
+    - key: c
+      text: Religious conversion
+    - key: d
+      text: Territorial dominance only
+  correct: b
+- id: 49
+  type: tf
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: The voyage of Columbus was sponsored by the Spanish monarchy.
+  answer: True
+- id: 50
+  type: mcq
+  topic: New World Explorers
+  stem:
+    - type: text
+      text: Which treaty divided New World territories between Spain and Portugal?
+  choices:
+    - key: a
+      text: Treaty of Tordesillas
+    - key: b
+      text: Treaty of Versailles
+    - key: c
+      text: Treaty of Paris
+    - key: d
+      text: Treaty of Utrecht
+  correct: a
+- id: 51
+  type: mcq
+  topic: History of Science
+  stem:
+    - type: text
+      text: Who developed the heliocentric model of the solar system?
+  choices:
+    - key: a
+      text: Galileo Galilei
+    - key: b
+      text: Nicolaus Copernicus
+    - key: c
+      text: Tycho Brahe
+    - key: d
+      text: Johannes Kepler
+  correct: b
+- id: 52
+  type: mcq
+  topic: History of Science
+  stem:
+    - type: text
+      text: Which scientist formulated the laws of motion and universal gravitation?
+  choices:
+    - key: a
+      text: Albert Einstein
+    - key: b
+      text: Isaac Newton
+    - key: c
+      text: René Descartes
+    - key: d
+      text: Blaise Pascal
+  correct: b
+- id: 53
+  type: tf
+  topic: History of Science
+  stem:
+    - type: text
+      text: Charles Darwin published "The Origin of Species" in 1859.
+  answer: True
+- id: 54
+  type: mcq
+  topic: History of Science
+  stem:
+    - type: text
+      text: Who discovered penicillin?
+  choices:
+    - key: a
+      text: Louis Pasteur
+    - key: b
+      text: Alexander Fleming
+    - key: c
+      text: Joseph Lister
+    - key: d
+      text: Robert Koch
+  correct: b
+- id: 55
+  type: mcq
+  topic: History of Science
+  stem:
+    - type: text
+      text: Which physicist developed the theory of relativity?
+  choices:
+    - key: a
+      text: Niels Bohr
+    - key: b
+      text: Albert Einstein
+    - key: c
+      text: Max Planck
+    - key: d
+      text: Werner Heisenberg
+  correct: b
+- id: 56
+  type: tf
+  topic: History of Science
+  stem:
+    - type: text
+      text: Marie Curie was the first woman to win a Nobel Prize.
+  answer: True
+- id: 57
+  type: mcq
+  topic: History of Science
+  stem:
+    - type: text
+      text: What was the primary focus of the Scientific Revolution?
+  choices:
+    - key: a
+      text: Religious doctrine
+    - key: b
+      text: Empirical observation and experimentation
+    - key: c
+      text: Philosophical speculation
+    - key: d
+      text: Political reform
+  correct: b
+- id: 58
+  type: tf
+  topic: History of Science
+  stem:
+    - type: text
+      text: The microscope was invented in the 17th century.
+  answer: True
+- id: 59
+  type: mcq
+  topic: History of Science
+  stem:
+    - type: text
+      text: Who proposed the atomic theory in the early 19th century?
+  choices:
+    - key: a
+      text: John Dalton
+    - key: b
+      text: Dmitri Mendeleev
+    - key: c
+      text: J.J. Thomson
+    - key: d
+      text: Ernest Rutherford
+  correct: a
+- id: 60
+  type: tf
+  topic: History of Science
+  stem:
+    - type: text
+      text: The periodic table was first organized by Dmitri Mendeleev.
+  answer: True
+- id: 61
+  type: mcq
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: Who was the first monarch of the Tudor dynasty?
+  choices:
+    - key: a
+      text: Henry VII
+    - key: b
+      text: Henry VIII
+    - key: c
+      text: Richard III
+    - key: d
+      text: Edward IV
+  correct: a
+- id: 62
+  type: mcq
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: How many times was Henry VIII married?
+  choices:
+    - key: a
+      text: Three times
+    - key: b
+      text: Four times
+    - key: c
+      text: Five times
+    - key: d
+      text: Six times
+  correct: d
+- id: 63
+  type: tf
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: Queen Elizabeth I was the daughter of Henry VIII.
+  answer: True
+- id: 64
+  type: mcq
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: Which monarch was known as the "Virgin Queen"?
+  choices:
+    - key: a
+      text: Mary I
+    - key: b
+      text: Elizabeth I
+    - key: c
+      text: Anne Boleyn
+    - key: d
+      text: Catherine of Aragon
+  correct: b
+- id: 65
+  type: tf
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: King John signed the Magna Carta in 1215.
+  answer: True
+- id: 66
+  type: mcq
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: Who was the longest-reigning British monarch before Queen Victoria?
+  choices:
+    - key: a
+      text: George III
+    - key: b
+      text: Elizabeth I
+    - key: c
+      text: Henry VIII
+    - key: d
+      text: Charles II
+  correct: a
+- id: 67
+  type: mcq
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: In which year did Queen Victoria ascend to the throne?
+  choices:
+    - key: a
+      text: 1819
+    - key: b
+      text: 1837
+    - key: c
+      text: 1845
+    - key: d
+      text: 1852
+  correct: b
+- id: 68
+  type: tf
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: The English Civil War resulted in the temporary abolition of the monarchy.
+  answer: True
+- id: 69
+  type: mcq
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: Who was the monarch during the Spanish Armada in 1588?
+  choices:
+    - key: a
+      text: Mary I
+    - key: b
+      text: Elizabeth I
+    - key: c
+      text: James I
+    - key: d
+      text: Edward VI
+  correct: b
+- id: 70
+  type: tf
+  topic: History of the British Monarchy
+  stem:
+    - type: text
+      text: Queen Elizabeth II reigned for over 70 years.
+  answer: True
+- id: 71
+  type: mcq
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: Which empire is considered the largest in ancient India?
+  choices:
+    - key: a
+      text: Maurya Empire
+    - key: b
+      text: Gupta Empire
+    - key: c
+      text: Chola Empire
+    - key: d
+      text: Vijayanagara Empire
+  correct: a
+- id: 72
+  type: mcq
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: Who was the greatest ruler of the Maurya Empire?
+  choices:
+    - key: a
+      text: Chandragupta Maurya
+    - key: b
+      text: Ashoka
+    - key: c
+      text: Bindusara
+    - key: d
+      text: Brihadratha
+  correct: b
+- id: 73
+  type: tf
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: The Gupta Empire is known as the Golden Age of India.
+  answer: True
+- id: 74
+  type: mcq
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: Which Gupta ruler is known as "Vikramaditya"?
+  choices:
+    - key: a
+      text: Chandragupta II
+    - key: b
+      text: Samudragupta
+    - key: c
+      text: Kumaragupta
+    - key: d
+      text: Skandagupta
+  correct: a
+- id: 75
+  type: tf
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: The Chola dynasty was a maritime power in South India.
+  answer: True
+- id: 76
+  type: mcq
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: What was the capital of the Vijayanagara Empire?
+  choices:
+    - key: a
+      text: Hampi
+    - key: b
+      text: Bijapur
+    - key: c
+      text: Golconda
+    - key: d
+      text: Warangal
+  correct: a
+- id: 77
+  type: tf
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: The Indus Valley Civilization existed around 3000-1500 BCE.
+  answer: True
+- id: 78
+  type: mcq
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: Which dynasty ruled India before the Mughal Empire?
+  choices:
+    - key: a
+      text: Lodi Dynasty
+    - key: b
+      text: Vijayanagara Empire
+    - key: c
+      text: Deccan Sultanates
+    - key: d
+      text: All of the above
+  correct: d
+- id: 79
+  type: tf
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: Ashoka spread Buddhism throughout the Maurya Empire.
+  answer: True
+- id: 80
+  type: mcq
+  topic: Precolonial India
+  stem:
+    - type: text
+      text: Which metal was primarily used in the Indus Valley Civilization?
+  choices:
+    - key: a
+      text: Iron
+    - key: b
+      text: Bronze
+    - key: c
+      text: Gold
+    - key: d
+      text: Copper
+  correct: b
+- id: 81
+  type: mcq
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: Which is the longest-lasting Chinese dynasty?
+  choices:
+    - key: a
+      text: Ming Dynasty
+    - key: b
+      text: Zhou Dynasty
+    - key: c
+      text: Han Dynasty
+    - key: d
+      text: Tang Dynasty
+  correct: b
+- id: 82
+  type: mcq
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: Who was the first emperor of unified China?
+  choices:
+    - key: a
+      text: Kublai Khan
+    - key: b
+      text: Qin Shi Huang
+    - key: c
+      text: Kangxi Emperor
+    - key: d
+      text: Yonglo Emperor
+  correct: b
+- id: 83
+  type: tf
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: The Great Wall of China was built primarily during the Ming Dynasty.
+  answer: True
+- id: 84
+  type: mcq
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: Which dynasty is known as the "Golden Age" of Chinese culture?
+  choices:
+    - key: a
+      text: Shang Dynasty
+    - key: b
+      text: Tang Dynasty
+    - key: c
+      text: Song Dynasty
+    - key: d
+      text: Yuan Dynasty
+  correct: b
+- id: 85
+  type: tf
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: The Forbidden City was built during the Ming Dynasty.
+  answer: True
+- id: 86
+  type: mcq
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: Which Chinese dynasty was founded by the Mongols?
+  choices:
+    - key: a
+      text: Yuan Dynasty
+    - key: b
+      text: Qing Dynasty
+    - key: c
+      text: Ming Dynasty
+    - key: d
+      text: Han Dynasty
+  correct: a
+- id: 87
+  type: mcq
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: The Terracotta Army was created for which emperor?
+  choices:
+    - key: a
+      text: Han Wudi
+    - key: b
+      text: Kangxi
+    - key: c
+      text: Qin Shi Huang
+    - key: d
+      text: Yonglo
+  correct: c
+- id: 88
+  type: tf
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: The Qing Dynasty was the last imperial dynasty of China.
+  answer: True
+- id: 89
+  type: mcq
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: Which dynasty developed the Silk Road trade networks?
+  choices:
+    - key: a
+      text: Shang Dynasty
+    - key: b
+      text: Han Dynasty
+    - key: c
+      text: Zhou Dynasty
+    - key: d
+      text: Song Dynasty
+  correct: b
+- id: 90
+  type: tf
+  topic: Chinese Dynasties
+  stem:
+    - type: text
+      text: Porcelain and ceramics reached their peak during the Song Dynasty.
   answer: True

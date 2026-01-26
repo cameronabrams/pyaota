@@ -48,7 +48,7 @@ class LayoutConfig:
     # must be the case that 2*radius >= text_height + text_depth for radius to matter
 
     # Darkness threshold to call a bubble filled
-    fill_ratio_threshold: float = 0.10
+    fill_ratio_threshold: float = 0.20
 
     # runner up margin (relative) to call a bubble filled
     runner_up_margin: float = 0.09
@@ -76,10 +76,10 @@ class LayoutConfig:
 
     # Search region specifications (as fractions of image dimensions from each corner)
     # Format: (width_fraction, height_fraction) - how far from corner to search
-    indicial_search_nw: Tuple[float, float] = (0.20, 0.15)  # Search top-left 20% width, 15% height
-    indicial_search_ne: Tuple[float, float] = (0.20, 0.15)  # Search top-right 20% width, 15% height
-    indicial_search_sw: Tuple[float, float] = (0.20, 0.15)  # Search bottom-left 20% width, 15% height
-    indicial_search_se: Tuple[float, float] = (0.20, 0.15)  # Search bottom-right 20% width, 15% height
+    indicial_search_nw: Tuple[float, float] = (0.12, 0.15)  # Search top-left 10% width, 10% height
+    indicial_search_ne: Tuple[float, float] = (0.12, 0.15)  # Search top-right 10% width, 10% height
+    indicial_search_sw: Tuple[float, float] = (0.12, 0.10)  # Search bottom-left 10% width, 10% height
+    indicial_search_se: Tuple[float, float] = (0.12, 0.10)  # Search bottom-right 10% width, 10% height
     # Search region specifications (as fractions of image dimensions from each corner)
     def get_indicial_search_regions(self, img_shape):
         """
@@ -119,32 +119,24 @@ class LayoutConfig:
             'sw': sw_region,
             'se': se_region
         }
-    # major elements of the answer sheet layout.  We just need to specify locations and sizes of:
-    # Name blank
-    # Student ID bubbles + digits
-    # QR code
-    # Above-bubble instructions
-    # Question bubbles
-    # below-bubble instructions
-    # margin no-write warnings
 
     name_blank_ul: Tuple[pint.Quantity, pint.Quantity] = (1.75 * _ureg.inch, 1.25 * _ureg.inch)
     name_blank_size: Tuple[pint.Quantity, pint.Quantity] = (5.5 * _ureg.inch, 0.3 * _ureg.inch)
 
-    student_id_digit_boxes_ul: Tuple[pint.Quantity, pint.Quantity] = (1.75 * _ureg.inch, 1.4 * _ureg.inch)
-    student_id_digit_boxes_box_size: Tuple[pint.Quantity, pint.Quantity] = (85 * _ureg.pxl, 85 * _ureg.pxl)
+    student_id_digit_boxes_ul: Tuple[pint.Quantity, pint.Quantity] = (2.25 * _ureg.inch, 1.4 * _ureg.inch)
+    student_id_digit_boxes_box_size: Tuple[pint.Quantity, pint.Quantity] = (100 * _ureg.pxl, 100 * _ureg.pxl)
     student_id_digit_boxes_horiz_gap: pint.Quantity = 33 * _ureg.pxl
     student_id_ocr_confidence_threshold: float = 0.7
     student_id_digits_cell_margin_frac: float = 0.06  # margin inside each cell for OCR crop
     bubble_column_vert_gap: pint.Quantity = 12 * _ureg.pxl  # vertical gap between bubble centers in a column
 
-    qr_ul: Tuple[pint.Quantity, pint.Quantity] = (6.0 * _ureg.inch, 2.5 * _ureg.inch)
+    qr_ul: Tuple[pint.Quantity, pint.Quantity] = (6.5 * _ureg.inch, 2.5 * _ureg.inch)
     qr_size: pint.Quantity = 1.5 * _ureg.cm
 
-    # # --- Bubble overlay parameters ---
+    warning_line_opacity: float = 0.75
+
     overlay_correct_choice_color: Tuple[int, int, int] = (0, 255, 0)  # green
     overlay_incorrect_choice_color: Tuple[int, int, int] = (0, 0, 255)  # red
-    # # parameters used by the reader
 
     bubble_field_num_questions_per_block: int = 5 # number of questions per block (vertical)
     bubble_field_num_cols: int = 3
@@ -154,30 +146,6 @@ class LayoutConfig:
     intrablock_row_gap: pint.Quantity = 60 * _ureg.pxl
     intrablock_choice_gap: pint.Quantity = 10 * _ureg.pxl
     intrablock_numbering_gap: pint.Quantity = 30 * _ureg.pxl
-
-    # # y-coordinate of the first row's bubbles in *normalized* coordinates
-    # first_row_top: float = 0.327
-
-    # # Vertical spacing between consecutive question rows *within a block*
-    # row_spacing: float = 0.026  # tune
-
-    # # Extra vertical gap *between* blocks (on top of row_spacing steps)
-    # block_gap: float = 0.0226   # tune
-
-    # # --- Horizontal structure ---
-
-    # # x-coordinate of the first column's 'a' bubble (Q1) in normalized coords
-    # first_col_left: float = 0.203
-
-    # # Horizontal spacing between columns (distance from col c to col c+1
-    # # for the 'a' bubble of the same row)
-    # col_spacing: float = 0.1899   # tune
-
-    # # Horizontal spacing between choices (a->b, b->c, etc.), normalized
-    # choice_spacing: float = 0.0263
-
-    # # --- Bubble reading parameters ---
-
 
 class AnswerSheetGenerator:
     def __init__(self, layout_config: LayoutConfig, question_list: Optional[List[dict]] = None):
@@ -271,17 +239,19 @@ class AnswerSheetGenerator:
         # place the label "Student ID:" to the left of the boxes
         main_label_x = ul_x - (0.1*_ureg.inch).to(_ureg.cm).magnitude
         main_label_y = ul_y - box_height / 2
+        sub_label_x = main_label_x + 0.25
         sub_label_y = main_label_y - 4.5 * (2*bubble_radius + vgap)
         lines.append(r'\node[anchor=east] at ('+f'{main_label_x}cm, {main_label_y}cm'+r') {\textbf{Student ID:}};')
         # place the label "Fill in bubbles for each digit" to the left of the bubbles
-        lines.append(r'\node[anchor=east,font=\footnotesize] at ('+f'{main_label_x}cm, {sub_label_y}cm'+r') {Fill in the bubble};')
-        lines.append(r'\node[anchor=east,font=\footnotesize] at ('+f'{main_label_x}cm, {sub_label_y-0.4}cm'+r') {for each digit};')
-        lines.append(r'\node[anchor=east,font=\footnotesize] at ('+f'{main_label_x}cm, {sub_label_y-0.8}cm'+r') {of your ID:};')
+        lines.append(r'\node[anchor=east,font=\footnotesize] at ('+f'{sub_label_x}cm, {sub_label_y}cm'+r') {Fill in the bubble};')
+        lines.append(r'\node[anchor=east,font=\footnotesize] at ('+f'{sub_label_x}cm, {sub_label_y-0.4}cm'+r') {for each digit};')
+        lines.append(r'\node[anchor=east,font=\footnotesize] at ('+f'{sub_label_x}cm, {sub_label_y-0.8}cm'+r') {of your ID:};')
         lines.append(r"\end{tikzpicture}")
         return "\n".join(lines)
 
     def _place_qr_code(self, version_label: str = "") -> str:
         config = self.layout_config
+        opacity = config.warning_line_opacity
         ul_x = config.qr_ul[0].to(_ureg.cm).magnitude
         ul_y = -config.qr_ul[1].to(_ureg.cm).magnitude
         size = config.qr_size.to(_ureg.cm).magnitude
@@ -294,7 +264,7 @@ class AnswerSheetGenerator:
         lines.append(r"\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]")
         # draw bounding box
         lines.append(
-            rf"\draw[line width=0.4pt,opacity=0.5] "
+            rf"\draw[line width=0.4pt,opacity={opacity}] "
             f"({bb_ul_x}cm, {bb_ul_y}cm) rectangle ({bb_ul_x + bb_w}cm, {bb_ul_y - bb_h}cm);"
         )
         lines.append(
@@ -303,9 +273,9 @@ class AnswerSheetGenerator:
         )
         # add warning text below the QR code
         lines.append(
-            rf"\node[anchor=north,opacity=0.5] at ({ul_x + size/2}cm, {ul_y + 0.6}cm) "
+            rf"\node[anchor=north,opacity={opacity}] at ({ul_x + size/2}cm, {ul_y + 0.6}cm) "
             r" {\footnotesize \textit{Make no marks}};"
-            rf"\node[anchor=north,opacity=0.5] at ({ul_x + size/2}cm, {ul_y - size - 0.1}cm) "
+            rf"\node[anchor=north,opacity={opacity}] at ({ul_x + size/2}cm, {ul_y - size - 0.1}cm) "
             r" {\footnotesize \textit{in this box}};"
         )
         lines.append(r"\end{tikzpicture}")
@@ -326,10 +296,11 @@ class AnswerSheetGenerator:
         bubble_text_depth = config.bubble_text_depth.to(_ureg.cm).magnitude
 
         num_questions = config.num_questions
-        assert num_questions == len(self.question_list) if self.question_list is not None else True
+        assert num_questions == len(self.question_list) if self.question_list is not None else True, f'num_questions {num_questions} != len(question_list) {len(self.question_list) if self.question_list is not None else "None"}'
         choice_keys = {'mcq': ["a", "b", "c", "d"], 'tf': ["T", "F"]}
 
         lines: list[str] = []
+        opacity = config.warning_line_opacity
 
         n_whole_blocks = num_questions // blocksize
         n_partial_block = 1 if (num_questions % blocksize) > 0 else 0
@@ -380,6 +351,7 @@ class AnswerSheetGenerator:
     def _place_boundary_warnings(self) -> str:
         # vertical line just to right of western indicials
         config = self.layout_config
+        opacity = config.warning_line_opacity
         lines: list[str] = []
         west_x = config.indicial_west_offset + config.indicial_sep + 0.5 * _ureg.cm
         east_x = config.canonical_width + config.indicial_east_offset - config.indicial_sep - 0.5 * _ureg.cm
@@ -388,37 +360,37 @@ class AnswerSheetGenerator:
         lines.append(r"\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]")
         # left vertical line
         lines.append(
-            rf"\draw[line width=0.4pt,opacity=0.5] "
+            rf"\draw[line width=0.4pt,opacity={opacity}] "
             f"({west_x.to(_ureg.cm).magnitude}cm, {top_y.to(_ureg.cm).magnitude}cm) -- "
             f"({west_x.to(_ureg.cm).magnitude}cm, {bottom_y.to(_ureg.cm).magnitude}cm);"
         )
         # right vertical line
         lines.append(
-            rf"\draw[line width=0.4pt,opacity=0.5] "
+            rf"\draw[line width=0.4pt,opacity={opacity}] "
             f"({east_x.to(_ureg.cm).magnitude}cm, {top_y.to(_ureg.cm).magnitude}cm) -- "
             f"({east_x.to(_ureg.cm).magnitude}cm, {bottom_y.to(_ureg.cm).magnitude}cm);"
         )
         # top horizontal line
         lines.append(
-            rf"\draw[line width=0.4pt,opacity=0.5] "
+            rf"\draw[line width=0.4pt,opacity={opacity}] "
             f"({west_x.to(_ureg.cm).magnitude}cm, {top_y.to(_ureg.cm).magnitude}cm) -- "
             f"({east_x.to(_ureg.cm).magnitude}cm, {top_y.to(_ureg.cm).magnitude}cm);"
         )
         # bottom horizontal line
         lines.append(
-            rf"\draw[line width=0.4pt,opacity=0.5] "
+            rf"\draw[line width=0.4pt,opacity={opacity}] "
             f"({west_x.to(_ureg.cm).magnitude}cm, {bottom_y.to(_ureg.cm).magnitude}cm) -- "
             f"({east_x.to(_ureg.cm).magnitude}cm, {bottom_y.to(_ureg.cm).magnitude}cm);"
         )
         # write messages near each line
         lines.append(
-            rf"\node[anchor=east,font=\footnotesize,rotate=90,opacity=0.5] at "
+            rf"\node[anchor=east,font=\footnotesize,rotate=90,opacity={opacity}] at "
             f"({west_x.to(_ureg.cm).magnitude - 0.4}cm, "
             f"{(0.5*(top_y+bottom_y)).to(_ureg.cm).magnitude}cm) "
             r" {Make no marks in the margins};"
         )
         lines.append(
-            rf"\node[anchor=west,font=\footnotesize,rotate=270,opacity=0.5] at "
+            rf"\node[anchor=west,font=\footnotesize,rotate=270,opacity={opacity}] at "
             f"({east_x.to(_ureg.cm).magnitude + 0.4}cm, "
             f"{(0.5*(top_y+bottom_y)).to(_ureg.cm).magnitude}cm) "
             r" {Make no marks in the margins};"
@@ -431,36 +403,22 @@ class AnswerSheetGenerator:
 
     def generate_tex(self,
         version_label: str = "",
-        instructions: str = "",
     ) -> str:
-        """
-        Build a LaTeX answer sheet using \\circledletter for each choice.
-
-        - num_questions: total number of questions in the exam
-        - choice_keys: list of choice labels (e.g., ["a","b","c","d"]).
-        """
         config = self.layout_config
-        choice_keys = list(config.choice_keys)
-        if choice_keys is None or not choice_keys:
-            choice_keys = ["a", "b", "c", "d"]
-
-        choice_keys = sorted(choice_keys)
+        top = config.page_top_margin.to(_ureg.inch).magnitude
+        bottom = config.page_bottom_margin.to(_ureg.inch).magnitude
+        left = config.page_left_margin.to(_ureg.inch).magnitude
+        right = config.page_right_margin.to(_ureg.inch).magnitude
 
         lines: list[str] = []
-        lines.append(r"\thispagestyle{answersheet}")        
-        lines.append(rf"\newgeometry{{top={config.page_top_margin.to(_ureg.inch).magnitude}in,bottom={config.page_bottom_margin.to(_ureg.inch).magnitude}in,left={config.page_left_margin.to(_ureg.inch).magnitude}in,right={config.page_right_margin.to(_ureg.inch).magnitude}in}}")
+        lines.append(r"\thispagestyle{answersheet}")
+        lines.append(rf"\newgeometry{{top={top}in,bottom={bottom}in,left={left}in,right={right}in}}")
 
-        # indicial markers in four corners (slightly inset)
         lines.append(self._place_indicials_tex())
         lines.append(self._place_name_blank())
         lines.append(self._place_student_id_boxes())
         lines.append(self._place_qr_code(version_label=version_label))
         lines.append(self._place_bubblefield())
         lines.append(self._place_boundary_warnings())
-        # # Version + QR again on answer sheet page:
-        # lines.extend((r"\noindent " + instructions).splitlines())
-        # # Compact table settings
-        # lines.append(self._place_bubbles_tex())
-        # lines.append("")
 
         return "\n".join(lines)

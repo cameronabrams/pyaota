@@ -218,7 +218,7 @@ def make_exams_subcommand(args):
             question_list=selected_questions,
         )
 
-        answersheet_tex = answersheet_generator.generate_tex(DEFAULT_ANSWER_SHEET_INSTRUCTIONS)
+        answersheet_tex = answersheet_generator.generate_tex(version_label=version_label,)
 
         exam_doc_specs = dict(
             institution=args.institution,
@@ -254,7 +254,6 @@ def make_answersheet_subcommand(args):
     for i in range(num_tf):
         mock_question_list.append({'type': 'tf'})
     random.shuffle(mock_question_list)
-    print(mock_question_list)
     answersheet_generator = AnswerSheetGenerator(
         layout_config=layout_config,
         question_list=mock_question_list,
@@ -266,7 +265,7 @@ def make_answersheet_subcommand(args):
             'pdflatex': 'pdflatex',
             'build-dir': args.output_dir,
         },
-        'job-name': 'answer_sheet_sample',
+        'job-name': args.output_pdf,
     })
     exam_doc_specs = dict(
         institution="",
@@ -292,7 +291,6 @@ def tune_answersheetreader_subcommand(args):
         return
 
     img = np.array(images[-1])
-    print(f'image shape: {img.shape}')
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     answersheetreader = AnswerSheetReader(img=img, layout_config=LayoutConfig(
@@ -301,11 +299,10 @@ def tune_answersheetreader_subcommand(args):
 
     answersheetreader._find_indicials()
     answersheetreader._warp_to_canonical()
-    # answersheetreader._compute_bubble_centers()
     answersheetreader._read_student_id()
+    # answersheetreader.diagnose_qr_detection()
     answersheetreader._read_qr()
     answersheetreader._read_bubblefield()
-    # answersheetreader._read_bubbles()
     img = answersheetreader._diagnostic_overlay()
     output_path = Path(args.output_image)
     cv2.imwrite(str(output_path), img)
@@ -313,7 +310,7 @@ def tune_answersheetreader_subcommand(args):
 
 def autograde_subcommand(args):
     pdf = args.input_pdf
-    keyfile = args.keyfile
+    keyfiles = args.keyfiles
     answersheetlayoutyaml = args.answersheet_layout_yaml
     output_dir_path = Path(args.output_dir)
     debug_output_dir_path = Path(args.debug_output_dir)
@@ -324,11 +321,13 @@ def autograde_subcommand(args):
     if not debug_output_dir_path.exists():
         debug_output_dir_path.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Autograding PDF {pdf} using keyfile {keyfile} and layout {answersheetlayoutyaml}")
+    logger.info(f"Autograding PDF {pdf} using keyfiles {keyfiles} and layout {answersheetlayoutyaml}")
     layout_config: LayoutConfig = read_answer_sheet_layout_yaml(answersheetlayoutyaml)
 
     autograder = Autograder(layout_config=layout_config)
-    autograder.load_version_keys_csv(keyfile)
+    for keyfile in keyfiles:
+        autograder.load_version_keys_csv(keyfile)
+        
     autograder.grade_pdf(pdf, output_dir_path=output_dir_path, 
         debug_output_dir_path=debug_output_dir_path, 
         gradesheet_output_csv_path=gradesheet_output_csv_path,

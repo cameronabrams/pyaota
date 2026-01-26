@@ -81,9 +81,9 @@ class AnswerSheetReader:
     def read(self) -> dict[str, Any]:
         self._find_indicials()
         self._warp_to_canonical()
-        self._read_bubbles()
         self._read_qr()
         self._read_student_id()
+        self._read_bubblefield()
         return self.results
         
     def _find_indicials(self):
@@ -121,7 +121,9 @@ class AnswerSheetReader:
         
         for corner, (x1, y1, x2, y2) in search_regions.items():
             logger.debug(f"Indicial search region {corner}: ({x1}, {y1}) to ({x2}, {y2})")
-            
+            # draw the search region on diagnostic image
+            if self.diagnostics.get('debug_image') is not None:
+                cv2.rectangle(self.diagnostics['debug_image'], (x1, y1), (x2, y2), (255, 0, 0), 2)
             # Extract search region
             sub = bin_inv[y1:y2, x1:x2]
             
@@ -268,13 +270,13 @@ class AnswerSheetReader:
         cv2.imwrite(str(overlay_path), out_img)         
 
 
-    def write_debug_output(self,
-        version_label: str = None,
-    ):
-        overlay_path = self.debug_output_path / f"debug_page_{version_label}.png"
-        overlay_img = self._diagnostic_overlay()
-        cv2.imwrite(str(overlay_path), overlay_img)
-        logger.debug(f"Debug overlay written to {overlay_path}")
+    # def write_debug_output(self,
+    #     version_label: str = None,
+    # ):
+    #     overlay_path = self.debug_output_path / f"debug_page_{version_label}.png"
+    #     overlay_img = self._diagnostic_overlay()
+    #     cv2.imwrite(str(overlay_path), overlay_img)
+    #     logger.debug(f"Debug overlay written to {overlay_path}")
 
     # def _diagnostic_overlay(self, version_str: str = None):
     #     config = self.layout_config
@@ -486,7 +488,7 @@ class AnswerSheetReader:
 
     #     # bubble scores overlay in warped image, so unwarp the centers
     #     scores = self.diagnostics.get('bubble_scores', {})
-    #     # print(f"Bubble scores: {scores}")
+    #     # logger.debug(f"Bubble scores: {scores}")
     #     all_vals = list(scores.values())
     #     if all_vals:
     #         vmin, vmax = min(all_vals), max(all_vals)
@@ -527,7 +529,7 @@ class AnswerSheetReader:
         # Source points: detected indicials in image coordinates
         (nw, ne, sw, se) = indicials['nw'], indicials['ne'], indicials['sw'], indicials['se']
         pts_src = np.float32([nw, ne, sw, se])
-        print(f'WARP TO CANONICAL: source indicials = {pts_src}')
+        logger.debug(f'WARP TO CANONICAL: source indicials = {pts_src}')
         # Destination points: known indicial positions in page coordinates (pixels)
         config = self.layout_config
         
@@ -550,11 +552,11 @@ class AnswerSheetReader:
         )
         
         pts_dst = np.float32([nw_page, ne_page, sw_page, se_page])
-        print(f'WARP TO CANONICAL: dest indicials = {pts_dst}')
+        logger.debug(f'WARP TO CANONICAL: dest indicials = {pts_dst}')
         # Output size: full page dimensions in pixels
         page_width_px = int(config.canonical_width.to('pxl').magnitude)
         page_height_px = int(config.canonical_height.to('pxl').magnitude)
-        print(f'WARP TO CANONICAL: page size = {page_width_px} x {page_height_px} px')
+        logger.debug(f'WARP TO CANONICAL: page size = {page_width_px} x {page_height_px} px')
         out_w = page_width_px
         out_h = page_height_px
 
@@ -580,99 +582,99 @@ class AnswerSheetReader:
         self.diagnostics['warp_matrix_inv'] = M_inv
         self.diagnostics['warped_size'] = (out_h, out_w)
 
-    def _compute_bubble_centers(self):
-        """
-        Compute bubble centers (in pixel coordinates of the warped image)
-        for each (question_number, choice_key), using a column-major layout
-        with blocks of `rows_per_block` questions and extra gaps between blocks.
+    # def _compute_bubble_centers(self):
+    #     """
+    #     Compute bubble centers (in pixel coordinates of the warped image)
+    #     for each (question_number, choice_key), using a column-major layout
+    #     with blocks of `rows_per_block` questions and extra gaps between blocks.
 
-        Column-major numbering:
-        - Let rows = ceil(num_questions / num_cols)
-        - Column 0 has questions 1..rows
-        - Column 1 has rows+1..2*rows
-        - etc.
-        """
-        img_shape = self.img.shape
-        h, w = img_shape[:2]
-        num_questions = self.layout_config.num_questions
-        choices = list(self.layout_config.choice_keys)
-        num_cols = self.layout_config.num_cols
-        rows_per_block = self.layout_config.rows_per_block
+    #     Column-major numbering:
+    #     - Let rows = ceil(num_questions / num_cols)
+    #     - Column 0 has questions 1..rows
+    #     - Column 1 has rows+1..2*rows
+    #     - etc.
+    #     """
+    #     img_shape = self.img.shape
+    #     h, w = img_shape[:2]
+    #     num_questions = self.layout_config.num_questions
+    #     choices = list(self.layout_config.choice_keys)
+    #     num_cols = self.layout_config.num_cols
+    #     rows_per_block = self.layout_config.rows_per_block
 
-        # questions are ordered column-wise and grouped into blocks of rows_per_block that cannot be broken except in the very last block of the very last column
-        # so rows must be a multiple of rows_per_block, and there may be empty rows in the last column
-        # padded number of questions is the smallest multiple of (num_cols * rows_per_block) >= num_questions
-        total_rows = ((num_questions + num_cols * rows_per_block - 1) // (num_cols * rows_per_block)) * rows_per_block
+    #     # questions are ordered column-wise and grouped into blocks of rows_per_block that cannot be broken except in the very last block of the very last column
+    #     # so rows must be a multiple of rows_per_block, and there may be empty rows in the last column
+    #     # padded number of questions is the smallest multiple of (num_cols * rows_per_block) >= num_questions
+    #     total_rows = ((num_questions + num_cols * rows_per_block - 1) // (num_cols * rows_per_block)) * rows_per_block
 
-        centers: Dict[Tuple[int, str], Tuple[int, int]] = {}
+    #     centers: Dict[Tuple[int, str], Tuple[int, int]] = {}
 
-        for c in range(num_cols):  # column index
-            for r in range(total_rows):  # row index within column
-                qnum = r + c * total_rows + 1
-                if qnum > num_questions:
-                    continue
+    #     for c in range(num_cols):  # column index
+    #         for r in range(total_rows):  # row index within column
+    #             qnum = r + c * total_rows + 1
+    #             if qnum > num_questions:
+    #                 continue
 
-                # Compute vertical position, accounting for blocks of rows_per_block
-                block_idx = r // rows_per_block
-                row_in_block = r % rows_per_block
+    #             # Compute vertical position, accounting for blocks of rows_per_block
+    #             block_idx = r // rows_per_block
+    #             row_in_block = r % rows_per_block
 
-                # base_y in normalized coordinates
-                y_norm = (
-                    self.layout_config.first_row_top
-                    + block_idx * (
-                        self.layout_config.rows_per_block * self.layout_config.row_spacing
-                        + self.layout_config.block_gap
-                    )
-                    + row_in_block * self.layout_config.row_spacing
-                )
+    #             # base_y in normalized coordinates
+    #             y_norm = (
+    #                 self.layout_config.first_row_top
+    #                 + block_idx * (
+    #                     self.layout_config.rows_per_block * self.layout_config.row_spacing
+    #                     + self.layout_config.block_gap
+    #                 )
+    #                 + row_in_block * self.layout_config.row_spacing
+    #             )
 
-                # Horizontal position for this column's 'a' bubble
-                x_norm_base = self.layout_config.first_col_left + c * self.layout_config.col_spacing
-                for j, key in enumerate(choices):
-                    x_norm = x_norm_base + j * self.layout_config.choice_spacing
-                    cx = int(x_norm * w)
-                    cy = int(y_norm * h)
-                    centers[(qnum, key)] = (cx, cy)
+    #             # Horizontal position for this column's 'a' bubble
+    #             x_norm_base = self.layout_config.first_col_left + c * self.layout_config.col_spacing
+    #             for j, key in enumerate(choices):
+    #                 x_norm = x_norm_base + j * self.layout_config.choice_spacing
+    #                 cx = int(x_norm * w)
+    #                 cy = int(y_norm * h)
+    #                 centers[(qnum, key)] = (cx, cy)
 
-        self.diagnostics['bubbles'] = centers
+    #     self.diagnostics['bubbles'] = centers
 
-    def _measure_fill_ratio(
-        self,
-        gray: np.ndarray,
-        center: Tuple[int, int],
-        radius_px: int,
-    ) -> float:
-        """
-        Measure the fraction of dark pixels inside a circular region around `center`.
-        """
-        h, w = gray.shape
-        cx, cy = center
-        if radius_px <= 0:
-            return 0.0
+    # def _measure_fill_ratio(
+    #     self,
+    #     gray: np.ndarray,
+    #     center: Tuple[int, int],
+    #     radius_px: int,
+    # ) -> float:
+    #     """
+    #     Measure the fraction of dark pixels inside a circular region around `center`.
+    #     """
+    #     h, w = gray.shape
+    #     cx, cy = center
+    #     if radius_px <= 0:
+    #         return 0.0
 
-        y_min = max(cy - radius_px, 0)
-        y_max = min(cy + radius_px, h - 1)
-        x_min = max(cx - radius_px, 0)
-        x_max = min(cx + radius_px, w - 1)
+    #     y_min = max(cy - radius_px, 0)
+    #     y_max = min(cy + radius_px, h - 1)
+    #     x_min = max(cx - radius_px, 0)
+    #     x_max = min(cx + radius_px, w - 1)
 
-        patch = gray[y_min:y_max + 1, x_min:x_max + 1]
-        if patch.size == 0:
-            return 0.0
+    #     patch = gray[y_min:y_max + 1, x_min:x_max + 1]
+    #     if patch.size == 0:
+    #         return 0.0
 
-        # Create circular mask
-        yy, xx = np.ogrid[y_min:y_max+1, x_min:x_max+1]
-        mask = (xx - cx)**2 + (yy - cy)**2 <= radius_px**2
+    #     # Create circular mask
+    #     yy, xx = np.ogrid[y_min:y_max+1, x_min:x_max+1]
+    #     mask = (xx - cx)**2 + (yy - cy)**2 <= radius_px**2
 
-        if not mask.any():
-            return 0.0
+    #     if not mask.any():
+    #         return 0.0
 
-        roi = patch[mask]
-        # Normalize intensities (0=black, 1=white-ish)
-        roi_float = roi.astype(np.float32) / 255.0
+    #     roi = patch[mask]
+    #     # Normalize intensities (0=black, 1=white-ish)
+    #     roi_float = roi.astype(np.float32) / 255.0
 
-        # "Darkness" = 1 - mean intensity
-        darkness = 1.0 - float(np.mean(roi_float))
-        return darkness
+    #     # "Darkness" = 1 - mean intensity
+    #     darkness = 1.0 - float(np.mean(roi_float))
+    #     return darkness
 
 
     def _read_bubblefield(self):
@@ -736,21 +738,21 @@ class AnswerSheetReader:
                     block_row_gap_px * blocksize + block_gap_px[1]
                 )
                 # write an X at the block origin for debugging
-                if debug_image is not None:
-                    cv2.line(
-                        debug_image,
-                        (x_col_px - 10, y_block_start_px - 10),
-                        (x_col_px + 10, y_block_start_px + 10),
-                        (255, 0, 0),
-                        2
-                    )
-                    cv2.line(
-                        debug_image,
-                        (x_col_px - 10, y_block_start_px + 10),
-                        (x_col_px + 10, y_block_start_px - 10),
-                        (255, 0, 0),
-                        2
-                    )   
+                # if debug_image is not None:
+                #     cv2.line(
+                #         debug_image,
+                #         (x_col_px - 10, y_block_start_px - 10),
+                #         (x_col_px + 10, y_block_start_px + 10),
+                #         (255, 0, 0),
+                #         2
+                #     )
+                #     cv2.line(
+                #         debug_image,
+                #         (x_col_px - 10, y_block_start_px + 10),
+                #         (x_col_px + 10, y_block_start_px - 10),
+                #         (255, 0, 0),
+                #         2
+                #     )   
                 for row in range(blocksize):
                     if qidx >= num_questions:
                         break
@@ -771,21 +773,21 @@ class AnswerSheetReader:
                     x_choices_px = x_col_px + block_numbering_gap_px
                     
                     # draw an X in the debug image at the center of the first choice bubble
-                    if debug_image is not None:
-                        cv2.line(
-                            debug_image,
-                            (x_choices_px - 10, y_base_px - 10),
-                            (x_choices_px + 10, y_base_px + 10),
-                            (0, 0, 255),
-                            2
-                        )
-                        cv2.line(
-                            debug_image,
-                            (x_choices_px - 10, y_base_px + 10),
-                            (x_choices_px + 10, y_base_px - 10),
-                            (0, 0, 255),
-                            2
-                        )
+                    # if debug_image is not None:
+                    #     cv2.line(
+                    #         debug_image,
+                    #         (x_choices_px - 10, y_base_px - 10),
+                    #         (x_choices_px + 10, y_base_px + 10),
+                    #         (0, 0, 255),
+                    #         2
+                    #     )
+                    #     cv2.line(
+                    #         debug_image,
+                    #         (x_choices_px - 10, y_base_px + 10),
+                    #         (x_choices_px + 10, y_base_px - 10),
+                    #         (0, 0, 255),
+                    #         2
+                    #     )
 
                     # Check each bubble for this question
                     bubble_fills = []  # (choice_key, fill_percentage)
@@ -827,61 +829,173 @@ class AnswerSheetReader:
                         # Threshold and count dark pixels
                         _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
                         fill_pct = np.sum(binary > 0) / len(masked_pixels)
-                        bubble_fills.append((key, fill_pct))
+                        bubble_fills.append((key, fill_pct, x_bubble_px, y_bubble_px))
                     
                     # Determine answer based on filled bubbles
                     threshold = config.fill_ratio_threshold
-                    filled = [(choice, pct) for choice, pct in bubble_fills if pct >= threshold]
+                    filled = [(choice, pct, x, y) for choice, pct, x, y in bubble_fills if pct >= threshold]
                     
                     if len(filled) == 0:
                         answers.append("?")  # No bubble filled
                     elif len(filled) == 1:
                         answers.append(filled[0][0])
+                        # draw a slightly enlarged circle around the filled-in choice
+                        x, y = filled[0][2], filled[0][3]
+                        if debug_image is not None:
+                            cv2.circle(
+                                debug_image,
+                                (x, y),
+                                int(bubble_radius_px*1.05),
+                                (190, 25, 25),
+                                3
+                            )
                     else:
                         # Multiple bubbles filled - pick darkest one
                         filled.sort(key=lambda x: x[1], reverse=True)
                         answers.append(filled[0][0])
+                        x, y = filled[0][2], filled[0][3]
+                        if debug_image is not None:
+                            cv2.circle(
+                                debug_image,
+                                (x, y),
+                                int(bubble_radius_px*1.05),
+                                (190, 25, 25),
+                                3
+                            )
                     
                     qidx += 1
         
         self.results['answers'] = answers
-        return answers
 
-    def _read_bubble_field(self) -> Dict[int, str]:
-        config = self.layout_config
-        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+    # def _read_bubble_field(self) -> Dict[int, str]:
+    #     config = self.layout_config
+    #     gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
 
-        h, w = gray.shape
-        bubble_radius = int(config.bubble_radius_frac * min(w, h))
+    #     h, w = gray.shape
+    #     bubble_radius = int(config.bubble_radius_frac * min(w, h))
 
-        self._compute_bubble_centers()
-        centers = self.diagnostics['bubbles']
+    #     self._compute_bubble_centers()
+    #     centers = self.diagnostics['bubbles']
 
-        scores: Dict[Tuple[int, str], float] = {}
-        for (qnum, key), center in centers.items():
-            darkness = self._measure_fill_ratio(gray, center, bubble_radius)
-            scores[(qnum, key)] = darkness
+    #     scores: Dict[Tuple[int, str], float] = {}
+    #     for (qnum, key), center in centers.items():
+    #         darkness = self._measure_fill_ratio(gray, center, bubble_radius)
+    #         scores[(qnum, key)] = darkness
 
-        answers: Dict[int, Optional[str]] = {}
-        by_question: Dict[int, List[Tuple[str, float]]] = {}
+    #     answers: Dict[int, Optional[str]] = {}
+    #     by_question: Dict[int, List[Tuple[str, float]]] = {}
 
-        for (qnum, key), dark in scores.items():
-            by_question.setdefault(qnum, []).append((key, dark))
+    #     for (qnum, key), dark in scores.items():
+    #         by_question.setdefault(qnum, []).append((key, dark))
 
-        for qnum, items in by_question.items():
-            items.sort(key=lambda kv: kv[1], reverse=True)
-            top_key, top_score = items[0]
-            runner_up_score = items[1][1] if len(items) > 1 else 0.0
-            if (
-                top_score >= config.fill_ratio_threshold
-                and top_score >= runner_up_score + config.runner_up_margin
-            ):
-                answers[qnum] = top_key
+    #     for qnum, items in by_question.items():
+    #         items.sort(key=lambda kv: kv[1], reverse=True)
+    #         top_key, top_score = items[0]
+    #         runner_up_score = items[1][1] if len(items) > 1 else 0.0
+    #         if (
+    #             top_score >= config.fill_ratio_threshold
+    #             and top_score >= runner_up_score + config.runner_up_margin
+    #         ):
+    #             answers[qnum] = top_key
+    #         else:
+    #             answers[qnum] = None
+
+    #     self.results['answers'] = answers
+    #     self.diagnostics['bubble_scores'] = scores
+    def diagnose_qr_detection(self):
+        """Diagnose QR code detection issues with detailed logging and visualization."""
+        img = self.img.copy()
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # 1. Check OpenCV version (some versions have bugs)
+        logger.info(f"OpenCV version: {cv2.__version__}")
+        
+        # 2. Try basic detection
+        detector = cv2.QRCodeDetector()
+        data, points, straight_qrcode = detector.detectAndDecode(img)
+        logger.info(f"Basic detection - Data: {data}, Points: {points}")
+        
+        if points is not None:
+            # Draw detected points
+            debug_img = img.copy()
+            points = points[0].astype(int)
+            cv2.polylines(debug_img, [points], True, (0, 255, 0), 3)
+            cv2.imwrite('qr_detected.png', debug_img)
+            logger.info("QR code detected! Saved debug image.")
+            return data
+        
+        # 3. Try different preprocessing approaches
+        preprocessing_methods = {
+            'original': gray,
+            'otsu_threshold': cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
+            'adaptive_mean': cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, 
+                                                cv2.THRESH_BINARY, 11, 2),
+            'adaptive_gaussian': cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                    cv2.THRESH_BINARY, 11, 2),
+            'equalized': cv2.equalizeHist(gray),
+            'blur_otsu': cv2.threshold(cv2.GaussianBlur(gray, (5, 5), 0), 0, 255, 
+                                    cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
+        }
+        
+        for name, processed in preprocessing_methods.items():
+            logger.info(f"Trying preprocessing: {name}")
+            
+            # Convert back to BGR if needed
+            if len(processed.shape) == 2:
+                processed_bgr = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
             else:
-                answers[qnum] = None
-
-        self.results['answers'] = answers
-        self.diagnostics['bubble_scores'] = scores
+                processed_bgr = processed
+            
+            data, points, _ = detector.detectAndDecode(processed_bgr)
+            
+            if data:
+                logger.info(f"SUCCESS with {name}: {data}")
+                cv2.imwrite(f'qr_success_{name}.png', processed_bgr)
+                return data
+            
+            # Save failed attempts for inspection
+            cv2.imwrite(f'qr_failed_{name}.png', processed)
+        
+        # 4. Try detect() separately to see if QR is found but not decoded
+        logger.info("Trying detect() without decode...")
+        retval, points = detector.detect(img)
+        if retval:
+            logger.info(f"QR code DETECTED but not decoded. Points: {points}")
+            debug_img = img.copy()
+            if points is not None:
+                pts = points[0].astype(int)
+                cv2.polylines(debug_img, [pts], True, (255, 0, 0), 3)
+                cv2.imwrite('qr_detected_not_decoded.png', debug_img)
+        else:
+            logger.warning("QR code not even detected")
+        
+        # 5. Try with different scales
+        logger.info("Trying different scales...")
+        for scale in [0.5, 0.75, 1.0, 1.5, 2.0]:
+            scaled = cv2.resize(img, None, fx=scale, fy=scale)
+            data, points, _ = detector.detectAndDecode(scaled)
+            if data:
+                logger.info(f"SUCCESS at scale {scale}: {data}")
+                return data
+        
+        # 6. Try pyzbar as alternative
+        try:
+            from pyzbar import pyzbar
+            logger.info("Trying pyzbar as alternative...")
+            decoded = pyzbar.decode(gray)
+            if decoded:
+                data = decoded[0].data.decode('utf-8')
+                logger.info(f"pyzbar SUCCESS: {data}")
+                return data
+        except ImportError:
+            logger.info("pyzbar not available (pip install pyzbar)")
+        
+        # 7. Check image statistics
+        logger.info(f"Image stats - Mean: {gray.mean():.1f}, Std: {gray.std():.1f}, "
+                f"Min: {gray.min()}, Max: {gray.max()}")
+        
+        logger.error("All QR detection methods failed")
+        return None
 
     def _read_qr(self):
         """
@@ -889,7 +1003,10 @@ class AnswerSheetReader:
         """
         config = self.layout_config
         detector = cv2.QRCodeDetector()
-        h, w = self.img.shape[:2]
+        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=0.5, fy=0.5)
+
+        h, w = gray.shape[:2]
         qr_ul_pxl = (
             int(config.qr_ul[0].to('pxl').magnitude),
             int(config.qr_ul[1].to('pxl').magnitude),
@@ -913,21 +1030,24 @@ class AnswerSheetReader:
                 (255, 0, 99),
                 3,
             )
-
-        self.diagnostics['qr_crop_region'] = {
-            'upper_left': (x0, y0),
-            'lower_right': (x1, y1),
-        }
+        # write the debug image
+        if self.diagnostics.get('debug_image') is not None:
+            debug_img_path = self.debug_output_path / f"qr.png"
+            cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
+        # self.diagnostics['qr_crop_region'] = {
+        #     'upper_left': (x0, y0),
+        #     'lower_right': (x1, y1),
+        # }
 
         # First: try on the whole image
-        data, points, _ = detector.detectAndDecode(self.img)
+        data, points, _ = detector.detectAndDecode(gray)
         if data:
             self.results['version'] = data.strip()
-            print(f"QR code detected in full image: {self.results['version']}")
+            logger.debug(f"QR code detected in full image: {self.results['version']}")
         else:
             # If that fails, try cropping the top-right region where we know the QR lives
 
-            roi = self.img[y0:y1, x0:x1]
+            roi = gray[y0:y1, x0:x1]
             data, points, _ = detector.detectAndDecode(roi)
             if data:
                 self.results['version'] = data.strip()
@@ -962,6 +1082,7 @@ class AnswerSheetReader:
         gap_px = int(config.student_id_digit_boxes_horiz_gap.to('pxl').magnitude)
         vgap_px = int(config.bubble_column_vert_gap.to('pxl').magnitude)
         bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
+        debug_image = self.diagnostics.get('debug_image', None)
         
         # Spacing between bubble centers (matches TikZ: 2*radius + vgap)
         spacing_px = 2 * bubble_radius_px + vgap_px
@@ -981,14 +1102,13 @@ class AnswerSheetReader:
                 bubble_center_y = ul_y_px + box_height_px + vgap_px + bubble_radius_px + spacing_px * j
                 
                 # draw a circle at the bubble center for diagnostics
-                debug_image = self.diagnostics.get('debug_image', None)
                 if debug_image is not None:
                     cv2.circle(
                         debug_image,
                         (col_center_x, bubble_center_y),
                         bubble_radius_px,
                         (0, 255, 0),
-                        1,
+                        2,
                     )
 
                 id_bubble_centers_px[(i, j)] = (col_center_x, bubble_center_y)
@@ -1016,20 +1136,38 @@ class AnswerSheetReader:
                 # Threshold and count dark pixels
                 _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
                 fill_pct = np.sum(binary > 0) / len(masked_pixels)
-                bubble_fills.append((j, fill_pct))
+                bubble_fills.append((j, fill_pct, col_center_x, bubble_center_y))
             
             # Find most filled bubble above threshold
             threshold = config.fill_ratio_threshold
-            filled = [(d, f) for d, f in bubble_fills if f >= threshold]
+            filled = [(d, f, x, y) for d, f, x, y in bubble_fills if f >= threshold]
             
             if len(filled) == 0:
                 id_digits.append("?")  # No bubble filled
             elif len(filled) == 1:
                 id_digits.append(str(filled[0][0]))
+                x, y = filled[0][2], filled[0][3]
+                if debug_image is not None:
+                    cv2.circle(
+                        debug_image,
+                        (x, y),
+                        int(bubble_radius_px*1.05),
+                        (195, 25, 25),
+                        3,
+                    )
             else:
                 # Multiple bubbles filled - pick darkest one
                 filled.sort(key=lambda x: x[1], reverse=True)
                 id_digits.append(str(filled[0][0]))
+                x, y = filled[0][2], filled[0][3]
+                if debug_image is not None:
+                    cv2.circle(
+                        debug_image,
+                        (x, y),
+                        int(bubble_radius_px*1.05),
+                        (195, 25, 25),
+                        3,
+                    )
         
         # If all blanks, treat as no ID
         if all(d == "?" for d in id_digits):
@@ -1122,7 +1260,7 @@ class AnswerSheetReader:
             inner_boxes.append((ix0, iy0, ix1, iy1))
             debug_image = self.diagnostics.get('debug_image', None)
             if debug_image is not None:
-                print(f'ID OCR: digit {i+1}, outer box=({box_x0},{box_y0})-({box_x1},{box_y1}), inner box=({ix0},{iy0})-({ix1},{iy1})')
+                logger.debug(f'ID OCR: digit {i+1}, outer box=({box_x0},{box_y0})-({box_x1},{box_y1}), inner box=({ix0},{iy0})-({ix1},{iy1})')
                 cv2.rectangle(
                     debug_image,
                     (ix0, iy0),

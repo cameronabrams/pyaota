@@ -47,13 +47,12 @@ class Autograder:
     """
     def __init__(self, layout_config: LayoutConfig):
         self.layout = layout_config
+        self.version_keys: Dict[str, List[str]] = {}
 
     def load_version_keys_csv(self, keys_csv_path: Path | str):
         if not os.path.exists(keys_csv_path):
             raise FileNotFoundError(f"Answer-key CSV not found: {keys_csv_path}")
-
-        self.version_keys: Dict[str, List[str]] = {}
-
+        current_number_of_keys = len(self.version_keys)
         with open(keys_csv_path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             fieldnames = reader.fieldnames or []
@@ -76,8 +75,10 @@ class Autograder:
                     else:
                         answers.append(val.lower() if val else "")
                 self.version_keys[version_label] = answers
-        logger.debug(f"Loaded version keys for {len(self.version_keys)} versions from {keys_csv_path}")
-
+        new_number_of_keys = len(self.version_keys)
+        logger.info(f"Loaded {new_number_of_keys - current_number_of_keys} new version keys from {keys_csv_path}")
+        logger.info(f"Total version keys loaded: {new_number_of_keys}")
+        
     def grade_pdf(self, 
         pdf_file_path: Path | str, 
         output_dir_path: [Path | str] = Path.cwd(),

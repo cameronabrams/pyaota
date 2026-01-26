@@ -124,6 +124,24 @@ class QuestionSet:
             logger.debug(f"  Selected question IDs: {selected_ids}")
             logger.debug(f"  Total selected so far: {len(selected_questions)}")
             logger.debug(f" Selected question IDs so far: {[q.get('id', 'N/A') for q in selected_questions]}")
+        # if we have not yet selected enough questions (due to rounding down), fill in from the start
+        while len(selected_questions) < num_questions:
+            for topic in ordered_topics:
+                if len(selected_questions) >= num_questions:
+                    break
+                pool = self.questions_by_topic.get(topic, [])
+                available = len(pool)
+                logger.debug(f"Filling in from topic '{topic}' with {available} available.")
+                # select one additional question from this topic
+                remaining_pool = [q for q in pool if q not in selected_questions]
+                if not remaining_pool:
+                    logger.debug(f"No remaining questions to select from topic '{topic}'.")
+                    continue
+                chosen = rng.choice(remaining_pool)
+                selected_questions.append(chosen)
+                logger.debug(f"Added question ID {chosen.get('id', 'N/A')} from topic '{topic}'.")
+                logger.debug(f" Total selected so far: {len(selected_questions)}")
+                logger.debug(f" Selected question IDs so far: {[q.get('id', 'N/A') for q in selected_questions]}")
 
         if shuffle:
             logger.debug('Shuffling selected questions.')

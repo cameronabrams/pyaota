@@ -47,7 +47,7 @@ questions:
   answer: True
 - id: 5
   type: mcq
-  topic: General Science
+  topic: Chemistry
   stem: 
    - type: text
      text: What is the chemical symbol for gold?
@@ -1235,3 +1235,118 @@ questions:
     - type: text
       text: Cholesterol is always harmful to the body.
   answer: False
+- id: 108
+  type: mcq
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: What are the three main layers of the Earth?
+  choices:
+    - key: a
+      text: Crust, mantle, core
+    - key: b
+      text: Lithosphere, asthenosphere, mesosphere
+    - key: c
+      text: Inner core, outer core, crust
+    - key: d
+      text: Soil, rock, magma
+  correct: a
+- id: 109
+  type: mcq
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: What is the process by which water changes from a liquid to a gas?
+  choices:
+    - key: a
+      text: Condensation
+    - key: b
+      text: Evaporation
+    - key: c
+      text: Precipitation
+    - key: d
+      text: Sublimation
+  correct: b
+- id: 110
+  type: mcq
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: Which type of plate boundary occurs when two plates move apart?
+  choices:
+    - key: a
+      text: Convergent
+    - key: b
+      text: Divergent
+    - key: c
+      text: Transform
+    - key: d
+      text: Subduction
+  correct: b
+- id: 111
+  type: mcq
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: What is the most abundant gas in Earth's atmosphere?
+  choices:
+    - key: a
+      text: Oxygen
+    - key: b
+      text: Nitrogen
+    - key: c
+      text: Carbon dioxide
+    - key: d
+      text: Argon
+  correct: b
+- id: 112
+  type: mcq
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: Which scale is used to measure earthquake intensity?
+  choices:
+    - key: a
+      text: Richter scale
+    - key: b
+      text: Beaufort scale
+    - key: c
+      text: Mohs scale
+    - key: d
+      text: Fujita scale
+  correct: a
+- id: 113
+  type: tf
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: Weathering is the breakdown of rocks by physical or chemical processes.
+  answer: True
+- id: 114
+  type: tf
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: Sedimentary rocks are formed from molten magma.
+  answer: False
+- id: 115
+  type: tf
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: The mantle is the hottest layer of the Earth.
+  answer: False
+- id: 116
+  type: tf
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: Fossils are used to determine the age of rocks and the history of life on Earth.
+  answer: True
+- id: 117
+  type: tf
+  topic: Earth Science
+  stem: 
+    - type: text
+      text: Ocean trenches are formed at convergent plate boundaries.
+  answer: True
