@@ -151,6 +151,7 @@ class Autograder:
             for qnum in range(1, num_q + 1):
                 correct = (key[qnum - 1] or "").lower()
                 detected = read_results['answers'].get(qnum)
+                logger.debug(f' Grading Q{qnum}: correct="{correct}", detected="{detected}"')
                 detected_norm = (detected or "").lower() if detected else ""
                 is_correct = bool(correct) and (detected_norm == correct)
                 if is_correct:
@@ -180,6 +181,7 @@ class Autograder:
             results.append(page_result)
 
         if gradesheet_output_csv_path is not None:
+            new_results = []
             gradesheet_output_csv_path = Path(gradesheet_output_csv_path)
             # if this file exists, read it in and append to it if this ID-version combo is not already present
             if gradesheet_output_csv_path.exists():
@@ -189,7 +191,6 @@ class Autograder:
                     for row in reader:
                         existing_rows.append(row)
                 existing_combos = set((row["student_id"], row["version_label"]) for row in existing_rows)
-                new_results = []
                 for res in results:
                     combo = (res["student_id"], res["version_label"])
                     if combo not in existing_combos:

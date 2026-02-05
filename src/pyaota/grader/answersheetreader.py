@@ -1,6 +1,7 @@
 from pathlib import Path
 from ..generator.answersheet import LayoutConfig, _ureg
 from ..ocr.digit_ocr import ocr_digit_nn, load_digit_model
+from ..image.warper import two_stage_warp
 from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
 import cv2
@@ -84,7 +85,7 @@ class AnswerSheetReader:
         self.debug_output_path = debug_output_dir
         self.results = {}
         self.diagnostics = {'original_size': img.shape[:2]}  # (height, width)
-        self.diagnostics['debug_image'] = self.rawimg.copy()
+        self.diagnostics['debug_image'] = None # we'll save the warped image here
         if not self.debug_output_path.exists():
             self.debug_output_path.mkdir(parents=True, exist_ok=True)
 
@@ -100,9 +101,12 @@ class AnswerSheetReader:
         self._read_qr()
         self._read_student_id()
         self._read_bubblefield()
+        if self.diagnostics.get('debug_image') is not None:
+            debug_img_path = self.debug_output_path / f"debug_overlay_warped.png"
+            cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
         return self.results
         
-    def _find_indicials(self):
+    def _find_indicials(self) -> Dict[str, Tuple[int, int]]:
         """
         Detect indicial markers in the four corners of the answer sheet image.
 
@@ -191,10 +195,7 @@ class AnswerSheetReader:
             if self.diagnostics.get('debug_image') is not None:
                 cv2.circle(self.diagnostics['debug_image'], (global_x, global_y), 
                         int(expected_radius_px*2), (0, 255, 0), 4)
-        # save the image 
-        if self.diagnostics.get('debug_image') is not None:
-            debug_img_path = self.debug_output_path / f"indicials.png"
-            cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
+
         self.diagnostics['indicials'] = indicials
         return indicials
 
@@ -335,8 +336,8 @@ class AnswerSheetReader:
 
         # Source points: detected indicials in image coordinates
         (nw, ne, sw, se) = indicials['nw'], indicials['ne'], indicials['sw'], indicials['se']
-        pts_src = np.float32([nw, ne, sw, se])
-        logger.debug(f'WARP TO CANONICAL: source indicials = {pts_src}')
+        corner_indicials = np.float32([nw, ne, sw, se])
+        logger.debug(f'WARP TO CANONICAL: source indicials = {corner_indicials}')
         # Destination points: known indicial positions in page coordinates (pixels)
         config = self.layout_config
         
@@ -358,48 +359,62 @@ class AnswerSheetReader:
             config.indicial_se_location[1].to('pxl').magnitude
         )
         
-        pts_dst = np.float32([nw_page, ne_page, sw_page, se_page])
-        logger.debug(f'WARP TO CANONICAL: dest indicials = {pts_dst}')
-        # Output size: full page dimensions in pixels
-        page_width_px = int(config.canonical_width.to('pxl').magnitude)
-        page_height_px = int(config.canonical_height.to('pxl').magnitude)
-        logger.debug(f'WARP TO CANONICAL: page size = {page_width_px} x {page_height_px} px')
-        out_w = page_width_px
-        out_h = page_height_px
+        canonical_corners = np.float32([nw_page, ne_page, sw_page, se_page])
+        bubble_field = self._locate_bubbles()
 
-        # Compute transformation
-        M = cv2.getPerspectiveTransform(pts_src, pts_dst)
-        M_inv = cv2.getPerspectiveTransform(pts_dst, pts_src)
+        selected_bubbles_canonical_positions = []
+        for i in range(1, config.num_questions + 1, 5):
+            question_bubbles = [ bubble_field[(i, key)] for key in ( 'a', 'b', 'c', 'd' ) ]
+            logger.debug(f' Question {i} bubble positions: {question_bubbles}')
+            selected_bubbles_canonical_positions.append( question_bubbles[0] )  # take 'a' bubble position as representative
+        selected_bubbles_canonical_positions = np.float32(selected_bubbles_canonical_positions)
+
+        two_stage_warped, roughly_warped, detected_centers, valid = two_stage_warp(
+            raw_img=img,
+            corner_indicials=corner_indicials,
+            canonical_corners=canonical_corners,
+            bubble_canonical_positions=selected_bubbles_canonical_positions
+        )
+
+        self.img = two_stage_warped
+        self.diagnostics['debug_image'] = two_stage_warped.copy()
+
+        # logger.debug(f' Selected bubbles canonical positions: {selected_bubbles_canonical_positions}')
+
+        # logger.debug(f'WARP TO CANONICAL: dest indicials = {canonical_corners}')
+        # # Output size: full page dimensions in pixels
+        # page_width_px = int(config.canonical_width.to('pxl').magnitude)
+        # page_height_px = int(config.canonical_height.to('pxl').magnitude)
+        # logger.debug(f'WARP TO CANONICAL: page size = {page_width_px} x {page_height_px} px')
+        # out_w = page_width_px
+        # out_h = page_height_px
+
+        # # Compute transformation
+        # M = cv2.getPerspectiveTransform(corner_indicials, canonical_corners)
+        # M_inv = cv2.getPerspectiveTransform(canonical_corners, corner_indicials)
         
-        # Apply warp
-        warped = cv2.warpPerspective(img, M, (out_w, out_h))
+        # # Apply warp
+        # warped = cv2.warpPerspective(img, M, (out_w, out_h))
         
-        self.img = warped
+        # self.img = warped
         debug_img_path = self.debug_output_path / "warped_page.png"
         cv2.imwrite(str(debug_img_path), self.img)
+        debug_img_path_rough = self.debug_output_path / "roughly_warped_page.png"
+        cv2.imwrite(str(debug_img_path_rough), roughly_warped)
         # warp the debug image as well, if present
-        if self.diagnostics.get('debug_image') is not None:
-            debug_warped = cv2.warpPerspective(
-                self.diagnostics['debug_image'], M, (out_w, out_h)
-            )
-            self.diagnostics['debug_image'] = debug_warped
-            debug_img_path = self.debug_output_path / "indicials_warped.png"
-            cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
-        self.diagnostics['warp_matrix'] = M
-        self.diagnostics['warp_matrix_inv'] = M_inv
-        self.diagnostics['warped_size'] = (out_h, out_w)
+        # if self.diagnostics.get('debug_image') is not None:
+        #     debug_warped = cv2.warpPerspective(
+        #         self.diagnostics['debug_image'], M, (out_w, out_h)
+        #     )
+        #     self.diagnostics['debug_image'] = debug_warped
+        #     debug_img_path = self.debug_output_path / "indicials_warped.png"
+        #     cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
+        # self.diagnostics['warp_matrix'] = M
+        # self.diagnostics['warp_matrix_inv'] = M_inv
+        # self.diagnostics['warped_size'] = (out_h, out_w)
 
-    def _read_bubblefield(self):
-        """
-        Read all question answers from the bubble field.
-        
-        Returns a list of answers, one per question.
-        Each answer is either a choice key ('a', 'b', 'c', 'd', 'T', 'F') or '?' for unclear/unmarked.
-        """
+    def _locate_bubbles(self):
         config = self.layout_config
-        
-        # Image is already warped to canonical page coordinates
-        img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         
         # Convert layout positions to pixels
         field_ul_px = (
@@ -431,12 +446,11 @@ class AnswerSheetReader:
         
         max_len_choice_keys = max(len(v) for v in choice_keys.values())
         
-        answers = {} # key is qnumber (1-based), value is answer key or '?'
         qnum = 1
         
         debug_image = self.diagnostics.get('debug_image', None)
 
-        centers: Dict[Tuple[int, str], Tuple[int, int]] = {}  # For debugging: store bubble centers
+        centers: Dict[Tuple[int, str], Tuple[int, int]] = {} 
 
         for col in range(total_columns):
             # Calculate column x position (matches placement)
@@ -477,81 +491,128 @@ class AnswerSheetReader:
                     # draw an X in the debug image at the center of the first choice bubble
                     if debug_image is not None:
                         x_marks_the_spot(debug_image, x_choices_px, y_base_px)
-                    # Check each bubble for this question
-                    bubble_fills = []  # (choice_key, fill_percentage)
                     
                     for i, key in enumerate(choices):
                         # Calculate bubble center position
                         x_bubble_px = x_choices_px + i * (block_choice_gap_px + bubble_radius_px * 2)
                         y_bubble_px = y_base_px
                         centers[(qnum, key)] = (x_bubble_px, y_bubble_px)
-                        if debug_image is not None:
-                            cv2.circle(
-                                debug_image,
-                                (x_bubble_px, y_bubble_px),
-                                bubble_radius_px,
-                                (0, 255, 0),
-                                2
-                            )
-
-                        # Extract circular region
-                        x1 = x_bubble_px - bubble_radius_px
-                        x2 = x_bubble_px + bubble_radius_px
-                        y1 = y_bubble_px - bubble_radius_px
-                        y2 = y_bubble_px + bubble_radius_px
-                        
-                        if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
-                            continue
-                        
-                        bubble_roi = img_gray[y1:y2, x1:x2]
-                        
-                        # Create circular mask
-                        mask = np.zeros_like(bubble_roi, dtype=np.uint8)
-                        cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
-                        
-                        # Calculate fill percentage
-                        masked_pixels = bubble_roi[mask > 0]
-                        if len(masked_pixels) == 0:
-                            continue
-                        
-                        # Threshold and count dark pixels
-                        _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
-                        fill_pct = np.sum(binary > 0) / len(masked_pixels)
-                        bubble_fills.append((key, fill_pct, x_bubble_px, y_bubble_px))
-                    
-                    # Determine answer based on filled bubbles
-                    threshold = config.fill_ratio_threshold
-                    filled = [(choice, pct, x, y) for choice, pct, x, y in bubble_fills if pct >= threshold]
-                    
-                    if len(filled) == 0:
-                        answers[qnum] = "?"  # No bubble filled
-                    elif len(filled) == 1:
-                        answers[qnum] = filled[0][0]
-                        # draw a slightly enlarged circle around the filled-in choice
-                        x, y = filled[0][2], filled[0][3]
-                        if debug_image is not None:
-                            cv2.circle(
-                                debug_image,
-                                (x, y),
-                                int(bubble_radius_px*1.05),
-                                (190, 25, 25),
-                                3
-                            )
-                    else:
-                        # Multiple bubbles filled - pick darkest one
-                        filled.sort(key=lambda x: x[1], reverse=True)
-                        answers[qnum] = filled[0][0]
-                        x, y = filled[0][2], filled[0][3]
-                        if debug_image is not None:
-                            cv2.circle(
-                                debug_image,
-                                (x, y),
-                                int(bubble_radius_px*1.05),
-                                (190, 25, 25),
-                                3
-                            )
-                    
                     qnum += 1
+        self.diagnostics['bubbles'] = centers
+        return centers
+
+    def _read_bubblefield(self):
+        """
+        Read all question answers from the bubble field.
+        
+        Returns a list of answers, one per question.
+        Each answer is either a choice key ('a', 'b', 'c', 'd', 'T', 'F') or '?' for unclear/unmarked.
+        """
+        debug_image = self.diagnostics.get('debug_image', None)
+
+        if not 'bubbles' in self.diagnostics:
+            centers = self._locate_bubbles()
+        else:
+            centers = self.diagnostics['bubbles']
+
+        config = self.layout_config
+        for key in centers.keys():
+            x, y = centers[key]
+            if self.diagnostics.get('debug_image') is not None:
+                cv2.circle(
+                    self.diagnostics['debug_image'],
+                    (x, y),
+                    int(config.bubble_radius.to('pxl').magnitude),
+                    (255, 0, 255),
+                    2
+                )
+        img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
+
+        # loop over bubble centers, and for each question, determine filled bubbles
+        # centers is a dict mapping (qnum, choice_key) to (x_px, y_px)
+        bubble_fills = {}  # (choice_key, fill_percentage, x_px, y_px)
+        answers = {}
+        choice_keys = {'mcq': ["a", "b", "c", "d"], 'tf': ["T", "F"]}
+
+        for (qnum, choice_key), (x_px, y_px) in centers.items():
+            if not qnum in bubble_fills:
+                bubble_fills[qnum] = {}
+            # Get question type from question list if available
+            if hasattr(config, 'question_list') and config.question_list:
+                q = config.question_list[qnum - 1]
+                qtyp = q.get("type", "mcq").lower()
+            else:
+                qtyp = "mcq"  # Default
+            choices = choice_keys[qtyp]
+            
+            # Extract circular region
+            x1 = x_px - bubble_radius_px
+            x2 = x_px + bubble_radius_px
+            y1 = y_px - bubble_radius_px
+            y2 = y_px + bubble_radius_px
+            
+            if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
+                continue
+                        
+            bubble_roi = img_gray[y1:y2, x1:x2]
+            
+            # Create circular mask
+            mask = np.zeros_like(bubble_roi, dtype=np.uint8)
+            cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
+            
+            # Calculate fill percentage
+            masked_pixels = bubble_roi[mask > 0]
+            if len(masked_pixels) == 0:
+                continue
+            
+            # Threshold and count dark pixels
+            _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
+            fill_pct = np.sum(binary > 0) / len(masked_pixels)
+            bubble_fills[qnum][choice_key] = (fill_pct, x_px, y_px)
+        
+            # Determine answer based on filled bubbles
+        threshold = config.fill_ratio_threshold
+
+        for qnum in range(1, config.num_questions + 1):
+            # Get question type from question list if available
+            if hasattr(config, 'question_list') and config.question_list:
+                q = config.question_list[qnum - 1]
+                qtyp = q.get("type", "mcq").lower()
+            else:
+                qtyp = "mcq"  # Default
+            choices = choice_keys[qtyp]
+            
+            filled = [(choice, pct, x, y) for choice, (pct, x, y) in bubble_fills.get(qnum, {}).items() if pct >= threshold]
+            
+            if len(filled) == 0:
+                answers[qnum] = "?"  # No bubble filled
+            elif len(filled) == 1:
+                answers[qnum] = filled[0][0]
+                # draw a slightly enlarged circle around the filled-in choice
+                x, y = filled[0][2], filled[0][3]
+                if debug_image is not None:
+                    cv2.circle(
+                        debug_image,
+                        (x, y),
+                        int(bubble_radius_px*1.05),
+                        (190, 25, 25),
+                        3
+                    )
+            else:
+                # Multiple bubbles filled - pick darkest one
+                filled.sort(key=lambda x: x[1], reverse=True)
+                answers[qnum] = filled[0][0]
+                x, y = filled[0][2], filled[0][3]
+                if debug_image is not None:
+                    cv2.circle(
+                        debug_image,
+                        (x, y),
+                        int(bubble_radius_px*1.05),
+                        (190, 25, 25),
+                        3
+                    )
+        
         self.diagnostics['bubbles'] = centers
         self.results['answers'] = answers
 
