@@ -175,7 +175,7 @@ class Autograder:
                 reader.write_graded_annotations(
                     per_question_results=per_q,
                     score_fraction=page_result["score_fraction"],
-                    overlay_path=output_dir_path / f"graded_{read_results['student_id_bubbles']}_{read_results['version']}.png",
+                    overlay_path=output_dir_path / f"graded_{read_results['student_id_bubbles'].replace('?', 'x')}_{read_results['version']}.png",
                 )
 
             results.append(page_result)

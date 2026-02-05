@@ -1,7 +1,7 @@
 from pathlib import Path
 from ..generator.answersheet import LayoutConfig, _ureg
-from ..ocr.digit_ocr import ocr_digit_nn, load_digit_model
-from ..image.warper import two_stage_warp
+# from ..ocr.digit_ocr import ocr_digit_nn, load_digit_model
+from ..image.warper import warp
 from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
 import cv2
@@ -80,22 +80,22 @@ def get_digit_model():
 class AnswerSheetReader:
     def __init__(self, img: np.ndarray, layout_config: LayoutConfig, debug_output_dir: Path = Path("debug")):
         self.rawimg = img.copy()
-        self.img = None
+        self.img_original = img.copy()
+        self.working_image = None
+        self.original_size = img.shape[:2]  # (height, width)
         self.layout_config = layout_config
         self.debug_output_path = debug_output_dir
         self.results = {}
         self.diagnostics = {'original_size': img.shape[:2]}  # (height, width)
         self.diagnostics['debug_image'] = None # we'll save the warped image here
+        self.diagnostics['indicial_search_image'] = img.copy()
         if not self.debug_output_path.exists():
             self.debug_output_path.mkdir(parents=True, exist_ok=True)
 
-    def _diagnostic_overlay(self):
-        # return self.img
-        unwarped = cv2.warpPerspective(self.diagnostics['debug_image'], self.diagnostics['warp_matrix_inv'], 
-        self.diagnostics['original_size'][::-1])
-        return unwarped
-
     def read(self) -> dict[str, Any]:
+        self.img_original = self.rawimg.copy()
+        self.working_image = self.rawimg.copy()
+        self._right_size()
         self._find_indicials()
         self._warp_to_canonical()
         self._read_qr()
@@ -105,6 +105,22 @@ class AnswerSheetReader:
             debug_img_path = self.debug_output_path / f"debug_overlay_warped.png"
             cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
         return self.results
+
+    def _right_size(self):
+        """
+        resize the working image to the canonical page size
+        """
+        config = self.layout_config
+        CANONICAL_PAGE_WIDTH = int(config.canonical_width.to('pxl').magnitude)
+        CANONICAL_PAGE_HEIGHT = int(config.canonical_height.to('pxl').magnitude)
+        self.working_image = cv2.resize(
+            self.working_image,
+            (CANONICAL_PAGE_WIDTH, CANONICAL_PAGE_HEIGHT),
+            interpolation=cv2.INTER_LINEAR
+        )
+        # write this resized image
+        diag_img_path = self.debug_output_path / "resized_page.png"
+        cv2.imwrite(str(diag_img_path), self.working_image)
         
     def _find_indicials(self) -> Dict[str, Tuple[int, int]]:
         """
@@ -116,7 +132,7 @@ class AnswerSheetReader:
         Raises RuntimeError if any indicial cannot be found.
         """
         config = self.layout_config
-        img = self.rawimg.copy()
+        img = self.working_image.copy()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
         # Light background, dark dots/text → invert for contour detection
@@ -192,12 +208,93 @@ class AnswerSheetReader:
             logger.debug(f"Found {corner} indicial at ({global_x}, {global_y}), circularity={best_circularity:.3f}")
             
             # Optional: draw on diagnostic image
-            if self.diagnostics.get('debug_image') is not None:
-                cv2.circle(self.diagnostics['debug_image'], (global_x, global_y), 
+            if self.diagnostics.get('indicial_search_image') is not None:
+                cv2.circle(self.diagnostics['indicial_search_image'], (global_x, global_y), 
                         int(expected_radius_px*2), (0, 255, 0), 4)
+            # save the indicial search image
+        diag_img_path = self.debug_output_path / "indicials_detected.png"
+        cv2.imwrite(str(diag_img_path), self.diagnostics['indicial_search_image'])
 
         self.diagnostics['indicials'] = indicials
         return indicials
+
+    def _warp_to_canonical(self):
+        img = self.working_image.copy()
+        indicials = self.diagnostics['indicials']
+
+        # Source points: detected indicials in image coordinates
+        (nw, ne, sw, se) = indicials['nw'], indicials['ne'], indicials['sw'], indicials['se']
+        corner_indicials = np.float32([nw, ne, sw, se])
+        logger.debug(f'WARP TO CANONICAL: source indicials = {corner_indicials}')
+        # Destination points: known indicial positions in page coordinates (pixels)
+        config = self.layout_config
+        
+        # Convert indicial positions from physical units to pixels
+        nw_page = (
+            config.indicial_nw_location[0].to('pxl').magnitude,
+            config.indicial_nw_location[1].to('pxl').magnitude
+        )
+        ne_page = (
+            config.indicial_ne_location[0].to('pxl').magnitude,
+            config.indicial_ne_location[1].to('pxl').magnitude
+        )
+        sw_page = (
+            config.indicial_sw_location[0].to('pxl').magnitude,
+            config.indicial_sw_location[1].to('pxl').magnitude
+        )
+        se_page = (
+            config.indicial_se_location[0].to('pxl').magnitude,
+            config.indicial_se_location[1].to('pxl').magnitude
+        )
+        
+        canonical_corners = np.float32([nw_page, ne_page, sw_page, se_page])
+
+        warped = warp(
+            raw_img=img,
+            corner_indicials=corner_indicials,
+            canonical_corners=canonical_corners,
+            canonical_page_dimensions=(
+                config.canonical_width.to('pxl').magnitude,
+                config.canonical_height.to('pxl').magnitude
+            )
+        )
+
+        self.working_image = warped
+        self.diagnostics['debug_image'] = warped.copy()
+
+
+
+        # logger.debug(f' Selected bubbles canonical positions: {selected_bubbles_canonical_positions}')
+
+        # logger.debug(f'WARP TO CANONICAL: dest indicials = {canonical_corners}')
+        # # Output size: full page dimensions in pixels
+        # page_width_px = int(config.canonical_width.to('pxl').magnitude)
+        # page_height_px = int(config.canonical_height.to('pxl').magnitude)
+        # logger.debug(f'WARP TO CANONICAL: page size = {page_width_px} x {page_height_px} px')
+        # out_w = page_width_px
+        # out_h = page_height_px
+
+        # # Compute transformation
+        # M = cv2.getPerspectiveTransform(corner_indicials, canonical_corners)
+        # M_inv = cv2.getPerspectiveTransform(canonical_corners, corner_indicials)
+        
+        # # Apply warp
+        # warped = cv2.warpPerspective(img, M, (out_w, out_h))
+        
+        # self.img = warped
+        debug_img_path = self.debug_output_path / "warped_page.png"
+        cv2.imwrite(str(debug_img_path), self.working_image)
+        # warp the debug image as well, if present
+        # if self.diagnostics.get('debug_image') is not None:
+        #     debug_warped = cv2.warpPerspective(
+        #         self.diagnostics['debug_image'], M, (out_w, out_h)
+        #     )
+        #     self.diagnostics['debug_image'] = debug_warped
+        #     debug_img_path = self.debug_output_path / "indicials_warped.png"
+        #     cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
+        # self.diagnostics['warp_matrix'] = M
+        # self.diagnostics['warp_matrix_inv'] = M_inv
+        # self.diagnostics['warped_size'] = (out_h, out_w)
 
     def write_graded_annotations(self,
                     per_question_results: List[Dict[str, Any]],
@@ -220,13 +317,14 @@ class AnswerSheetReader:
         id_report_pos = (int(config.id_report_position[0].to('pxl').magnitude), int(config.id_report_position[1].to('pxl').magnitude))
         version_report_pos = (int(config.version_report_position[0].to('pxl').magnitude), int(config.version_report_position[1].to('pxl').magnitude))
         score_report_pos = (int(config.score_report_position[0].to('pxl').magnitude), int(config.score_report_position[1].to('pxl').magnitude))
-        overlay_img = self.img_original.copy()
+        # the overlay will stay warped
+        overlay_img = self.working_image.copy()
         bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude*1.05)
         centers = self.diagnostics['bubbles']
         center_coords = list(centers.values())
         pts_array = np.array(center_coords, dtype=np.float32).reshape(-1, 1, 2)
-        unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-        bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_center_coords]
+        # unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+        bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in pts_array]
         bubble_keys = list(centers.keys())
         max_y = 0
         sum_x = 0
@@ -284,8 +382,8 @@ class AnswerSheetReader:
             ur = (lr[0], ul[1])
             ll = (ul[0], lr[1])
             pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
-            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
+            # unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+            id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in pts_array]
             u_ul, u_ur, u_lr, u_ll = id_bubble_result_tuples
             cv2.putText(
                 overlay_img,
@@ -308,8 +406,8 @@ class AnswerSheetReader:
             ur = (lr[0], ul[1])
             ll = (ul[0], lr[1])
             pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
-            unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            qr_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in unwrapped_pts]
+            # unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
+            qr_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in pts_array]
             u_ul, u_ur, u_lr, u_ll = qr_result_tuples
             cv2.putText(
                 overlay_img,
@@ -322,96 +420,9 @@ class AnswerSheetReader:
                 cv2.LINE_AA,
             )
         
-        # unwarp
-        # unwarped_overlay = cv2.warpPerspective(overlay_img, self.diagnostics['warp_matrix_inv'],self.diagnostics['original_size'][::-1])
         # write to the path
         cv2.imwrite(str(overlay_path), overlay_img)
         logger.info(f'Wrote graded overlay image to {overlay_path}')
-
-    def _warp_to_canonical(self):
-        img = self.rawimg
-        self.img_original = img.copy()
-        self.original_size = img.shape[:2]  # (height, width)
-        indicials = self.diagnostics['indicials']
-
-        # Source points: detected indicials in image coordinates
-        (nw, ne, sw, se) = indicials['nw'], indicials['ne'], indicials['sw'], indicials['se']
-        corner_indicials = np.float32([nw, ne, sw, se])
-        logger.debug(f'WARP TO CANONICAL: source indicials = {corner_indicials}')
-        # Destination points: known indicial positions in page coordinates (pixels)
-        config = self.layout_config
-        
-        # Convert indicial positions from physical units to pixels
-        nw_page = (
-            config.indicial_nw_location[0].to('pxl').magnitude,
-            config.indicial_nw_location[1].to('pxl').magnitude
-        )
-        ne_page = (
-            config.indicial_ne_location[0].to('pxl').magnitude,
-            config.indicial_ne_location[1].to('pxl').magnitude
-        )
-        sw_page = (
-            config.indicial_sw_location[0].to('pxl').magnitude,
-            config.indicial_sw_location[1].to('pxl').magnitude
-        )
-        se_page = (
-            config.indicial_se_location[0].to('pxl').magnitude,
-            config.indicial_se_location[1].to('pxl').magnitude
-        )
-        
-        canonical_corners = np.float32([nw_page, ne_page, sw_page, se_page])
-        bubble_field = self._locate_bubbles()
-
-        selected_bubbles_canonical_positions = []
-        for i in range(1, config.num_questions + 1, 5):
-            question_bubbles = [ bubble_field[(i, key)] for key in ( 'a', 'b', 'c', 'd' ) ]
-            logger.debug(f' Question {i} bubble positions: {question_bubbles}')
-            selected_bubbles_canonical_positions.append( question_bubbles[0] )  # take 'a' bubble position as representative
-        selected_bubbles_canonical_positions = np.float32(selected_bubbles_canonical_positions)
-
-        two_stage_warped, roughly_warped, detected_centers, valid = two_stage_warp(
-            raw_img=img,
-            corner_indicials=corner_indicials,
-            canonical_corners=canonical_corners,
-            bubble_canonical_positions=selected_bubbles_canonical_positions
-        )
-
-        self.img = two_stage_warped
-        self.diagnostics['debug_image'] = two_stage_warped.copy()
-
-        # logger.debug(f' Selected bubbles canonical positions: {selected_bubbles_canonical_positions}')
-
-        # logger.debug(f'WARP TO CANONICAL: dest indicials = {canonical_corners}')
-        # # Output size: full page dimensions in pixels
-        # page_width_px = int(config.canonical_width.to('pxl').magnitude)
-        # page_height_px = int(config.canonical_height.to('pxl').magnitude)
-        # logger.debug(f'WARP TO CANONICAL: page size = {page_width_px} x {page_height_px} px')
-        # out_w = page_width_px
-        # out_h = page_height_px
-
-        # # Compute transformation
-        # M = cv2.getPerspectiveTransform(corner_indicials, canonical_corners)
-        # M_inv = cv2.getPerspectiveTransform(canonical_corners, corner_indicials)
-        
-        # # Apply warp
-        # warped = cv2.warpPerspective(img, M, (out_w, out_h))
-        
-        # self.img = warped
-        debug_img_path = self.debug_output_path / "warped_page.png"
-        cv2.imwrite(str(debug_img_path), self.img)
-        debug_img_path_rough = self.debug_output_path / "roughly_warped_page.png"
-        cv2.imwrite(str(debug_img_path_rough), roughly_warped)
-        # warp the debug image as well, if present
-        # if self.diagnostics.get('debug_image') is not None:
-        #     debug_warped = cv2.warpPerspective(
-        #         self.diagnostics['debug_image'], M, (out_w, out_h)
-        #     )
-        #     self.diagnostics['debug_image'] = debug_warped
-        #     debug_img_path = self.debug_output_path / "indicials_warped.png"
-        #     cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
-        # self.diagnostics['warp_matrix'] = M
-        # self.diagnostics['warp_matrix_inv'] = M_inv
-        # self.diagnostics['warped_size'] = (out_h, out_w)
 
     def _locate_bubbles(self):
         config = self.layout_config
@@ -526,7 +537,7 @@ class AnswerSheetReader:
                     (255, 0, 255),
                     2
                 )
-        img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        img_gray = cv2.cvtColor(self.working_image, cv2.COLOR_BGR2GRAY)
         bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
 
         # loop over bubble centers, and for each question, determine filled bubbles
@@ -616,100 +627,6 @@ class AnswerSheetReader:
         self.diagnostics['bubbles'] = centers
         self.results['answers'] = answers
 
-    def diagnose_qr_detection(self):
-        """Diagnose QR code detection issues with detailed logging and visualization."""
-        img = self.img.copy()
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-        # 1. Check OpenCV version (some versions have bugs)
-        logger.info(f"OpenCV version: {cv2.__version__}")
-        
-        # 2. Try basic detection
-        detector = cv2.QRCodeDetector()
-        data, points, straight_qrcode = detector.detectAndDecode(img)
-        logger.info(f"Basic detection - Data: {data}, Points: {points}")
-        
-        if points is not None:
-            # Draw detected points
-            debug_img = img.copy()
-            points = points[0].astype(int)
-            cv2.polylines(debug_img, [points], True, (0, 255, 0), 3)
-            cv2.imwrite('qr_detected.png', debug_img)
-            logger.info("QR code detected! Saved debug image.")
-            return data
-        
-        # 3. Try different preprocessing approaches
-        preprocessing_methods = {
-            'original': gray,
-            'otsu_threshold': cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
-            'adaptive_mean': cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, 
-                                                cv2.THRESH_BINARY, 11, 2),
-            'adaptive_gaussian': cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                    cv2.THRESH_BINARY, 11, 2),
-            'equalized': cv2.equalizeHist(gray),
-            'blur_otsu': cv2.threshold(cv2.GaussianBlur(gray, (5, 5), 0), 0, 255, 
-                                    cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
-        }
-        
-        for name, processed in preprocessing_methods.items():
-            logger.info(f"Trying preprocessing: {name}")
-            
-            # Convert back to BGR if needed
-            if len(processed.shape) == 2:
-                processed_bgr = cv2.cvtColor(processed, cv2.COLOR_GRAY2BGR)
-            else:
-                processed_bgr = processed
-            
-            data, points, _ = detector.detectAndDecode(processed_bgr)
-            
-            if data:
-                logger.info(f"SUCCESS with {name}: {data}")
-                cv2.imwrite(f'qr_success_{name}.png', processed_bgr)
-                return data
-            
-            # Save failed attempts for inspection
-            cv2.imwrite(f'qr_failed_{name}.png', processed)
-        
-        # 4. Try detect() separately to see if QR is found but not decoded
-        logger.info("Trying detect() without decode...")
-        retval, points = detector.detect(img)
-        if retval:
-            logger.info(f"QR code DETECTED but not decoded. Points: {points}")
-            debug_img = img.copy()
-            if points is not None:
-                pts = points[0].astype(int)
-                cv2.polylines(debug_img, [pts], True, (255, 0, 0), 3)
-                cv2.imwrite('qr_detected_not_decoded.png', debug_img)
-        else:
-            logger.warning("QR code not even detected")
-        
-        # 5. Try with different scales
-        logger.info("Trying different scales...")
-        for scale in [0.5, 0.75, 1.0, 1.5, 2.0]:
-            scaled = cv2.resize(img, None, fx=scale, fy=scale)
-            data, points, _ = detector.detectAndDecode(scaled)
-            if data:
-                logger.info(f"SUCCESS at scale {scale}: {data}")
-                return data
-        
-        # 6. Try pyzbar as alternative
-        try:
-            from pyzbar import pyzbar
-            logger.info("Trying pyzbar as alternative...")
-            decoded = pyzbar.decode(gray)
-            if decoded:
-                data = decoded[0].data.decode('utf-8')
-                logger.info(f"pyzbar SUCCESS: {data}")
-                return data
-        except ImportError:
-            logger.info("pyzbar not available (pip install pyzbar)")
-        
-        # 7. Check image statistics
-        logger.info(f"Image stats - Mean: {gray.mean():.1f}, Std: {gray.std():.1f}, "
-                f"Min: {gray.min()}, Max: {gray.max()}")
-        
-        logger.error("All QR detection methods failed")
-        return None
 
     def _read_qr(self):
         """
@@ -717,8 +634,8 @@ class AnswerSheetReader:
         """
         config = self.layout_config
         detector = cv2.QRCodeDetector()
-        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        gray = cv2.resize(gray, None, fx=0.5, fy=0.5)
+        gray = cv2.cvtColor(self.working_image, cv2.COLOR_BGR2GRAY)
+        # gray = cv2.resize(gray, None, fx=0.5, fy=0.5)
 
         h, w = gray.shape[:2]
         qr_ul_pxl = (
@@ -733,6 +650,8 @@ class AnswerSheetReader:
         side_len = min(x1 - x0, y1 - y0)
         x1 = x0 + side_len
         y1 = y0 + side_len
+
+        logger.debug(f"QR crop region: ({x0}, {y0}) to ({x1}, {y1}) in warped image of size ({w}, {h})")
 
         # draw the crop region on the debug image for diagnostics
         debug_image = self.diagnostics.get('debug_image', None)
@@ -766,9 +685,15 @@ class AnswerSheetReader:
             logger.debug(f"QR code detected in full image: {self.results['version']}")
         else:
             # If that fails, try cropping the top-right region where we know the QR lives
-
             roi = gray[y0:y1, x0:x1]
-            data, points, _ = detector.detectAndDecode(roi)
+            # save the roi as a debug image
+            debug_roi_path = self.debug_output_path / f"qr_roi.png"
+            cv2.imwrite(str(debug_roi_path), roi)
+            try:
+                data, points, _ = detector.detectAndDecode(roi)
+            except Exception as e:
+                logger.error(f"Error during QR code detection in cropped region: {e}")
+                raise RuntimeError("Failed to read QR code from answer sheet.")
             if data:
                 self.results['version'] = data.strip()
             else:
@@ -791,7 +716,7 @@ class AnswerSheetReader:
         num_digits = config.student_id_num_digits
         
         # Image is already warped to canonical page coordinates
-        img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        img_gray = cv2.cvtColor(self.working_image, cv2.COLOR_BGR2GRAY)
         
         # Convert layout positions from physical units to pixels
         # Match the TikZ coordinate system
@@ -903,127 +828,127 @@ class AnswerSheetReader:
 
         self.diagnostics['id_bubble_centers'] = id_bubble_centers_px
 
-    def _read_student_id_ocr(self):
-        config = self.layout_config
-        num_digits = config.student_id_num_digits
-        model = get_digit_model()
+    # def _read_student_id_ocr(self):
+    #     config = self.layout_config
+    #     num_digits = config.student_id_num_digits
+    #     model = get_digit_model()
         
-        # Image is already warped to canonical page coordinates
-        img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        confidence_threshold = config.student_id_ocr_confidence_threshold
+    #     # Image is already warped to canonical page coordinates
+    #     img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+    #     confidence_threshold = config.student_id_ocr_confidence_threshold
 
-        # Convert layout positions from physical units to pixels
-        id_box_ul_px = (
-            int(config.student_id_digit_boxes_ul[0].to('pxl').magnitude),
-            int(config.student_id_digit_boxes_ul[1].to('pxl').magnitude)
-        )
-        # write an X at the upper-left corner for diagnostics
-        debug_image = self.diagnostics.get('debug_image', None)
-        if debug_image is not None:
-            cv2.line(
-                debug_image,
-                (id_box_ul_px[0] - 10, id_box_ul_px[1] - 10),
-                (id_box_ul_px[0] + 10, id_box_ul_px[1] + 10),
-                (34, 122, 255),
-                3,
-            )
-            cv2.line(
-                debug_image,
-                (id_box_ul_px[0] - 10, id_box_ul_px[1] + 10),
-                (id_box_ul_px[0] + 10, id_box_ul_px[1] - 10),
-                (34, 122, 255),
-                3,
-            )
-        box_width_px = int(config.student_id_digit_boxes_box_size[0].to('pxl').magnitude)
-        box_height_px = int(config.student_id_digit_boxes_box_size[1].to('pxl').magnitude)
-        gap_px = int(config.student_id_digit_boxes_horiz_gap.to('pxl').magnitude)
+    #     # Convert layout positions from physical units to pixels
+    #     id_box_ul_px = (
+    #         int(config.student_id_digit_boxes_ul[0].to('pxl').magnitude),
+    #         int(config.student_id_digit_boxes_ul[1].to('pxl').magnitude)
+    #     )
+    #     # write an X at the upper-left corner for diagnostics
+    #     debug_image = self.diagnostics.get('debug_image', None)
+    #     if debug_image is not None:
+    #         cv2.line(
+    #             debug_image,
+    #             (id_box_ul_px[0] - 10, id_box_ul_px[1] - 10),
+    #             (id_box_ul_px[0] + 10, id_box_ul_px[1] + 10),
+    #             (34, 122, 255),
+    #             3,
+    #         )
+    #         cv2.line(
+    #             debug_image,
+    #             (id_box_ul_px[0] - 10, id_box_ul_px[1] + 10),
+    #             (id_box_ul_px[0] + 10, id_box_ul_px[1] - 10),
+    #             (34, 122, 255),
+    #             3,
+    #         )
+    #     box_width_px = int(config.student_id_digit_boxes_box_size[0].to('pxl').magnitude)
+    #     box_height_px = int(config.student_id_digit_boxes_box_size[1].to('pxl').magnitude)
+    #     gap_px = int(config.student_id_digit_boxes_horiz_gap.to('pxl').magnitude)
         
-        x0, y0 = id_box_ul_px
+    #     x0, y0 = id_box_ul_px
         
-        digits: list[str] = []
+    #     digits: list[str] = []
 
-        outer_boxes = []
-        inner_boxes = []
+    #     outer_boxes = []
+    #     inner_boxes = []
 
-        for i in range(num_digits):
-            # Calculate this box's position
-            box_x0 = x0 + i * (box_width_px + gap_px)
-            box_x1 = box_x0 + box_width_px
-            box_y0 = y0
-            box_y1 = y0 + box_height_px
-            # draw this box for diagnostics
-            debug_image = self.diagnostics.get('debug_image', None)
-            if debug_image is not None:
-                cv2.rectangle(
-                    debug_image,
-                    (box_x0, box_y0),
-                    (box_x1, box_y1),
-                    (255, 0, 0),
-                    3,
-                )
-            outer_boxes.append((box_x0, box_y0, box_x1, box_y1))
-            # Extract cell
-            cell = img_gray[box_y0:box_y1, box_x0:box_x1]
+    #     for i in range(num_digits):
+    #         # Calculate this box's position
+    #         box_x0 = x0 + i * (box_width_px + gap_px)
+    #         box_x1 = box_x0 + box_width_px
+    #         box_y0 = y0
+    #         box_y1 = y0 + box_height_px
+    #         # draw this box for diagnostics
+    #         debug_image = self.diagnostics.get('debug_image', None)
+    #         if debug_image is not None:
+    #             cv2.rectangle(
+    #                 debug_image,
+    #                 (box_x0, box_y0),
+    #                 (box_x1, box_y1),
+    #                 (255, 0, 0),
+    #                 3,
+    #             )
+    #         outer_boxes.append((box_x0, box_y0, box_x1, box_y1))
+    #         # Extract cell
+    #         cell = img_gray[box_y0:box_y1, box_x0:box_x1]
             
-            ch, cw = cell.shape
-            if ch <= 0 or cw <= 0:
-                digits.append("")
-                continue
+    #         ch, cw = cell.shape
+    #         if ch <= 0 or cw <= 0:
+    #             digits.append("")
+    #             continue
 
-            # Inner crop to avoid borders
-            margin_y = int(config.student_id_digits_cell_margin_frac * ch)
-            margin_x = int(config.student_id_digits_cell_margin_frac * cw)
-            iy0 = box_y0 + margin_y
-            iy1 = box_y0 + ch - margin_y
-            ix0 = box_x0 + margin_x
-            ix1 = box_x0 + cw - margin_x
+    #         # Inner crop to avoid borders
+    #         margin_y = int(config.student_id_digits_cell_margin_frac * ch)
+    #         margin_x = int(config.student_id_digits_cell_margin_frac * cw)
+    #         iy0 = box_y0 + margin_y
+    #         iy1 = box_y0 + ch - margin_y
+    #         ix0 = box_x0 + margin_x
+    #         ix1 = box_x0 + cw - margin_x
 
-            if iy1 <= iy0 or ix1 <= ix0:
-                digits.append("")
-                continue
+    #         if iy1 <= iy0 or ix1 <= ix0:
+    #             digits.append("")
+    #             continue
 
-            inner = img_gray[iy0:iy1, ix0:ix1]
-            inner_boxes.append((ix0, iy0, ix1, iy1))
-            debug_image = self.diagnostics.get('debug_image', None)
-            if debug_image is not None:
-                logger.debug(f'ID OCR: digit {i+1}, outer box=({box_x0},{box_y0})-({box_x1},{box_y1}), inner box=({ix0},{iy0})-({ix1},{iy1})')
-                cv2.rectangle(
-                    debug_image,
-                    (ix0, iy0),
-                    (ix1, iy1),
-                    (0, 0, 255),
-                    3,
-                )
-            inner = get_centered_padded_digit(inner, pad=5)
+    #         inner = img_gray[iy0:iy1, ix0:ix1]
+    #         inner_boxes.append((ix0, iy0, ix1, iy1))
+    #         debug_image = self.diagnostics.get('debug_image', None)
+    #         if debug_image is not None:
+    #             logger.debug(f'ID OCR: digit {i+1}, outer box=({box_x0},{box_y0})-({box_x1},{box_y1}), inner box=({ix0},{iy0})-({ix1},{iy1})')
+    #             cv2.rectangle(
+    #                 debug_image,
+    #                 (ix0, iy0),
+    #                 (ix1, iy1),
+    #                 (0, 0, 255),
+    #                 3,
+    #             )
+    #         inner = get_centered_padded_digit(inner, pad=5)
 
-            # Run CNN OCR
-            digit, conf = ocr_digit_nn(inner, model=model)
+    #         # Run CNN OCR
+    #         digit, conf = ocr_digit_nn(inner, model=model)
             
-            if conf < confidence_threshold:
-                digits.append("?")
-                if digit == '7':
-                    # Check if it's actually a 9 written upside down
-                    rotated_inner = cv2.rotate(inner, cv2.ROTATE_180)
-                    digit_rot, conf_rot = ocr_digit_nn(rotated_inner, model=model)
-                    if conf_rot >= confidence_threshold and digit_rot == '6':
-                        digits[-1] = '9'
-            else:
-                if digit == '3':
-                    # Might be an 8 with gaps
-                    flipped_inner = cv2.flip(inner, 1)
-                    digit_flp, conf_flp = ocr_digit_nn(flipped_inner, model=model)
-                    if conf_flp >= confidence_threshold and digit_flp == '8':
-                        digit = '8'
-                digits.append(digit)
+    #         if conf < confidence_threshold:
+    #             digits.append("?")
+    #             if digit == '7':
+    #                 # Check if it's actually a 9 written upside down
+    #                 rotated_inner = cv2.rotate(inner, cv2.ROTATE_180)
+    #                 digit_rot, conf_rot = ocr_digit_nn(rotated_inner, model=model)
+    #                 if conf_rot >= confidence_threshold and digit_rot == '6':
+    #                     digits[-1] = '9'
+    #         else:
+    #             if digit == '3':
+    #                 # Might be an 8 with gaps
+    #                 flipped_inner = cv2.flip(inner, 1)
+    #                 digit_flp, conf_flp = ocr_digit_nn(flipped_inner, model=model)
+    #                 if conf_flp >= confidence_threshold and digit_flp == '8':
+    #                     digit = '8'
+    #             digits.append(digit)
 
-        # If all blanks, treat as no ID
-        if all(d == "" for d in digits):
-            self.results['student_id_ocr'] = None
-        else:
-            self.results['student_id_ocr'] = "".join(d if d else "?" for d in digits)
+    #     # If all blanks, treat as no ID
+    #     if all(d == "" for d in digits):
+    #         self.results['student_id_ocr'] = None
+    #     else:
+    #         self.results['student_id_ocr'] = "".join(d if d else "?" for d in digits)
 
-        self.diagnostics['id_digit_outer_boxes'] = outer_boxes
-        self.diagnostics['id_digit_inner_boxes'] = inner_boxes
+    #     self.diagnostics['id_digit_outer_boxes'] = outer_boxes
+    #     self.diagnostics['id_digit_inner_boxes'] = inner_boxes
 
     def _read_student_id(self):
         """
@@ -1031,4 +956,4 @@ class AnswerSheetReader:
         using both bubble detection and OCR methods.
         """
         self._read_student_id_bubbles()
-        self._read_student_id_ocr()
+        # self._read_student_id_ocr()
