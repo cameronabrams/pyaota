@@ -14,6 +14,7 @@ authors = [{ name = "Cameron F. Abrams" }]
 dependencies = [
   "pyyaml",
   "pdf2image",
+  "PyPDF2",
   "numpy",
   "opencv-python",
   "tensorflow>=2.12",   # swap for torch if you prefer

@@ -6,6 +6,7 @@ from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
 import cv2
 import logging
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -25,57 +26,57 @@ def x_marks_the_spot(image, x_px, y_px):
         2
     )
 
-def get_centered_padded_digit(img_gray: np.ndarray, pad: int = 10) -> np.ndarray:
-    """
-    Takes a grayscale digit image, finds the ink bounding box,
-    centers the digit in a new image, and adds uniform padding.
+# def get_centered_padded_digit(img_gray: np.ndarray, pad: int = 10) -> np.ndarray:
+#     """
+#     Takes a grayscale digit image, finds the ink bounding box,
+#     centers the digit in a new image, and adds uniform padding.
     
-    Returns a new grayscale image.
-    """
+#     Returns a new grayscale image.
+#     """
 
-    # Ensure grayscale
-    if img_gray.ndim == 3:
-        img_gray = cv2.cvtColor(img_gray, cv2.COLOR_BGR2GRAY)
+#     # Ensure grayscale
+#     if img_gray.ndim == 3:
+#         img_gray = cv2.cvtColor(img_gray, cv2.COLOR_BGR2GRAY)
 
-    # Threshold to get binary ink mask (digit in black or white)
-    _, th = cv2.threshold(
-        img_gray, 0, 255,
-        cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
-    )
-    # Now digit strokes are white (255), background black (0)
+#     # Threshold to get binary ink mask (digit in black or white)
+#     _, th = cv2.threshold(
+#         img_gray, 0, 255,
+#         cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+#     )
+#     # Now digit strokes are white (255), background black (0)
 
-    # Find bounding box of the white pixels
-    ys, xs = np.where(th > 0)  # coordinates where ink exists
-    if len(xs) == 0 or len(ys) == 0:
-        # no ink found ― return padded blank image
-        h, w = img_gray.shape
-        return 255 * np.ones((h + 2*pad, w + 2*pad), dtype=np.uint8)
+#     # Find bounding box of the white pixels
+#     ys, xs = np.where(th > 0)  # coordinates where ink exists
+#     if len(xs) == 0 or len(ys) == 0:
+#         # no ink found ― return padded blank image
+#         h, w = img_gray.shape
+#         return 255 * np.ones((h + 2*pad, w + 2*pad), dtype=np.uint8)
 
-    x_min, x_max = xs.min(), xs.max()
-    y_min, y_max = ys.min(), ys.max()
+#     x_min, x_max = xs.min(), xs.max()
+#     y_min, y_max = ys.min(), ys.max()
 
-    # Crop to bounding box
-    cropped = img_gray[y_min:y_max+1, x_min:x_max+1]
+#     # Crop to bounding box
+#     cropped = img_gray[y_min:y_max+1, x_min:x_max+1]
 
-    # Create padded new image
-    new_h = (y_max - y_min + 1) + 2 * pad
-    new_w = (x_max - x_min + 1) + 2 * pad
+#     # Create padded new image
+#     new_h = (y_max - y_min + 1) + 2 * pad
+#     new_w = (x_max - x_min + 1) + 2 * pad
 
-    canvas = 255 * np.ones((new_h, new_w), dtype=np.uint8)  # white background
+#     canvas = 255 * np.ones((new_h, new_w), dtype=np.uint8)  # white background
 
-    # Paste the Cropped digit in the center
-    canvas[pad:pad + cropped.shape[0], pad:pad + cropped.shape[1]] = cropped
+#     # Paste the Cropped digit in the center
+#     canvas[pad:pad + cropped.shape[0], pad:pad + cropped.shape[1]] = cropped
 
-    return canvas
+#     return canvas
 
-# Optionally load global model once if you like
-_DIGIT_MODEL = None
+# # Optionally load global model once if you like
+# _DIGIT_MODEL = None
 
-def get_digit_model():
-    global _DIGIT_MODEL
-    if _DIGIT_MODEL is None:
-        _DIGIT_MODEL = load_digit_model()
-    return _DIGIT_MODEL
+# def get_digit_model():
+#     global _DIGIT_MODEL
+#     if _DIGIT_MODEL is None:
+#         _DIGIT_MODEL = load_digit_model()
+#     return _DIGIT_MODEL
 
 class AnswerSheetReader:
     def __init__(self, img: np.ndarray, layout_config: LayoutConfig, debug_output_dir: Path = Path("debug")):
@@ -95,12 +96,28 @@ class AnswerSheetReader:
     def read(self) -> dict[str, Any]:
         self.img_original = self.rawimg.copy()
         self.working_image = self.rawimg.copy()
-        self._right_size()
-        self._find_indicials()
-        self._warp_to_canonical()
-        self._read_qr()
-        self._read_student_id()
-        self._read_bubblefield()
+
+        steps = [
+            ("find_indicials", self._right_size, self._find_indicials),
+            ("warp", None, self._warp_to_canonical),
+            ("read_qr", None, self._read_qr),
+            ("read_student_id", None, self._read_student_id),
+            ("read_bubblefield", None, self._read_bubblefield),
+        ]
+
+        for step_name, pre, action in steps:
+            try:
+                if pre is not None:
+                    pre()
+                action()
+            except Exception as exc:
+                self.results["read_status"] = f"failed_{step_name}"
+                self.results["read_error"] = str(exc)
+                logger.warning(f"AnswerSheetReader: step '{step_name}' failed — {exc}")
+                break
+        else:
+            self.results["read_status"] = "success"
+
         if self.diagnostics.get('debug_image') is not None:
             debug_img_path = self.debug_output_path / f"debug_overlay_warped.png"
             cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
@@ -153,13 +170,20 @@ class AnswerSheetReader:
         search_regions = config.get_indicial_search_regions(img.shape[:2])
         self.diagnostics['indicial_search_regions'] = search_regions
         
+        logger.debug(f'Indicial search regions (pixels): {search_regions}')
+
         indicials = {}
         
+        self.diagnostics['debug_image'] = img.copy()
         for corner, (x1, y1, x2, y2) in search_regions.items():
-            logger.debug(f"Indicial search region {corner}: ({x1}, {y1}) to ({x2}, {y2})")
             # draw the search region on diagnostic image
             if self.diagnostics.get('debug_image') is not None:
                 cv2.rectangle(self.diagnostics['debug_image'], (x1, y1), (x2, y2), (255, 0, 0), 2)
+        diag_img_path = self.debug_output_path / "indicial_search_regions.png"
+        cv2.imwrite(str(diag_img_path), self.diagnostics['debug_image'])
+
+        for corner, (x1, y1, x2, y2) in search_regions.items():
+            logger.debug(f"Indicial search region {corner}: ({x1}, {y1}) to ({x2}, {y2})")
             # Extract search region
             sub = bin_inv[y1:y2, x1:x2]
             
@@ -420,9 +444,11 @@ class AnswerSheetReader:
                 cv2.LINE_AA,
             )
         
-        # write to the path
-        cv2.imwrite(str(overlay_path), overlay_img)
-        logger.info(f'Wrote graded overlay image to {overlay_path}')
+        # write to the path as a single-page PDF
+        overlay_rgb = cv2.cvtColor(overlay_img, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(overlay_rgb)
+        pil_img.save(str(overlay_path), "PDF", resolution=300.0)
+        logger.info(f'Wrote graded overlay PDF to {overlay_path}')
 
     def _locate_bubbles(self):
         config = self.layout_config
@@ -512,12 +538,47 @@ class AnswerSheetReader:
         self.diagnostics['bubbles'] = centers
         return centers
 
+    def _compute_bubble_fills(self, img_gray, centers, bubble_radius_px, pixel_threshold):
+        """
+        Compute fill ratios for every bubble at the given *pixel_threshold*.
+
+        Returns ``{qnum: {choice_key: (fill_pct, x_px, y_px), ...}, ...}``
+        """
+        bubble_fills: Dict[int, Dict[str, Tuple[float, int, int]]] = {}
+        for (qnum, choice_key), (x_px, y_px) in centers.items():
+            if qnum not in bubble_fills:
+                bubble_fills[qnum] = {}
+
+            x1 = x_px - bubble_radius_px
+            x2 = x_px + bubble_radius_px
+            y1 = y_px - bubble_radius_px
+            y2 = y_px + bubble_radius_px
+
+            if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
+                continue
+
+            bubble_roi = img_gray[y1:y2, x1:x2]
+
+            mask = np.zeros_like(bubble_roi, dtype=np.uint8)
+            cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
+
+            masked_pixels = bubble_roi[mask > 0]
+            if len(masked_pixels) == 0:
+                continue
+
+            _, binary = cv2.threshold(masked_pixels, pixel_threshold, 255, cv2.THRESH_BINARY_INV)
+            fill_pct = np.sum(binary > 0) / len(masked_pixels)
+            bubble_fills[qnum][choice_key] = (fill_pct, x_px, y_px)
+        return bubble_fills
+
     def _read_bubblefield(self):
         """
         Read all question answers from the bubble field.
-        
-        Returns a list of answers, one per question.
-        Each answer is either a choice key ('a', 'b', 'c', 'd', 'T', 'F') or '?' for unclear/unmarked.
+
+        Uses an adaptive pixel threshold: starts strict (127) and
+        progressively relaxes (160, 190) for any question where no
+        bubble exceeds the fill-ratio threshold, catching lighter
+        pencil marks.
         """
         debug_image = self.diagnostics.get('debug_image', None)
 
@@ -540,92 +601,65 @@ class AnswerSheetReader:
         img_gray = cv2.cvtColor(self.working_image, cv2.COLOR_BGR2GRAY)
         bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
 
-        # loop over bubble centers, and for each question, determine filled bubbles
-        # centers is a dict mapping (qnum, choice_key) to (x_px, y_px)
-        bubble_fills = {}  # (choice_key, fill_percentage, x_px, y_px)
-        answers = {}
-        choice_keys = {'mcq': ["a", "b", "c", "d"], 'tf': ["T", "F"]}
+        fill_threshold = config.fill_ratio_threshold
+        pixel_thresholds = [127, 160, 190]
 
-        for (qnum, choice_key), (x_px, y_px) in centers.items():
-            if not qnum in bubble_fills:
-                bubble_fills[qnum] = {}
-            # Get question type from question list if available
-            if hasattr(config, 'question_list') and config.question_list:
-                q = config.question_list[qnum - 1]
-                qtyp = q.get("type", "mcq").lower()
-            else:
-                qtyp = "mcq"  # Default
-            choices = choice_keys[qtyp]
-            
-            # Extract circular region
-            x1 = x_px - bubble_radius_px
-            x2 = x_px + bubble_radius_px
-            y1 = y_px - bubble_radius_px
-            y2 = y_px + bubble_radius_px
-            
-            if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
-                continue
-                        
-            bubble_roi = img_gray[y1:y2, x1:x2]
-            
-            # Create circular mask
-            mask = np.zeros_like(bubble_roi, dtype=np.uint8)
-            cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
-            
-            # Calculate fill percentage
-            masked_pixels = bubble_roi[mask > 0]
-            if len(masked_pixels) == 0:
-                continue
-            
-            # Threshold and count dark pixels
-            _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
-            fill_pct = np.sum(binary > 0) / len(masked_pixels)
-            bubble_fills[qnum][choice_key] = (fill_pct, x_px, y_px)
-        
-            # Determine answer based on filled bubbles
-        threshold = config.fill_ratio_threshold
+        answers: Dict[int, str] = {}
+        answer_coords: Dict[int, Tuple[int, int]] = {}
 
-        for qnum in range(1, config.num_questions + 1):
-            # Get question type from question list if available
-            if hasattr(config, 'question_list') and config.question_list:
-                q = config.question_list[qnum - 1]
-                qtyp = q.get("type", "mcq").lower()
-            else:
-                qtyp = "mcq"  # Default
-            choices = choice_keys[qtyp]
-            
-            filled = [(choice, pct, x, y) for choice, (pct, x, y) in bubble_fills.get(qnum, {}).items() if pct >= threshold]
-            
-            if len(filled) == 0:
-                answers[qnum] = "?"  # No bubble filled
-            elif len(filled) == 1:
-                answers[qnum] = filled[0][0]
-                # draw a slightly enlarged circle around the filled-in choice
-                x, y = filled[0][2], filled[0][3]
-                if debug_image is not None:
-                    cv2.circle(
-                        debug_image,
-                        (x, y),
-                        int(bubble_radius_px*1.05),
-                        (190, 25, 25),
-                        3
-                    )
-            else:
-                # Multiple bubbles filled - pick darkest one
-                filled.sort(key=lambda x: x[1], reverse=True)
-                answers[qnum] = filled[0][0]
-                x, y = filled[0][2], filled[0][3]
-                if debug_image is not None:
-                    cv2.circle(
-                        debug_image,
-                        (x, y),
-                        int(bubble_radius_px*1.05),
-                        (190, 25, 25),
-                        3
-                    )
-        
+        for pixel_thresh in pixel_thresholds:
+            # Only recompute for questions still unresolved
+            unresolved = [q for q in range(1, config.num_questions + 1)
+                          if answers.get(q, "?") == "?"]
+            if not unresolved:
+                break
+
+            bubble_fills = self._compute_bubble_fills(
+                img_gray, centers, bubble_radius_px, pixel_thresh)
+
+            for qnum in unresolved:
+                filled = [(choice, pct, x, y)
+                          for choice, (pct, x, y)
+                          in bubble_fills.get(qnum, {}).items()
+                          if pct >= fill_threshold]
+
+                if len(filled) == 0:
+                    answers[qnum] = "?"
+                elif len(filled) == 1:
+                    answers[qnum] = filled[0][0]
+                    answer_coords[qnum] = (filled[0][2], filled[0][3])
+                    if pixel_thresh > pixel_thresholds[0]:
+                        logger.debug(
+                            f"Q{qnum}: resolved at pixel_threshold={pixel_thresh} "
+                            f"(answer={filled[0][0]}, fill={filled[0][1]:.3f})")
+                else:
+                    filled.sort(key=lambda f: f[1], reverse=True)
+                    answers[qnum] = filled[0][0]
+                    answer_coords[qnum] = (filled[0][2], filled[0][3])
+                    if pixel_thresh > pixel_thresholds[0]:
+                        logger.debug(
+                            f"Q{qnum}: resolved at pixel_threshold={pixel_thresh} "
+                            f"(answer={filled[0][0]}, fill={filled[0][1]:.3f})")
+
+        # Draw debug circles for all resolved answers
+        if debug_image is not None:
+            for qnum, (x, y) in answer_coords.items():
+                cv2.circle(
+                    debug_image,
+                    (x, y),
+                    int(bubble_radius_px * 1.05),
+                    (190, 25, 25),
+                    3,
+                )
+
         self.diagnostics['bubbles'] = centers
         self.results['answers'] = answers
+
+        blank_qs = [q for q, a in answers.items() if a == "?"]
+        if blank_qs:
+            raise RuntimeError(
+                f"No answer detected for question(s) {blank_qs}"
+            )
 
 
     def _read_qr(self):
@@ -678,26 +712,33 @@ class AnswerSheetReader:
         #     'lower_right': (x1, y1),
         # }
 
-        # First: try on the whole image
-        data, points, _ = detector.detectAndDecode(gray)
-        if data:
-            self.results['version'] = data.strip()
-            logger.debug(f"QR code detected in full image: {self.results['version']}")
-        else:
-            # If that fails, try cropping the top-right region where we know the QR lives
-            roi = gray[y0:y1, x0:x1]
-            # save the roi as a debug image
-            debug_roi_path = self.debug_output_path / f"qr_roi.png"
-            cv2.imwrite(str(debug_roi_path), roi)
+        roi = gray[y0:y1, x0:x1]
+        debug_roi_path = self.debug_output_path / f"qr_roi.png"
+        cv2.imwrite(str(debug_roi_path), roi)
+
+        # Adaptive QR reading: try full image and cropped ROI at native
+        # resolution first, then retry both at 50% scale.
+        attempts = [
+            ("full image", gray),
+            ("cropped ROI", roi),
+            ("full image 50%", cv2.resize(gray, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)),
+            ("cropped ROI 50%", cv2.resize(roi, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)),
+        ]
+
+        data = None
+        points = None
+        for label, img in attempts:
             try:
-                data, points, _ = detector.detectAndDecode(roi)
+                data, points, _ = detector.detectAndDecode(img)
             except Exception as e:
-                logger.error(f"Error during QR code detection in cropped region: {e}")
-                raise RuntimeError("Failed to read QR code from answer sheet.")
+                logger.debug(f"QR attempt '{label}' raised: {e}")
+                continue
             if data:
                 self.results['version'] = data.strip()
-            else:
-                raise RuntimeError("Failed to read QR code from answer sheet.")
+                logger.debug(f"QR code detected via '{label}': {self.results['version']}")
+                break
+        else:
+            raise RuntimeError("Failed to read QR code from answer sheet.")
         if debug_image is not None and points is not None:
             # echo the qr value
             cv2.putText(
@@ -711,15 +752,44 @@ class AnswerSheetReader:
                 cv2.LINE_AA,
             )
 
+    def _compute_id_column_fills(self, img_gray, col_center_x, bubble_centers_y,
+                                   bubble_radius_px, pixel_threshold):
+        """
+        Compute fill ratios for the 10 bubbles in one student-ID column
+        at the given *pixel_threshold*.
+
+        Returns ``[(digit, fill_pct, x, y), ...]``
+        """
+        fills: list[Tuple[int, float, int, int]] = []
+        for j, bubble_center_y in enumerate(bubble_centers_y):
+            x1 = col_center_x - bubble_radius_px
+            x2 = col_center_x + bubble_radius_px
+            y1 = bubble_center_y - bubble_radius_px
+            y2 = bubble_center_y + bubble_radius_px
+
+            if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
+                continue
+
+            bubble_roi = img_gray[y1:y2, x1:x2]
+
+            mask = np.zeros_like(bubble_roi, dtype=np.uint8)
+            cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
+
+            masked_pixels = bubble_roi[mask > 0]
+            if len(masked_pixels) == 0:
+                continue
+
+            _, binary = cv2.threshold(masked_pixels, pixel_threshold, 255, cv2.THRESH_BINARY_INV)
+            fill_pct = np.sum(binary > 0) / len(masked_pixels)
+            fills.append((j, fill_pct, col_center_x, bubble_center_y))
+        return fills
+
     def _read_student_id_bubbles(self):
         config = self.layout_config
         num_digits = config.student_id_num_digits
-        
-        # Image is already warped to canonical page coordinates
+
         img_gray = cv2.cvtColor(self.working_image, cv2.COLOR_BGR2GRAY)
-        
-        # Convert layout positions from physical units to pixels
-        # Match the TikZ coordinate system
+
         ul_x_px = int(config.student_id_digit_boxes_ul[0].to('pxl').magnitude)
         ul_y_px = int(config.student_id_digit_boxes_ul[1].to('pxl').magnitude)
         box_width_px = int(config.student_id_digit_boxes_box_size[0].to('pxl').magnitude)
@@ -728,11 +798,11 @@ class AnswerSheetReader:
         vgap_px = int(config.bubble_column_vert_gap.to('pxl').magnitude)
         bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
         debug_image = self.diagnostics.get('debug_image', None)
-        
-        # Spacing between bubble centers (matches TikZ: 2*radius + vgap)
+
         spacing_px = 2 * bubble_radius_px + vgap_px
-        
-        id_digits: list[str] = []
+
+        id_digits: list[str] = ["?"] * num_digits
+        digit_coords: Dict[int, Tuple[int, int]] = {}
         id_bubble_centers_px: Dict[Tuple[int, int], Tuple[int, int]] = {}
         self.diagnostics['id_bubble_region'] = {
             'x0': ul_x_px,
@@ -740,89 +810,80 @@ class AnswerSheetReader:
             'x1': ul_x_px + num_digits * (box_width_px + gap_px) - gap_px,
             'y1': ul_y_px + box_height_px + vgap_px + spacing_px * 10,
         }
-        # For each column (i = 1 to num_digits in TikZ)
+
+        # Pre-compute column geometry (centres + per-column bubble y positions)
+        col_geometry: list[Tuple[int, list[int]]] = []  # (col_center_x, [bubble_y_0..9])
         for i in range(1, num_digits + 1):
-            # Calculate column center x position (matches TikZ: ul_x + (i - 0.5)*(gap+box_width) - bubble_radius)
-            col_center_x = ul_x_px + int(round((i-1) * (gap_px + box_width_px))) + int(np.round(0.5 * box_width_px))
-            
-            # Check each bubble (0-9) in this column
-            bubble_fills: list[Tuple[int, float]] = []  # (digit, fill_percentage)
-            
+            col_center_x = ul_x_px + int(round((i - 1) * (gap_px + box_width_px))) + int(np.round(0.5 * box_width_px))
+            bubble_ys = []
             for j in range(10):
-                # Calculate bubble center y position (matches TikZ: ul_y - box_height - spacing * j)
                 bubble_center_y = ul_y_px + box_height_px + vgap_px + bubble_radius_px + spacing_px * j
-                
-                # draw a circle at the bubble center for diagnostics
-                if debug_image is not None:
-                    cv2.circle(
-                        debug_image,
-                        (col_center_x, bubble_center_y),
-                        bubble_radius_px,
-                        (0, 255, 0),
-                        2,
-                    )
-
+                bubble_ys.append(bubble_center_y)
                 id_bubble_centers_px[(i, j)] = (col_center_x, bubble_center_y)
+                if debug_image is not None:
+                    cv2.circle(debug_image, (col_center_x, bubble_center_y),
+                               bubble_radius_px, (0, 255, 0), 2)
+            col_geometry.append((col_center_x, bubble_ys))
 
-                # Extract circular region around bubble center
-                x1 = col_center_x - bubble_radius_px
-                x2 = col_center_x + bubble_radius_px
-                y1 = bubble_center_y - bubble_radius_px
-                y2 = bubble_center_y + bubble_radius_px
-                
-                if x1 < 0 or y1 < 0 or x2 >= img_gray.shape[1] or y2 >= img_gray.shape[0]:
+        threshold = config.fill_ratio_threshold
+        pixel_thresholds = [127, 160, 190, 210]
+
+        for pixel_thresh in pixel_thresholds:
+            unresolved = [idx for idx in range(num_digits) if id_digits[idx] == "?"]
+            if not unresolved:
+                break
+
+            for idx in unresolved:
+                col_center_x, bubble_ys = col_geometry[idx]
+                bubble_fills = self._compute_id_column_fills(
+                    img_gray, col_center_x, bubble_ys, bubble_radius_px, pixel_thresh)
+
+                logger.debug(f"ID column {idx+1} (pixel_thresh={pixel_thresh}): "
+                             f"bubble fills = {bubble_fills}, threshold={threshold}")
+
+                if not bubble_fills:
                     continue
-                    
-                bubble_roi = img_gray[y1:y2, x1:x2]
-                
-                # Create circular mask
-                mask = np.zeros_like(bubble_roi, dtype=np.uint8)
-                cv2.circle(mask, (bubble_radius_px, bubble_radius_px), bubble_radius_px, 255, -1)
-                
-                # Calculate fill percentage (darker = more filled)
-                masked_pixels = bubble_roi[mask > 0]
-                if len(masked_pixels) == 0:
-                    continue
-                
-                # Threshold and count dark pixels
-                _, binary = cv2.threshold(masked_pixels, 127, 255, cv2.THRESH_BINARY_INV)
-                fill_pct = np.sum(binary > 0) / len(masked_pixels)
-                bubble_fills.append((j, fill_pct, col_center_x, bubble_center_y))
-            
-            # Find most filled bubble above threshold
-            threshold = config.fill_ratio_threshold
-            filled = [(d, f, x, y) for d, f, x, y in bubble_fills if f >= threshold]
-            
-            if len(filled) == 0:
-                id_digits.append("?")  # No bubble filled
-            elif len(filled) == 1:
-                id_digits.append(str(filled[0][0]))
-                x, y = filled[0][2], filled[0][3]
-                if debug_image is not None:
-                    cv2.circle(
-                        debug_image,
-                        (x, y),
-                        int(bubble_radius_px*1.05),
-                        (195, 25, 25),
-                        3,
-                    )
-            else:
-                # Multiple bubbles filled - pick darkest one
-                filled.sort(key=lambda x: x[1], reverse=True)
-                id_digits.append(str(filled[0][0]))
-                x, y = filled[0][2], filled[0][3]
-                if debug_image is not None:
-                    cv2.circle(
-                        debug_image,
-                        (x, y),
-                        int(bubble_radius_px*1.05),
-                        (195, 25, 25),
-                        3,
-                    )
-        
-        # If all blanks, treat as no ID
-        if all(d == "?" for d in id_digits):
+
+                # Relative contrast: filled bubble must stand out above column baseline
+                all_fills = [f for _, f, _, _ in bubble_fills]
+                median_fill = float(np.median(all_fills))
+                effective_threshold = max(threshold, median_fill * 2.0)
+                logger.debug(f"ID column {idx+1}: median_fill={median_fill:.3f}, "
+                             f"effective_threshold={effective_threshold:.3f}")
+
+                filled = [(d, f, x, y) for d, f, x, y in bubble_fills
+                          if f >= effective_threshold]
+
+                if len(filled) == 1:
+                    id_digits[idx] = str(filled[0][0])
+                    digit_coords[idx] = (filled[0][2], filled[0][3])
+                    if pixel_thresh > pixel_thresholds[0]:
+                        logger.debug(
+                            f"ID column {idx+1}: resolved at pixel_threshold={pixel_thresh} "
+                            f"(digit={filled[0][0]}, fill={filled[0][1]:.3f})")
+                elif len(filled) > 1:
+                    filled.sort(key=lambda f: f[1], reverse=True)
+                    id_digits[idx] = str(filled[0][0])
+                    digit_coords[idx] = (filled[0][2], filled[0][3])
+                    if pixel_thresh > pixel_thresholds[0]:
+                        logger.debug(
+                            f"ID column {idx+1}: resolved at pixel_threshold={pixel_thresh} "
+                            f"(digit={filled[0][0]}, fill={filled[0][1]:.3f})")
+
+        # Draw debug circles for resolved digits
+        if debug_image is not None:
+            for idx, (x, y) in digit_coords.items():
+                cv2.circle(debug_image, (x, y),
+                           int(bubble_radius_px * 1.05), (195, 25, 25), 3)
+
+        # If any blanks, treat as no ID
+        if any(d == "?" for d in id_digits):
             self.results['student_id_bubbles'] = None
+            uncertain = [i for i, d in enumerate(id_digits) if d == "?"]
+            raise RuntimeError(
+                f"Could not determine student ID: uncertain digit(s) at position(s) {uncertain} "
+                f"(partial read: {''.join(id_digits)})"
+            )
         else:
             self.results['student_id_bubbles'] = "".join(id_digits)
 

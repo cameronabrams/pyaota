@@ -9,12 +9,14 @@ import sys, os, shutil
 import yaml
 
 from .generator.manager import (
-    make_exams_subcommand, 
+    make_exams_subcommand,
     make_answersheet_subcommand,
-    compile_dump_subcommand, 
-    tune_answersheetreader_subcommand, 
-    autograde_subcommand
+    compile_dump_subcommand,
+    tune_answersheetreader_subcommand,
+    autograde_subcommand,
+    return_subcommand,
 )
+from .bundle import bundle_subcommand
 from .util.text import banner, oxford
 
 import logging
@@ -92,6 +94,14 @@ def main(argv: list[str] | None = None) -> int:
             func = tune_answersheetreader_subcommand,
             help = 'tune the answer sheet reader parameters',
         ),
+        'bundle': dict(
+            func = bundle_subcommand,
+            help = 'bundle PDFs from a directory into uniform-sized bundles',
+        ),
+        'return': dict(
+            func = return_subcommand,
+            help = 'email graded answer sheets and exam PDFs to students via Outlook',
+        ),
     }
     parser = ap.ArgumentParser(
         prog='pyaota',
@@ -135,7 +145,6 @@ def main(argv: list[str] | None = None) -> int:
             help=specs['help'],
             formatter_class=ap.RawDescriptionHelpFormatter
         )
-        # command_parsers[k].set_defaults(func=specs['func'])
     
     command_parsers["build"].add_argument(
         "-od",
@@ -228,6 +237,13 @@ def main(argv: list[str] | None = None) -> int:
         action=ap.BooleanOptionalAction,
         help="Overwrite output directory if it exists",
     )
+    command_parsers["build"].add_argument(
+        "-if",
+        "--instructions-file",
+        type=str,
+        default=None,
+        help="Path to file containing custom exam instructions in LaTeX format (if not provided, default instructions will be used)",
+    )
     command_parsers["compile-dump"].add_argument(
         "-od",
         "--output-dir",
@@ -259,6 +275,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Term name",
         default="202526"
     )
+    command_parsers["compile-dump"].add_argument(
+        "-if",
+        "--instructions-file",
+        type=str,
+        default=None,
+        help="Path to file containing custom instructions in LaTeX format (if not provided, default instructions will be used)",
+    )
 
     command_parsers["grade"].add_argument(
         "-i",
@@ -289,15 +312,33 @@ def main(argv: list[str] | None = None) -> int:
         help="Path to output directory for debug images",
     )
     command_parsers["grade"].add_argument(
-        "-og",
-        "--gradesheet-output-csv",
-        default="graded_results.csv",
-        help="Path to output CSV file summarizing results",
+        "-fp",
+        "--failed-pages-dir",
+        default=None,
+        help="Directory for failed/unreadable page PDFs and report (default: same as --output-dir)",
     )
     command_parsers["grade"].add_argument(
-        "-oq",
-        "--question-tally-output-csv",
-        default="question_tally.csv",
+        "-gb",
+        "--gradebooks",
+        nargs="+",
+        help="One or more gradebook CSV files (must contain a 'Student ID' column)",
+    )
+    command_parsers["grade"].add_argument(
+        "-sc",
+        "--score-column",
+        default="score",
+        help="Column name in the gradebook(s) for the score (default: 'score')",
+    )
+    command_parsers["grade"].add_argument(
+        "-nc",
+        "--num-counted",
+        type=int,
+        default=None,
+        help="Number of questions counted toward the score (default: all questions). Must be <= total questions.",
+    )
+    command_parsers["grade"].add_argument(
+        "-qt",
+        "--question-tally",
         help="Path to output CSV file summarizing question tallies",
     )
 
@@ -359,6 +400,82 @@ def main(argv: list[str] | None = None) -> int:
         "--output-image",
         default="answersheetreader_tuning_overlay.png",
         help="Path to output image file showing tuning overlay",
+    )
+
+    command_parsers["bundle"].add_argument(
+        "-i",
+        "--input-dir",
+        required=True,
+        help="Directory containing PDF files to bundle",
+    )
+    command_parsers["bundle"].add_argument(
+        "-od",
+        "--output-dir",
+        default="bundles",
+        help="Output directory for bundle PDFs (default: bundles/)",
+    )
+    command_parsers["bundle"].add_argument(
+        "-n",
+        "--bundle-size",
+        type=int,
+        required=True,
+        help="Number of documents per bundle",
+    )
+    command_parsers["bundle"].add_argument(
+        "--co-bundle",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Also generate a co-bundle PDF of the last page from each document",
+    )
+
+    command_parsers["return"].add_argument(
+        "-gb",
+        "--gradebooks",
+        nargs="+",
+        required=True,
+        help="Gradebook CSV file(s) with 'Student ID' and email columns",
+    )
+    command_parsers["return"].add_argument(
+        "-gd",
+        "--graded-dir",
+        required=True,
+        help="Directory containing graded answer sheet PDFs (graded_<id>_<version>.pdf)",
+    )
+    command_parsers["return"].add_argument(
+        "-ed",
+        "--exams-dir",
+        required=True,
+        help="Directory containing exam version PDFs (exam-<version>.pdf)",
+    )
+    command_parsers["return"].add_argument(
+        "--email-column",
+        default="Username",
+        help="Gradebook column containing email or email prefix (default: 'Username')",
+    )
+    command_parsers["return"].add_argument(
+        "--email-suffix",
+        default="@drexel.edu",
+        help="Suffix appended to email column value (default: '@drexel.edu'). "
+             "Set to '' if the column already has full addresses.",
+    )
+    command_parsers["return"].add_argument(
+        "--subject",
+        default="Your graded exam",
+        help="Email subject line (default: 'Your graded exam')",
+    )
+    command_parsers["return"].add_argument(
+        "--body",
+        default=(
+            "Attached are your graded answer sheet and a copy of the exam you took.\n"
+            "If you have questions about your grade, please contact your instructor."
+        ),
+        help="Plain-text email body",
+    )
+    command_parsers["return"].add_argument(
+        "--dry-run",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Preview what would be sent without actually emailing",
     )
 
     # ---- dispatch ------------------------------------------------

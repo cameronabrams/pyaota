@@ -6,21 +6,14 @@ This document describes the complete YAML schema for multiple‑choice questions
 Top-Level Structure
 -------------------
 
-A question file contains two top‑level keys:
+A question file contains one top‑level key:
 
 .. code-block:: yaml
-
-    topics:
-      - <topic name>
-      - <topic name>
-      ...
 
     questions:
       - <question>
       - <question>
       ...
-
-``topics`` is optional; ``questions`` is required.
 
 Question Structure
 ------------------
@@ -32,12 +25,13 @@ Each question is a mapping with the following required fields:
     id: <string>
     topic: <string>
     points: <integer>
-    type: mcq
-    difficulty: <string>
+    type: mcq | tf
     stem: <list of stem blocks>
-    choices: <list of 4 choices>
-    correct: <a/b/c/d>
+    choices: <list of 4 choices if mcq>
+    correct: <a/b/c/d/true/false>
     explanation: <string>
+
+``mcq`` questions have four choices (a, b, c, d), while ``tf`` questions have two choices (true, false).
 
 Stem Blocks
 -----------
@@ -94,7 +88,7 @@ Use ``type: text`` for prose answers.
 Correct Answer and Explanation
 ------------------------------
 
-* ``correct`` must match one of: ``a``, ``b``, ``c``, ``d``.
+* ``correct`` must match one of: ``a``, ``b``, ``c``, ``d``, or ``true``, ``false`` for a true-false.
 * ``explanation`` is required and may contain inline code markup (``like this``).
 
 Output Formatting Rules

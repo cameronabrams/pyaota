@@ -21,6 +21,7 @@ from .answersheet import AnswerSheetGenerator, LayoutConfig, _ureg
 from .layout_config_serialization import save_layout_config, load_layout_config
 from ..grader.answersheetreader import AnswerSheetReader
 from ..grader.autograder import Autograder
+from ..grader.returner import return_graded_exams
 from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS, DEFAULT_EXAM_INSTRUCTIONS, QUESTION_BANK_DUMP_INSTRUCTIONS
 from ..latex.latexcompiler import LatexCompiler
 from ..util.collectors import on_rm_error
@@ -102,6 +103,216 @@ def write_version_keys_csv(
                 row[f"Q{i}"] = ans
             writer.writerow(row)
 
+def build_answer_key_table_latex(
+    records: list[tuple[str, list[str]]],
+    institution: str = "",
+    course: str = "",
+    term: str = "",
+    exam_name: str = "",
+    max_versions_per_table: int = 10,
+) -> str:
+    """
+    Build LaTeX code for answer key table(s).
+
+    Creates a longtable with:
+    - Columns: Question number + one column per exam version
+    - Rows: One row per question
+
+    If there are more versions than max_versions_per_table, splits into multiple tables.
+
+    Args:
+        records: list of (version_label, [ans1, ans2, ...])
+        institution: Institution name for header
+        course: Course name for header
+        term: Term for header
+        exam_name: Exam name for header
+        max_versions_per_table: Maximum number of versions per table before splitting
+
+    Returns:
+        Complete LaTeX document as string
+    """
+    if not records:
+        return ""
+
+    # Determine number of questions
+    num_questions = max(len(ans_list) for _, ans_list in records)
+    num_versions = len(records)
+
+    # Build header
+    parts = []
+    parts.append(r"\documentclass[10pt, landscape]{article}")
+    parts.append(r"\usepackage[landscape, margin=0.5in]{geometry}")
+    parts.append(r"\usepackage{longtable}")
+    parts.append(r"\usepackage{array}")
+    parts.append(r"\usepackage{xcolor}")
+    parts.append(r"\usepackage[table]{xcolor}")
+    parts.append(r"\usepackage{booktabs}")
+    parts.append(r"\usepackage{fancyhdr}")
+    parts.append(r"\usepackage[scaled]{helvet}")
+    parts.append(r"\renewcommand\familydefault{\sfdefault}")
+
+    parts.append(r"")
+
+    # Page style
+    parts.append(r"\pagestyle{fancy}")
+    parts.append(r"\fancyhf{}")
+    if institution or course or term:
+        header_parts = [p for p in [institution, course, term] if p]
+        parts.append(rf"\lhead{{{' -- '.join(header_parts)}}}")
+    if exam_name:
+        parts.append(rf"\rhead{{{exam_name} -- Answer Keys}}")
+    else:
+        parts.append(r"\rhead{Answer Keys}")
+    parts.append(r"\cfoot{\thepage}")
+    parts.append(r"")
+
+    # Alternate row coloring
+    parts.append(r"\definecolor{lightgray}{gray}{0.9}")
+    parts.append(r"\newcommand{\rowcol}{\rowcolor{lightgray}}")
+    parts.append(r"")
+
+    parts.append(r"\begin{document}")
+    parts.append(r"")
+
+    # Split versions into chunks if needed
+    version_chunks = []
+    for i in range(0, num_versions, max_versions_per_table):
+        chunk = records[i:i + max_versions_per_table]
+        version_chunks.append(chunk)
+
+    # Create a table for each chunk
+    for chunk_idx, chunk in enumerate(version_chunks):
+        if len(version_chunks) > 1:
+            parts.append(rf"\section*{{Answer Keys (Versions {chunk_idx * max_versions_per_table + 1}--{chunk_idx * max_versions_per_table + len(chunk)})}}")
+        else:
+            parts.append(r"\section*{Answer Keys for All Exam Versions}")
+        parts.append(r"")
+
+        # Build column specification: question column + version columns
+        num_cols_in_chunk = len(chunk)
+        col_spec = "|c|" + "c|" * num_cols_in_chunk
+
+        # Start longtable
+        parts.append(rf"\begin{{longtable}}{{{col_spec}}}")
+        parts.append(r"\hline")
+
+        # Header row
+        header_cells = [r"\textbf{Q}"]
+        for version_label, _ in chunk:
+            # Truncate version label if too long
+            display_label = version_label[:8] if len(version_label) > 8 else version_label
+            header_cells.append(rf"\textbf{{{display_label}}}")
+        parts.append(" & ".join(header_cells) + r" \\")
+        parts.append(r"\hline")
+        parts.append(r"\endfirsthead")
+        parts.append(r"")
+
+        # Header for continuation pages
+        parts.append(r"\multicolumn{" + str(num_cols_in_chunk + 1) + r"}{c}{\textit{(continued from previous page)}} \\")
+        parts.append(r"\hline")
+        parts.append(" & ".join(header_cells) + r" \\")
+        parts.append(r"\hline")
+        parts.append(r"\endhead")
+        parts.append(r"")
+
+        # Footer for continuation
+        parts.append(r"\hline")
+        parts.append(r"\multicolumn{" + str(num_cols_in_chunk + 1) + r"}{r}{\textit{(continued on next page)}} \\")
+        parts.append(r"\endfoot")
+        parts.append(r"")
+
+        # Final footer
+        parts.append(r"\hline")
+        parts.append(r"\endlastfoot")
+        parts.append(r"")
+
+        # Data rows - one per question
+        for q_num in range(1, num_questions + 1):
+            # Alternate row colors every 5 rows for easier reading
+            if (q_num - 1) % 5 == 0 and q_num > 1:
+                row_cells = [rf"\rowcol {q_num}"]
+            else:
+                row_cells = [str(q_num)]
+
+            # Get answer for this question from each version in chunk
+            for version_label, ans_list in chunk:
+                if q_num <= len(ans_list):
+                    answer = ans_list[q_num - 1]
+                    row_cells.append(answer)
+                else:
+                    row_cells.append("--")
+
+            parts.append(" & ".join(row_cells) + r" \\")
+
+        parts.append(r"\hline")
+        parts.append(r"\end{longtable}")
+        parts.append(r"")
+
+        # Add page break between chunks (except after last chunk)
+        if chunk_idx < len(version_chunks) - 1:
+            parts.append(r"\clearpage")
+            parts.append(r"")
+
+    parts.append(r"\end{document}")
+
+    return "\n".join(parts)
+
+def write_version_keys_pdf(
+    records: list[tuple[str, list[str]]],
+    output_dir: Path,
+    institution: str = "",
+    course: str = "",
+    term: str = "",
+    exam_name: str = "",
+    max_versions_per_table: int = 10,
+) -> None:
+    """
+    Generate a PDF with nicely formatted answer keys table.
+
+    Args:
+        records: list of (version_label, [ans1, ans2, ...])
+        output_dir: Directory where PDF should be created
+        institution: Institution name for header
+        course: Course name for header
+        term: Term for header
+        exam_name: Exam name for header
+        max_versions_per_table: Maximum number of versions per table before splitting
+    """
+    if not records:
+        logger.warning("No answer key records to generate PDF from.")
+        return
+
+    logger.info(f"Generating answer keys PDF with {len(records)} exam versions...")
+
+    # Build the LaTeX content
+    latex_content = build_answer_key_table_latex(
+        records=records,
+        institution=institution,
+        course=course,
+        term=term,
+        exam_name=exam_name,
+        max_versions_per_table=max_versions_per_table,
+    )
+
+    # Create a temporary document object to hold the LaTeX
+    from .document import Document
+
+    # Write LaTeX to a temporary file and compile
+    latex_compiler = LatexCompiler(build_specs={
+        'paths': {
+            'pdflatex': 'pdflatex',
+            'build-dir': str(output_dir),
+        },
+        'job-name': 'answer_keys',
+    })
+
+    doc = Document(content=latex_content)
+    doc.version = "AnswerKeys"
+    latex_compiler.build_document(doc, cleanup=True)
+
+    output_pdf = output_dir / "answer_keys.pdf"
+    logger.info(f"Answer keys PDF generated: {output_pdf}")
+
 def compile_dump_subcommand(args):
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
@@ -121,13 +332,21 @@ def compile_dump_subcommand(args):
 
     selected_questions = question_set.raw_question_list
 
+    # Load custom instructions if provided, otherwise use default
+    if args.instructions_file is not None:
+        logger.info(f'Loading custom dump instructions from {args.instructions_file}')
+        with open(args.instructions_file, 'r', encoding='utf-8') as f:
+            dump_instructions = f.read()
+    else:
+        dump_instructions = QUESTION_BANK_DUMP_INSTRUCTIONS
+
     exam_doc_specs = dict(
         institution=args.institution,
         course=args.course,
         term=args.term,
-        examname="Banks: " + bankfiles,
+        examname=f"{len(selected_questions)}-question dump",
         version=version_label,
-        instructions=QUESTION_BANK_DUMP_INSTRUCTIONS,
+        instructions=dump_instructions,
         question_renderer=lambda q: render_question(q, show_id=True, highlight_correct=True),
         question_list=selected_questions,
         endmessage="End of Exam\n\\clearpage",)
@@ -171,6 +390,15 @@ def make_exams_subcommand(args):
     logger.info(f'Generating {args.num_exams} exam versions with version numbers: {", ".join(hex_strings)}')
     question_set = QuestionSet(question_banks=yaml_paths)
     version_answer_records: list[tuple[str, list[str]]] = []
+
+    # Load custom instructions if provided, otherwise use default
+    if args.instructions_file is not None:
+        logger.info(f'Loading custom exam instructions from {args.instructions_file}')
+        with open(args.instructions_file, 'r', encoding='utf-8') as f:
+            exam_instructions = f.read()
+    else:
+        exam_instructions = DEFAULT_EXAM_INSTRUCTIONS
+
     answer_sheet_layout = LayoutConfig(
         bubble_field_num_cols = args.num_cols,
         num_questions = args.num_questions,
@@ -206,7 +434,7 @@ def make_exams_subcommand(args):
             term=args.term,
             examname=args.exam_name,
             version=version_label,
-            instructions=DEFAULT_EXAM_INSTRUCTIONS,
+            instructions=exam_instructions,
             question_renderer=render_question,
             question_list=selected_questions,
             answersheet_tex=answersheet_tex,
@@ -216,6 +444,17 @@ def make_exams_subcommand(args):
         latex_compiler.build_document(exam_doc, cleanup=args.cleanup)
 
     write_version_keys_csv(version_answer_records, output_path=output_dir/"exam_version_keys.csv")
+
+    # Generate PDF version of answer keys
+    write_version_keys_pdf(
+        records=version_answer_records,
+        output_dir=output_dir,
+        institution=args.institution,
+        course=args.course,
+        term=args.term,
+        exam_name=args.exam_name,
+        max_versions_per_table=10,
+    )
 
 def make_answersheet_subcommand(args):
     layout_config = LayoutConfig(
@@ -288,27 +527,48 @@ def tune_answersheetreader_subcommand(args):
     logger.info(f"Wrote diagnostic overlay image to {output_path}")
 
 def autograde_subcommand(args):
-    global _ureg
+    # global _ureg
     pdf = args.input_pdf
     keyfiles = args.keyfiles
     answersheetlayoutjson = args.answersheet_layout_json
     output_dir_path = Path(args.output_dir)
     debug_output_dir_path = Path(args.debug_output_dir)
-    gradesheet_output_csv_path = Path(args.gradesheet_output_csv)
-    question_tally_csv_path = Path(args.question_tally_output_csv)
+    failed_pages_dir_path = Path(args.failed_pages_dir) if args.failed_pages_dir else None
+    gradebook_paths = args.gradebooks
+    question_tally_path = Path(args.question_tally) if args.question_tally else None
     if not output_dir_path.exists():
         output_dir_path.mkdir(parents=True, exist_ok=True)
     if not debug_output_dir_path.exists():
         debug_output_dir_path.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Autograding PDF {pdf} using keyfiles {keyfiles} and layout {answersheetlayoutjson}")
+
     layout_config = load_layout_config(answersheetlayoutjson, LayoutConfig, _ureg)
 
     autograder = Autograder(layout_config=layout_config)
     for keyfile in keyfiles:
         autograder.load_version_keys_csv(keyfile)
 
-    autograder.grade_pdf(pdf, output_dir_path=output_dir_path, 
-        debug_output_dir_path=debug_output_dir_path, 
-        gradesheet_output_csv_path=gradesheet_output_csv_path,
-        question_tally_csv_path=question_tally_csv_path)
+    autograder.grade_pdf(pdf, output_dir_path=output_dir_path,
+        failed_pages_dir_path=failed_pages_dir_path,
+        debug_output_dir_path=debug_output_dir_path,
+        gradebook_paths=gradebook_paths,
+        score_column=args.score_column,
+        num_counted=args.num_counted,
+        question_tally_path=question_tally_path)
+
+def return_subcommand(args):
+    gradebook_paths = args.gradebooks
+    if not gradebook_paths:
+        print("Error: at least one gradebook is required (--gradebooks)")
+        return 1
+    return_graded_exams(
+        gradebook_paths=gradebook_paths,
+        graded_dir=Path(args.graded_dir),
+        exams_dir=Path(args.exams_dir),
+        email_column=args.email_column,
+        email_suffix=args.email_suffix,
+        subject=args.subject,
+        body=args.body,
+        dry_run=args.dry_run,
+    )

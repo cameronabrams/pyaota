@@ -82,8 +82,8 @@ class LayoutConfig:
     # Format: (width_fraction, height_fraction) - how far from corner to search
     indicial_search_nw: Tuple[float, float] = (0.12, 0.15)  # Search top-left 10% width, 10% height
     indicial_search_ne: Tuple[float, float] = (0.12, 0.15)  # Search top-right 10% width, 10% height
-    indicial_search_sw: Tuple[float, float] = (0.12, 0.10)  # Search bottom-left 10% width, 10% height
-    indicial_search_se: Tuple[float, float] = (0.12, 0.10)  # Search bottom-right 10% width, 10% height
+    indicial_search_sw: Tuple[float, float] = (0.12, 0.1)  # Search bottom-left 10% width, 10% height
+    indicial_search_se: Tuple[float, float] = (0.12, 0.1)  # Search bottom-right 10% width, 10% height
     # Search region specifications (as fractions of image dimensions from each corner)
     def get_indicial_search_regions(self, img_shape):
         """
