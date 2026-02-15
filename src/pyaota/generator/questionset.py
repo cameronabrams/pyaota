@@ -4,6 +4,7 @@
 Question set management for pyaota
 """
 
+import shutil
 import yaml
 import logging
 
@@ -19,7 +20,9 @@ class QuestionSet:
     """
     def __init__(self, question_banks: list[str] = []):
         self.data = {}
+        self.image_dirs: list[Path] = []
         for yaml_file in question_banks:
+            yaml_path = Path(yaml_file)
             with open(yaml_file, "r", encoding="utf-8") as f:
                 file_data = yaml.safe_load(f)
                 if not self.data:
@@ -30,7 +33,11 @@ class QuestionSet:
                     for topic in file_data.get("topics", []):
                         if topic not in self.data.get("topics", []):
                             self.data.setdefault("topics", []).append(topic)
-    
+            # Track images/ directory alongside each YAML file
+            img_dir = yaml_path.parent / "images"
+            if img_dir.is_dir() and img_dir not in self.image_dirs:
+                self.image_dirs.append(img_dir)
+
         self.topics_from_yaml = self.data.get("topics", [])
         self.raw_question_list = self.data.get("questions", [])
         # convert id numbers to integers if possible
@@ -50,6 +57,25 @@ class QuestionSet:
         self.apparent_topics = list(self.questions_by_topic.keys())
         for topic in self.apparent_topics:
             logger.debug(f"Topic '{topic}': {len(self.questions_by_topic[topic])} questions available.")
+
+    def copy_images_to(self, dest_dir: Path):
+        """Copy all question bank images into *dest_dir*/images/.
+
+        Only copies if any question bank had an ``images/`` directory
+        next to its YAML file.
+        """
+        if not self.image_dirs:
+            return
+        target = Path(dest_dir) / "images"
+        target.mkdir(parents=True, exist_ok=True)
+        count = 0
+        for img_dir in self.image_dirs:
+            for img in img_dir.iterdir():
+                if img.is_file():
+                    shutil.copy2(img, target / img.name)
+                    count += 1
+        if count:
+            logger.debug(f"Copied {count} image(s) to {target}")
 
     def get_random_selection(self, 
             num_questions: int, 

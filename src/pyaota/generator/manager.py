@@ -325,6 +325,7 @@ def compile_dump_subcommand(args):
     output_dir = Path(args.output_dir)
 
     question_set = QuestionSet(question_banks=yaml_paths)
+    question_set.copy_images_to(Path.cwd())
 
     version_label = "0"
     bankfiles = tex_escape(", ".join(yaml_paths))
@@ -389,6 +390,7 @@ def make_exams_subcommand(args):
     logger.info(f'Using master seed {seed} for RNG that generates exam version numbers.')
     logger.info(f'Generating {args.num_exams} exam versions with version numbers: {", ".join(hex_strings)}')
     question_set = QuestionSet(question_banks=yaml_paths)
+    question_set.copy_images_to(Path.cwd())
     version_answer_records: list[tuple[str, list[str]]] = []
 
     # Load custom instructions if provided, otherwise use default

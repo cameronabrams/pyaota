@@ -16,6 +16,7 @@ from .generator.manager import (
     autograde_subcommand,
     return_subcommand,
 )
+from .generator.wordexport2rawyaml import convert_subcommand
 from .bundle import bundle_subcommand
 from .util.text import banner, oxford
 
@@ -101,6 +102,10 @@ def main(argv: list[str] | None = None) -> int:
         'return': dict(
             func = return_subcommand,
             help = 'email graded answer sheets and exam PDFs to students via Outlook',
+        ),
+        'convert': dict(
+            func = convert_subcommand,
+            help = 'convert a ZyBooks-exported zip (QTI XML or Word) into a YAML question bank',
         ),
     }
     parser = ap.ArgumentParser(
@@ -478,8 +483,21 @@ def main(argv: list[str] | None = None) -> int:
         help="Preview what would be sent without actually emailing",
     )
 
+    command_parsers["convert"].add_argument(
+        "-i",
+        "--input-zip",
+        required=True,
+        help="Path to a ZyBooks-exported zip file containing Word documents",
+    )
+    command_parsers["convert"].add_argument(
+        "-o",
+        "--output-yaml",
+        required=True,
+        help="Path to the output YAML question bank file",
+    )
+
     # ---- dispatch ------------------------------------------------
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # If config specified, load and override
     if args.config:

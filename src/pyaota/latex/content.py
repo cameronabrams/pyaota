@@ -22,6 +22,7 @@ HEADMATTER = r"""
 \usetikzlibrary{calc}
 \usepackage{qrcode}
 \usepackage{multicol}
+\usepackage{graphicx}
 
 
 \definecolor{bubblegray}{gray}{0.3}

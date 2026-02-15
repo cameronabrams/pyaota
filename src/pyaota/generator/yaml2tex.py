@@ -156,7 +156,7 @@ def render_code_block(text: str, style: str = "mypython", force_env: bool = True
 
 def render_stem_block(block: dict) -> str:
     """
-    Render a single stem block (text or code) to LaTeX.
+    Render a single stem block (text, code, or image) to LaTeX.
     """
     btype = block.get("type", "text")
     if btype == "text":
@@ -168,6 +168,22 @@ def render_stem_block(block: dict) -> str:
         kind, tex = render_code_block(text, style)
         # For stems, just return whatever tex we got (inline or block)
         return tex
+    elif btype == "image":
+        src = block.get("src", "")
+        width = block.get("width", "")
+        # Convert pixel width to a fraction of linewidth (assume ~500px ≈ full width)
+        lw_frac = 0.5
+        if width:
+            try:
+                px = int(re.sub(r'[^0-9]', '', width))
+                lw_frac = min(round(px / 500, 2), 1.0)
+            except (ValueError, TypeError):
+                pass
+        return (
+            f"\n\\begin{{center}}\n"
+            f"\\includegraphics[width={lw_frac}\\linewidth]{{images/{src}}}\n"
+            f"\\end{{center}}"
+        )
     else:
         return f"% [unhandled stem block type: {btype}]"
 
