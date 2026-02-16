@@ -17,11 +17,17 @@ dependencies = [
   "PyPDF2",
   "numpy",
   "opencv-python",
-  "tensorflow>=2.12",   # swap for torch if you prefer
-  "docx",
+  "pint",
+  "scipy",
+  "pandas",
+  "Pillow",
+  "python-docx",
 ]
 
 [project.optional-dependencies]
+ocr = [
+  "tensorflow>=2.12",
+]
 dev = [
   "pytest",
   "pytest-cov",

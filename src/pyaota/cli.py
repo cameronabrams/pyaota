@@ -17,7 +17,7 @@ from .generator.manager import (
     return_subcommand,
 )
 from .generator.wordexport2rawyaml import convert_subcommand
-from .bundle import bundle_subcommand
+from .util.bundle import bundle_subcommand
 from .util.text import banner, oxford
 
 import logging
@@ -482,7 +482,12 @@ def main(argv: list[str] | None = None) -> int:
         action=ap.BooleanOptionalAction,
         help="Preview what would be sent without actually emailing",
     )
-
+    command_parsers["return"].add_argument(
+        "--sleep-seconds",
+        type=float,
+        default=0.5,
+        help="Number of seconds to sleep between sending emails (default: 0.5 seconds)",
+    )
     command_parsers["convert"].add_argument(
         "-i",
         "--input-zip",

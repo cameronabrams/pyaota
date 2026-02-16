@@ -11,6 +11,7 @@ import logging
 import re
 import sys
 from pathlib import Path
+import time
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -35,6 +36,7 @@ def return_graded_exams(
         "If you have questions about your grade, please contact your instructor."
     ),
     dry_run: bool = False,
+    sleep_seconds: Optional[float] = None,
 ):
     """
     Email each student their graded answer sheet and exam version PDF.
@@ -58,6 +60,8 @@ def return_graded_exams(
         Plain-text email body.
     dry_run : bool
         If True, print what would be sent without actually sending.
+    sleep_seconds : float | None
+        Number of seconds to sleep between sending emails. If None, no delay is applied.
     """
     graded_dir = Path(graded_dir)
     exams_dir = Path(exams_dir)
@@ -161,6 +165,8 @@ def return_graded_exams(
             sys.stderr.write(f"\rSent {sent}...")
             sys.stderr.flush()
             logger.info(f"Sent to {email} ({graded_path.name}, {exam_path.name})")
+            if sleep_seconds:
+                time.sleep(sleep_seconds)
         except Exception as e:
             failed.append((mk, email, str(e)))
             logger.error(f"Failed to send to {email}: {e}")

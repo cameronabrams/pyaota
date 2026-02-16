@@ -30,8 +30,10 @@ class Command:
         """
         Runs the command and returns the output and error messages.
         """
-        process = subprocess.Popen(self.c, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        out, err = process.communicate()
+        process = subprocess.Popen(self.c, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out_bytes, err_bytes = process.communicate()
+        out = out_bytes.decode("utf-8", errors="replace")
+        err = err_bytes.decode("utf-8", errors="replace")
         if process.returncode != 0 and not process.returncode in self.ignore_codes:
             raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
         return out, err

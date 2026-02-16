@@ -369,26 +369,69 @@ def _looks_like_code(text):
     indicators = [
         r'\{.*[:!].*\}',       # format specifiers  {x:>4}, {x!r}
         r'\w+\.\w+\(',         # method calls        foo.bar(
+        r'\w+\(',              # function calls       upper(), len(
         r'\w+\[',              # subscript            arr[
         r'\w+\s*[=!<>]=',      # comparison/assign    x == , x !=
-        r'\bdef\b|\bclass\b|\breturn\b|\bprint\b|\bimport\b',  # keywords
-        r'\bTrue\b|\bFalse\b|\bNone\b',                        # builtins
+        r'\breturn\b|\bprint\b|\bimport\b',                     # unambiguous keywords
+        r'\bTrue\b|\bFalse\b|\bNone\b',                         # builtins
+        # compound-statement keywords only when they look like Python
+        # statements (line ends with a colon)
+        r'(?m)^\s*(?:class|def|if|elif|else|for|while|with|try|except|finally)\b.*:\s*$',
     ]
     return any(re.search(p, text) for p in indicators)
 
 
-def _wrap_string_literals(text):
-    """Wrap double-quoted string literals in ``backtick`` markers for inline code.
+def _wrap_inline_code(text):
+    """Wrap string literals and Python identifiers in ``backtick`` markers.
 
-    Skips strings that are already inside ``...`` backtick regions so that
-    embedded string literals in inline code are not double-wrapped.
+    Detects double-quoted string literals and underscore-containing words
+    (e.g. ``new_string``, ``my_list``) that are almost certainly Python
+    identifiers.  Skips regions already inside ``...`` backtick markers.
     """
     # Split on ``...`` regions, only transform the outside parts
     parts = re.split(r'(``.*?``)', text)
     for i, part in enumerate(parts):
         if not part.startswith('``'):
-            parts[i] = re.sub(r'"([^"]+)"', r'``"\1"``', part)
+            # Wrap double-quoted string literals
+            part = re.sub(r'"([^"]+)"', r'``"\1"``', part)
+            # Wrap underscore identifiers (e.g. new_string, my_list)
+            part = re.sub(r'\b(\w+_\w+)\b', r'``\1``', part)
+            parts[i] = part
     return "".join(parts)
+
+
+def _table_to_text(table_elem):
+    """Convert a QTI ``<table>`` element into aligned plain-text rows.
+
+    Returns a string that resembles ``pandas`` DataFrame output, suitable
+    for inclusion as a ``code`` stem block.
+    """
+    ns = _QTI_NS
+    rows = []
+    for tr in table_elem.iter(f"{{{ns}}}tr"):
+        cells = []
+        for td in tr.iter(f"{{{ns}}}td"):
+            # A cell might contain nested <p> or bare text
+            text = _element_text(td).strip()
+            cells.append(text)
+        rows.append(cells)
+    if not rows:
+        return ""
+
+    # Pad all rows to the same width
+    max_cols = max(len(r) for r in rows)
+    for r in rows:
+        while len(r) < max_cols:
+            r.append("")
+
+    # Column widths
+    col_widths = [max(len(r[c]) for r in rows) for c in range(max_cols)]
+
+    lines = []
+    for r in rows:
+        line = "  ".join(r[c].rjust(col_widths[c]) for c in range(max_cols))
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _element_text(elem, *, inline_code=False):
@@ -470,6 +513,17 @@ def parse_qti_item(xml_path):
                 })
                 continue
 
+            if child_local == "table":
+                table_text = _table_to_text(child)
+                if table_text:
+                    stem_blocks.append({
+                        "type": "code",
+                        "language": "text",
+                        "style": "mypython",
+                        "text": table_text,
+                    })
+                continue
+
             if child_local != "p":
                 continue
 
@@ -484,7 +538,7 @@ def parse_qti_item(xml_path):
                 )
                 if has_surrounding_text:
                     # Inline code — render as text with ``backtick`` markers
-                    text = _wrap_string_literals(_element_text(p, inline_code=True).strip())
+                    text = _wrap_inline_code(_element_text(p, inline_code=True).strip())
                     if text:
                         stem_blocks.append({"type": "text", "text": text})
                 else:
@@ -497,9 +551,26 @@ def parse_qti_item(xml_path):
                         "text": code_text,
                     })
             else:
-                text = _wrap_string_literals(_element_text(p).strip())
+                text = _wrap_inline_code(_element_text(p).strip())
                 if text:
                     stem_blocks.append({"type": "text", "text": text})
+
+    # Merge consecutive text blocks where the second is a sentence
+    # continuation (ZyBooks splits <p> at inline-element boundaries).
+    merged = []
+    for block in stem_blocks:
+        if (merged
+                and merged[-1].get("type") == "text"
+                and block.get("type") == "text"):
+            text = block["text"]
+            if text and (text[0].islower() or text[0] in ',.?!;:'):
+                if text[0] in ',.?!;:':
+                    merged[-1]["text"] += text
+                else:
+                    merged[-1]["text"] += " " + text
+                continue
+        merged.append(block)
+    stem_blocks = merged
 
     # Determine if the stem implies choices are code/output
     stem_text_joined = " ".join(
@@ -510,7 +581,8 @@ def parse_qti_item(xml_path):
         r"|what does .* (print|output|return)"
         r"|what will .* (print|output|display)"
         r"|complete the (following )?code"
-        r"|which .* (line|statement|expression|code)"
+        r"|which .* (line|statement|expression|code|method)"
+        r"|presentation type"
         r"|as output",
         stem_text_joined,
     ))

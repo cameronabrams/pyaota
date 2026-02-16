@@ -87,24 +87,30 @@ def tex_escape_inline_code(s: str) -> str:
 
 def render_text(s: str) -> str:
     """
-    Render a text string that may contain ``inline code`` markers
-    into LaTeX, using \\inl{...} for the code spans and escaping
-    the rest as normal text.
+    Render a text string that may contain ``inline code`` and
+    ``@@inline math@@`` markers into LaTeX.
+
+    - ``code`` regions are rendered with ``\\inl{...}``
+    - ``@@math@@`` regions are passed through as ``$...$``
+    - Everything else is escaped for normal text.
     """
     s = normalize_punctuation(s)
     result_parts = []
     pos = 0
-    pattern = re.compile(r'``(.*?)``')
+    # Match @@...@@ (math) or ``...`` (code) in a single pass
+    pattern = re.compile(r'@@(.*?)@@|``(.*?)``')
 
     for m in pattern.finditer(s):
         before = s[pos:m.start()]
-        code = m.group(1)
-
         if before:
             result_parts.append(tex_escape_plain(before))
-        # print(f'inline code found: {code}, rendering...')
-        # print(f'  -> escaped inline code: {tex_escape_inline_code(code)}')
-        result_parts.append(f"\\inl{{{tex_escape_inline_code(code)}}}")
+
+        if m.group(1) is not None:
+            # @@...@@ → inline math, pass through raw
+            result_parts.append(f"${m.group(1)}$")
+        else:
+            # ``...`` → inline code
+            result_parts.append(f"\\inl{{{tex_escape_inline_code(m.group(2))}}}")
 
         pos = m.end()
 

@@ -573,4 +573,5 @@ def return_subcommand(args):
         subject=args.subject,
         body=args.body,
         dry_run=args.dry_run,
+        sleep_seconds=args.sleep_seconds,
     )

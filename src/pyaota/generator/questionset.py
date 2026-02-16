@@ -70,6 +70,8 @@ class QuestionSet:
         target.mkdir(parents=True, exist_ok=True)
         count = 0
         for img_dir in self.image_dirs:
+            if img_dir.resolve() == target.resolve():
+                continue
             for img in img_dir.iterdir():
                 if img.is_file():
                     shutil.copy2(img, target / img.name)

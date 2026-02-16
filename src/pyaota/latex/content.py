@@ -76,7 +76,7 @@ HEADMATTER = r"""
   upquote=true,
   commentstyle=\ttfamily\upshape,
 }
-\newcommand{\inl}[1]{\lstinline[style=mypython]|#1|}
+\newcommand{\inl}[1]{\lstinline[style=mypython,breaklines=false]|#1|}
 \lstdefinestyle{pseudocode}{
     basicstyle=\ttfamily,
     keywordstyle=\bfseries,
