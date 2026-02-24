@@ -188,7 +188,8 @@ def main(argv: list[str] | None = None) -> int:
         "-n",
         "--num-exams",
         type=int,
-        help="Number of exams to generate",
+        default=1,
+        help="Number of exams to generate (default: 1)",
     )
     command_parsers["build"].add_argument(
         "-t",
