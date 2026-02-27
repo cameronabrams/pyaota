@@ -54,6 +54,16 @@ Key options:
 - ``--institution``, ``--course``, ``--term`` -- metadata for headers
 - ``--cleanup`` -- remove intermediate LaTeX files after compilation
 - ``-ow`` / ``--overwrite`` -- overwrite output directory if it exists
+- ``--font-size {10pt,11pt,12pt}`` -- document font size (default: ``12pt``)
+- ``--question-spacing <LENGTH>`` -- vertical space between questions as a LaTeX
+  length, e.g. ``24pt`` or ``1cm`` (default: ``24pt``)
+- ``--bubble-font-size <PT>`` -- absolute font size in points for answer bubble
+  labels (default: ``8.0``); independent of ``--font-size``
+- ``--odd-page-answersheet`` -- force the answer sheet to start on an odd-numbered
+  page by inserting a blank filler page when needed (useful for double-sided
+  printing)
+- ``--rasterize`` -- rasterize output PDFs at 300 DPI after compilation for
+  improved printer compatibility
 
 compile-dump
 ~~~~~~~~~~~~
@@ -71,6 +81,8 @@ Key options:
 - ``-od`` / ``--output-dir`` -- output directory
 - ``-if`` / ``--instructions-file`` -- custom LaTeX instructions
 - ``--institution``, ``--course``, ``--term`` -- metadata
+- ``--font-size {10pt,11pt,12pt}`` -- document font size (default: ``12pt``)
+- ``--question-spacing <LENGTH>`` -- vertical space between questions (default: ``24pt``)
 
 grade
 ~~~~~
@@ -110,6 +122,10 @@ Key options:
 - ``-nc`` / ``--num-cols`` -- number of bubble columns
 - ``-od`` / ``--output-dir`` -- output directory
 - ``-idl`` / ``--student-id-num-digits`` -- digits in the student ID field
+- ``--bubble-font-size <PT>`` -- absolute font size in points for bubble labels
+  (default: ``8.0``)
+- ``--odd-page-answersheet`` -- force the sheet to start on an odd-numbered page
+- ``--rasterize`` -- rasterize the output PDF at 300 DPI for printer compatibility
 
 tune-answersheetreader
 ~~~~~~~~~~~~~~~~~~~~~~

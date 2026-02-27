@@ -137,6 +137,10 @@ class LayoutConfig:
     qr_ul: Tuple[pint.Quantity, pint.Quantity] = (6.5 * _ureg.inch, 2.5 * _ureg.inch)
     qr_size: pint.Quantity = 1.5 * _ureg.cm
 
+    bubble_font_size_pt: float = 8.0
+
+    force_odd_page: bool = False
+
     warning_line_opacity: float = 0.75
 
     overlay_correct_choice_color: Tuple[int, int, int] = (0, 255, 0)  # green
@@ -145,7 +149,8 @@ class LayoutConfig:
     bubble_field_num_questions_per_block: int = 5 # number of questions per block (vertical)
     bubble_field_num_cols: int = 3
 
-    bubble_field_ul: Tuple[pint.Quantity, pint.Quantity] = (2 * _ureg.inch, 4.6 * _ureg.inch)
+    bubble_field_ul: Tuple[pint.Quantity, pint.Quantity] = field(init=False)
+    bubble_field_header_gap: pint.Quantity = 0.867 * _ureg.inch
     bubble_field_block_gap: Tuple[pint.Quantity, pint.Quantity] = (1.25 * _ureg.cm, 1 * _ureg.cm)
     intrablock_row_gap: pint.Quantity = 60 * _ureg.pxl
     intrablock_choice_gap: pint.Quantity = 10 * _ureg.pxl
@@ -153,7 +158,34 @@ class LayoutConfig:
 
     id_report_position: Tuple[pint.Quantity, pint.Quantity] = (6.5 * _ureg.inch, 0.45 * _ureg.inch)
     version_report_position: Tuple[pint.Quantity, pint.Quantity] = (0.5 * _ureg.inch, 0.45 * _ureg.inch)
-    score_report_position: Tuple[pint.Quantity, pint.Quantity] = (4.25 * _ureg.inch, 9.5 * _ureg.inch)
+
+    def __post_init__(self):
+        max_len = max(len(self.choice_keys), len(self.tf_keys))
+        choice_stride = self.intrablock_choice_gap + 2 * self.bubble_radius
+        col_stride = (
+            self.intrablock_numbering_gap
+            + choice_stride * max_len
+            + self.bubble_field_block_gap[0]
+        )
+        field_width = (
+            (self.bubble_field_num_cols - 1) * col_stride
+            + self.intrablock_numbering_gap
+            + (max_len - 1) * choice_stride
+            + self.bubble_radius
+        )
+        ul_x = self.canonical_width / 2 - field_width / 2
+
+        first_bubble_y = (
+            self.student_id_digit_boxes_ul[1]
+            + self.student_id_digit_boxes_box_size[1]
+            + self.bubble_column_vert_gap
+            + self.bubble_radius
+        )
+        last_bubble_y = first_bubble_y + 9 * (2 * self.bubble_radius + self.bubble_column_vert_gap)
+        student_id_bottom = last_bubble_y + self.bubble_radius
+        ul_y = student_id_bottom + self.bubble_field_header_gap
+
+        self.bubble_field_ul = (ul_x, ul_y)
 
 class AnswerSheetGenerator:
     def __init__(self, layout_config: LayoutConfig, question_list: Optional[List[dict]] = None):
@@ -241,7 +273,7 @@ class AnswerSheetGenerator:
         lines.append(r'  \foreach \j in {0,...,9} {')
         lines.append(rf'    \pgfmathsetmacro{{\spacing}}{{2*\radius + {vgap}}}')
         lines.append(rf'    \pgfmathsetmacro{{\ypos}}{{{ul_y} - {box_height} - {vgap} - {bubble_radius} - \spacing * \j}}')
-        lines.append(rf'    \node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\footnotesize,text height={bubble_text_height}cm,text depth={bubble_text_depth}cm,anchor=center] at (\xpos cm, \ypos cm) {{\textcolor{{bubblegray}}{{\j}}}};')
+        lines.append(rf'    \node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height={bubble_text_height}cm,text depth={bubble_text_depth}cm,anchor=center] at (\xpos cm, \ypos cm) {{\textcolor{{bubblegray}}{{\j}}}};')
         lines.append(r'  }')
         lines.append(r'}')
         # place the label "Student ID:" to the left of the boxes
@@ -348,7 +380,7 @@ class AnswerSheetGenerator:
                     x_choices = x_col + config.intrablock_numbering_gap.to(_ureg.cm).magnitude
                     for i, key in enumerate(choice_keys[qtyp]):
                         x_bubble = x_choices + (i) * ((block_choice_gap + bubble_radius * 2))
-                        lines.append(rf'\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\footnotesize,text height={bubble_text_height}cm,text depth={bubble_text_depth}cm,anchor=center] at ({x_bubble}cm, -{y_base}cm) {{\textcolor{{bubblegray}}{{{key}}}}};')
+                        lines.append(rf'\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height={bubble_text_height}cm,text depth={bubble_text_depth}cm,anchor=center] at ({x_bubble}cm, -{y_base}cm) {{\textcolor{{bubblegray}}{{{key}}}}};')
                     qidx += 1
                     if qidx >= num_questions:
                         break
@@ -419,8 +451,14 @@ class AnswerSheetGenerator:
         right = config.page_right_margin.to(_ureg.inch).magnitude
 
         lines: list[str] = []
+        if config.force_odd_page:
+            lines.append(r"\ifodd\value{page}\else\thispagestyle{empty}\mbox{}\clearpage\fi")
         lines.append(r"\thispagestyle{answersheet}")
         lines.append(rf"\newgeometry{{top={top}in,bottom={bottom}in,left={left}in,right={right}in}}")
+        lines.append(r"\fontsize{12pt}{14.4pt}\selectfont")
+        bfpt = config.bubble_font_size_pt
+        bfskip = round(bfpt * 1.2, 2)
+        lines.append(rf"\newcommand{{\bubblefont}}{{\fontsize{{{bfpt}pt}}{{{bfskip}pt}}\selectfont}}")
 
         lines.append(self._place_indicials_tex())
         lines.append(self._place_name_blank())

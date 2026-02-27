@@ -12,6 +12,7 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   pyaota.util.bundle
    pyaota.util.collectors
    pyaota.util.command
    pyaota.util.text

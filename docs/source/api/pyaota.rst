@@ -25,5 +25,4 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   pyaota.bundle
    pyaota.cli

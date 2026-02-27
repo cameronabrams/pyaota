@@ -213,7 +213,8 @@ def main(argv: list[str] | None = None) -> int:
         "-nc",
         "--num-cols",
         type=int,
-        help="Number of columns in the answer sheet",
+        default=3,
+        help="Number of columns in the answer sheet (default: 3)",
     )
     command_parsers["build"].add_argument(
         "-sq",
@@ -249,6 +250,39 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         default=None,
         help="Path to file containing custom exam instructions in LaTeX format (if not provided, default instructions will be used)",
+    )
+    command_parsers["build"].add_argument(
+        "--font-size",
+        type=str,
+        default="12pt",
+        choices=["10pt", "11pt", "12pt"],
+        help="Font size for the generated PDF (default: 12pt)",
+    )
+    command_parsers["build"].add_argument(
+        "--question-spacing",
+        type=str,
+        default="24pt",
+        metavar="LENGTH",
+        help="Vertical space between questions as a LaTeX length (default: 24pt)",
+    )
+    command_parsers["build"].add_argument(
+        "--bubble-font-size",
+        type=float,
+        default=8.0,
+        metavar="PT",
+        help="Font size in points for text inside answer bubbles (default: 8.0)",
+    )
+    command_parsers["build"].add_argument(
+        "--odd-page-answersheet",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Force the answer sheet to start on an odd-numbered page (for double-sided printing)",
+    )
+    command_parsers["build"].add_argument(
+        "--rasterize",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Rasterize output PDFs at 300 DPI for improved printer compatibility",
     )
     command_parsers["compile-dump"].add_argument(
         "-od",
@@ -287,6 +321,20 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         default=None,
         help="Path to file containing custom instructions in LaTeX format (if not provided, default instructions will be used)",
+    )
+    command_parsers["compile-dump"].add_argument(
+        "--font-size",
+        type=str,
+        default="12pt",
+        choices=["10pt", "11pt", "12pt"],
+        help="Font size for the generated PDF (default: 12pt)",
+    )
+    command_parsers["compile-dump"].add_argument(
+        "--question-spacing",
+        type=str,
+        default="24pt",
+        metavar="LENGTH",
+        help="Vertical space between questions as a LaTeX length (default: 24pt)",
     )
 
     command_parsers["grade"].add_argument(
@@ -380,6 +428,25 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=8,
         help="Number of digits in the student ID field",
+    )
+    command_parsers["make-answersheet"].add_argument(
+        "--bubble-font-size",
+        type=float,
+        default=8.0,
+        metavar="PT",
+        help="Font size in points for text inside answer bubbles (default: 8.0)",
+    )
+    command_parsers["make-answersheet"].add_argument(
+        "--odd-page-answersheet",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Force the answer sheet to start on an odd-numbered page (for double-sided printing)",
+    )
+    command_parsers["make-answersheet"].add_argument(
+        "--rasterize",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Rasterize output PDF at 300 DPI for improved printer compatibility",
     )
 
     command_parsers["tune-answersheetreader"].add_argument(
@@ -521,6 +588,7 @@ def main(argv: list[str] | None = None) -> int:
         save_args(args, args.save_config)
 
     setup_logging(args)
+    logger.debug(f'Command line: {" ".join(sys.argv)}')
 
     if args.banner:
         banner(print)

@@ -6,7 +6,7 @@ from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
 import cv2
 import logging
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
 
@@ -338,9 +338,6 @@ class AnswerSheetReader:
             Path to write the overlay image to.
         """
         config = self.layout_config
-        id_report_pos = (int(config.id_report_position[0].to('pxl').magnitude), int(config.id_report_position[1].to('pxl').magnitude))
-        version_report_pos = (int(config.version_report_position[0].to('pxl').magnitude), int(config.version_report_position[1].to('pxl').magnitude))
-        score_report_pos = (int(config.score_report_position[0].to('pxl').magnitude), int(config.score_report_position[1].to('pxl').magnitude))
         # the overlay will stay warped
         overlay_img = self.working_image.copy()
         bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude*1.05)
@@ -350,6 +347,7 @@ class AnswerSheetReader:
         # unwrapped_center_coords = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
         bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in pts_array]
         bubble_keys = list(centers.keys())
+        ambiguous_bubbles = self.diagnostics.get('ambiguous_bubbles', {})
         max_y = 0
         sum_x = 0
         for qnum in range(1, config.num_questions+1):
@@ -357,96 +355,120 @@ class AnswerSheetReader:
             correct_bubble_label = q_info["correct"]
             detected_filled_bubble_label = q_info["detected"]
             is_correct = q_info["is_correct"]
+            row_centers = []
             for key in 'abcd':
                 bubble_idx = bubble_keys.index((qnum, key))
                 bubble_center = bubble_result_tuples[bubble_idx]
                 x, y = bubble_center
                 max_y = max(max_y, y)
                 sum_x += x
+                row_centers.append((x, y))
                 if key == correct_bubble_label:
                     cv2.circle(overlay_img, (x, y), bubble_radius_px, (0, 255, 0), 3)
                 elif key == detected_filled_bubble_label and not is_correct:
                     cv2.circle(overlay_img, (x, y), bubble_radius_px, (0, 0, 255), 3)
+            if detected_filled_bubble_label == "?":
+                xs = [c[0] for c in row_centers]
+                row_y = row_centers[0][1]
+                if qnum in ambiguous_bubbles:
+                    # Multiple fill: red circle on each detected-filled bubble that
+                    # isn't the correct answer (correct one is already green above).
+                    for choice, bx, by in ambiguous_bubbles[qnum]:
+                        if choice != correct_bubble_label:
+                            cv2.circle(overlay_img, (bx, by), bubble_radius_px, (0, 0, 255), 3)
+                # Red horizontal line for both blank and multiple-fill.
+                cv2.line(
+                    overlay_img,
+                    (min(xs) - bubble_radius_px, row_y),
+                    (max(xs) + bubble_radius_px, row_y),
+                    (0, 0, 255),
+                    2,
+                )
         avg_x = int(sum_x / config.num_questions / 4)
-        # write the score
-        logger.debug(f' Writing score annotation: score_fraction={score_fraction}')
-        if score_fraction is not None:
-            (text_width, text_height), baseline = cv2.getTextSize(
-                f"Score: {(score_fraction*100):.1f}%",
-                cv2.FONT_HERSHEY_SIMPLEX,
-                3.0,
-                4,
-            )
-            score_color = (75, 0, 130)  # a gentle dark purple
-            cv2.putText(
-                overlay_img,
-                f"Score: {(score_fraction*100):.1f}%",
-                (score_report_pos[0] - text_width // 2, score_report_pos[1]),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                3.0,
-                score_color,
-                4,
-                cv2.LINE_AA,
-            )
-            # draw a rectangle around the score
-            cv2.rectangle(
-                overlay_img,
-                (score_report_pos[0] - text_width // 2 - 10, score_report_pos[1] - text_height - 20),
-                (score_report_pos[0] + text_width // 2 + 10, score_report_pos[1] + baseline + 10),
-                score_color,
-                4,
-            )
 
-        id_bubble_color = (0, 130, 130)  # dark orange
         id_bubble_region = self.diagnostics.get('id_bubble_region', None)
-        if id_bubble_region is not None:
-            id_detected = self.results['student_id_bubbles']
-            ul = (id_bubble_region['x0'], id_bubble_region['y0'])
-            lr = (id_bubble_region['x1'], id_bubble_region['y1'])
-            ur = (lr[0], ul[1])
-            ll = (ul[0], lr[1])
-            pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
-            # unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            id_bubble_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in pts_array]
-            u_ul, u_ur, u_lr, u_ll = id_bubble_result_tuples
-            cv2.putText(
-                overlay_img,
-                f"ID: {id_detected}",
-                (id_report_pos[0], id_report_pos[1]),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.5,
-                id_bubble_color,
-                3,
-                cv2.LINE_AA,
-            )
+        id_detected = self.results['student_id_bubbles'] if id_bubble_region is not None else None
         qr_crop = self.diagnostics.get('qr_crop_coords', None)
-        if qr_crop is not None:
-            version_detected = self.results.get('version', 'unknown')
-            logger.debug(f' Writing version annotation: version_detected={version_detected} within QR crop {qr_crop}')
-            qr_color = (139, 0, 0) # navy blue
-            x0, y0, x1, y1 = qr_crop['x0'], qr_crop['y0'], qr_crop['x1'], qr_crop['y1']
-            ul = (x0, y0)
-            lr = (x1, y1)
-            ur = (lr[0], ul[1])
-            ll = (ul[0], lr[1])
-            pts_array = np.array([ul, ur, lr, ll], dtype=np.float32).reshape(-1, 1, 2)
-            # unwrapped_pts = cv2.perspectiveTransform(pts_array, self.diagnostics['warp_matrix_inv'])
-            qr_result_tuples = [list(map(lambda x: int(round(x, 0)), pt.tolist()[0])) for pt in pts_array]
-            u_ul, u_ur, u_lr, u_ll = qr_result_tuples
-            cv2.putText(
-                overlay_img,
-                f"v {version_detected}",
-                (version_report_pos[0], version_report_pos[1]),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.5,
-                qr_color,
-                2,
-                cv2.LINE_AA,
-            )
-        
+        version_detected = self.results.get('version') if qr_crop is not None else None
+
         # write to the path as a single-page PDF
         overlay_rgb = cv2.cvtColor(overlay_img, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(overlay_rgb)
+        draw = ImageDraw.Draw(pil_img)
+
+        # Load system fonts (shared across all annotations)
+        large_font = small_font = None
+        for fp in [
+            "C:/Windows/Fonts/calibri.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/verdana.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
+        ]:
+            try:
+                large_font = ImageFont.truetype(fp, 90)
+                small_font = ImageFont.truetype(fp, 45)
+                break
+            except (IOError, OSError):
+                continue
+        if large_font is None:
+            large_font = small_font = ImageFont.load_default()
+
+        def draw_boxed_text(text, pos, color, font, pad=10, border_width=3):
+            """Draw text with a padded rectangle, anchored at pos (top-left of glyphs)."""
+            bb = draw.textbbox((0, 0), text, font=font)
+            tx = pos[0] - bb[0]
+            ty = pos[1] - bb[1]
+            draw.rectangle(
+                [(tx + bb[0] - pad, ty + bb[1] - pad),
+                 (tx + bb[2] + pad, ty + bb[3] + pad)],
+                outline=color,
+                width=border_width,
+            )
+            draw.text((tx, ty), text, fill=color, font=font)
+
+        # Score box (large, centered on bubble field)
+        logger.debug(f' Writing score annotation: score_fraction={score_fraction}')
+        if score_fraction is not None:
+            score_text = f"Score: {(score_fraction * 100):.1f}%"
+            score_color = (75, 0, 130)  # dark purple
+            bb = draw.textbbox((0, 0), score_text, font=large_font)
+            pad = 15
+            text_x = avg_x - (bb[0] + bb[2]) // 2
+            text_y = max_y + 3 * bubble_radius_px - bb[1]
+            draw.rectangle(
+                [(text_x + bb[0] - pad, text_y + bb[1] - pad),
+                 (text_x + bb[2] + pad, text_y + bb[3] + pad)],
+                outline=score_color,
+                width=4,
+            )
+            draw.text((text_x, text_y), score_text, fill=score_color, font=large_font)
+
+        # ID box — just to the right of the digit boxes, vertically centered on those boxes
+        if id_detected is not None:
+            logger.debug(f' Writing ID annotation: id_detected={id_detected}')
+            id_text = f"ID: {id_detected}"
+            id_bb = draw.textbbox((0, 0), id_text, font=small_font)
+            text_h = id_bb[3] - id_bb[1]
+            box_height_px = int(config.student_id_digit_boxes_box_size[1].to('pxl').magnitude)
+            box_mid_y = id_bubble_region['y0'] + box_height_px // 2
+            id_x = id_bubble_region['x1'] + 20
+            id_y = box_mid_y - text_h // 2
+            draw_boxed_text(id_text, (id_x, id_y), (130, 130, 0), small_font)
+
+        # Version box — centered horizontally below the QR code with padding
+        if version_detected is not None:
+            logger.debug(f' Writing version annotation: version_detected={version_detected}')
+            ver_text = f"v {version_detected}"
+            ver_bb = draw.textbbox((0, 0), ver_text, font=small_font)
+            text_w = ver_bb[2] - ver_bb[0]
+            text_h = ver_bb[3] - ver_bb[1]
+            qr_cx = (qr_crop['x0'] + qr_crop['x1']) // 2
+            ver_x = qr_cx - text_w // 2
+            ver_y = qr_crop['y1'] + 60 + text_h
+            draw_boxed_text(ver_text, (ver_x, ver_y), (0, 0, 139), small_font)
+
         pil_img.save(str(overlay_path), "PDF", resolution=300.0)
         logger.info(f'Wrote graded overlay PDF to {overlay_path}')
 
@@ -606,6 +628,8 @@ class AnswerSheetReader:
 
         answers: Dict[int, str] = {}
         answer_coords: Dict[int, Tuple[int, int]] = {}
+        # qnum -> [(choice, x, y)] for questions rejected by runner_up_margin
+        ambiguous_bubbles: Dict[int, List[Tuple[str, int, int]]] = {}
 
         for pixel_thresh in pixel_thresholds:
             # Only recompute for questions still unresolved
@@ -618,28 +642,51 @@ class AnswerSheetReader:
                 img_gray, centers, bubble_radius_px, pixel_thresh)
 
             for qnum in unresolved:
+                q_fills = bubble_fills.get(qnum, {})
                 filled = [(choice, pct, x, y)
                           for choice, (pct, x, y)
-                          in bubble_fills.get(qnum, {}).items()
+                          in q_fills.items()
                           if pct >= fill_threshold]
 
                 if len(filled) == 0:
                     answers[qnum] = "?"
-                elif len(filled) == 1:
-                    answers[qnum] = filled[0][0]
-                    answer_coords[qnum] = (filled[0][2], filled[0][3])
-                    if pixel_thresh > pixel_thresholds[0]:
-                        logger.debug(
-                            f"Q{qnum}: resolved at pixel_threshold={pixel_thresh} "
-                            f"(answer={filled[0][0]}, fill={filled[0][1]:.3f})")
-                else:
+                elif len(filled) > 1:
+                    # More than one bubble above fill threshold — explicit multiple fill.
                     filled.sort(key=lambda f: f[1], reverse=True)
-                    answers[qnum] = filled[0][0]
-                    answer_coords[qnum] = (filled[0][2], filled[0][3])
-                    if pixel_thresh > pixel_thresholds[0]:
+                    logger.debug(
+                        f"Q{qnum}: multiple fills at pixel_threshold={pixel_thresh} "
+                        f"({[(c, round(f, 3)) for c, f, _, _ in filled]})"
+                    )
+                    answers[qnum] = "?"
+                    ambiguous_bubbles[qnum] = [(c, x, y) for c, _, x, y in filled]
+                else:
+                    # Exactly one bubble above fill threshold.
+                    top_choice, top_fill, top_x, top_y = filled[0]
+                    # Also require it to stand out from all other choices by at least
+                    # runner_up_margin — catches circle-outline false positives.
+                    second_fill = max(
+                        (pct for k, (pct, _, _) in q_fills.items() if k != top_choice),
+                        default=0.0,
+                    )
+                    if top_fill - second_fill < config.runner_up_margin:
                         logger.debug(
-                            f"Q{qnum}: resolved at pixel_threshold={pixel_thresh} "
-                            f"(answer={filled[0][0]}, fill={filled[0][1]:.3f})")
+                            f"Q{qnum}: rejected at pixel_threshold={pixel_thresh} "
+                            f"(top={top_choice}:{top_fill:.3f}, "
+                            f"second_best:{second_fill:.3f}, "
+                            f"margin={top_fill - second_fill:.3f} < {config.runner_up_margin})"
+                        )
+                        answers[qnum] = "?"
+                        ambiguous_bubbles[qnum] = [(c, x, y) for c, _, x, y in filled]
+                    else:
+                        answers[qnum] = top_choice
+                        answer_coords[qnum] = (top_x, top_y)
+                        ambiguous_bubbles.pop(qnum, None)
+                        if pixel_thresh > pixel_thresholds[0]:
+                            logger.debug(
+                                f"Q{qnum}: resolved at pixel_threshold={pixel_thresh} "
+                                f"(answer={top_choice}, fill={top_fill:.3f}, "
+                                f"margin={top_fill - second_fill:.3f})"
+                            )
 
         # Draw debug circles for all resolved answers
         if debug_image is not None:
@@ -653,12 +700,20 @@ class AnswerSheetReader:
                 )
 
         self.diagnostics['bubbles'] = centers
+        self.diagnostics['ambiguous_bubbles'] = ambiguous_bubbles
         self.results['answers'] = answers
 
-        blank_qs = [q for q, a in answers.items() if a == "?"]
+        blank_qs = [q for q, a in answers.items() if a == "?" and q not in ambiguous_bubbles]
+        ambig_qs = [q for q in ambiguous_bubbles]
         if blank_qs:
-            raise RuntimeError(
-                f"No answer detected for question(s) {blank_qs}"
+            logger.warning(
+                f"No fill detected for question(s) {blank_qs} "
+                f"— treating as unanswered (will be scored wrong)"
+            )
+        if ambig_qs:
+            logger.warning(
+                f"Ambiguous/multiple fill detected for question(s) {ambig_qs} "
+                f"— treating as unanswered (will be scored wrong)"
             )
 
 

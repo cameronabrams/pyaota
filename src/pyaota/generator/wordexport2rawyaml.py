@@ -63,10 +63,12 @@ def find_docs_in_extracted_dir(extract_dir: Path):
 
 def parse_answer_key(answer_doc_path: Path):
     """
-    Parse an answer-key .docx where each answer is on a line like:
-        '1) b'
-        '2) a'
-    Returns: dict[int -> 'a'..'d']
+    Parse an answer-key .docx where each answer is on a line like::
+
+        1) b
+        2) a
+
+    Returns a dict mapping question number to answer letter (``'a'``--``'d'``).
     """
     from docx import Document
     doc = Document(str(answer_doc_path))

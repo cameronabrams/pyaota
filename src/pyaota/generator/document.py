@@ -66,6 +66,8 @@ class ExamDocument(Document):
             'TERM': self.term,
             'DOCUMENTNAME': self.documentname,
             'VERSION': self.version,
+            'FONTSIZE': self.specs.get('fontsize', '12pt'),
+            'QUESTIONSPACING': self.specs.get('questionspacing', '24pt'),
         }
         logger.debug(f'Number of questions: {len(self.question_list)}')
         content = HEADMATTER + '\n\n' + DEFAULT_PAGESTYLES_TEMPLATE + '\n\n' + BEGIN_DOCUMENT + '\n\n' + self.instructions + '\n\n'

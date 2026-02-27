@@ -116,60 +116,57 @@ class QuestionSet:
             rng = random.Random(seed)
 
         selected_questions: list[dict] = []
-        if topics_order is None or topics_order == []:
+        auto_topics = topics_order is None or topics_order == []
+        if auto_topics:
             ordered_topics = list(self.questions_by_topic.keys())
         else:
             # Only include topics that actually appear in questions_by_topic
-            ordered_topics = [t for t in topics_order if t in self.questions_by_topic]    
+            ordered_topics = [t for t in topics_order if t in self.questions_by_topic]
 
         logger.debug(f'Using topic order: {ordered_topics}')
 
+        # Compute per-topic allocations. Process the most-constrained topics
+        # first (fewest available questions) so that any shortfall is
+        # redistributed to topics that have more questions, keeping the
+        # total exactly equal to num_questions.
+        topics_by_avail = sorted(
+            ordered_topics,
+            key=lambda t: len(self.questions_by_topic.get(t, [])),
+        )
+        allocations: dict[str, int] = {}
+        remaining_need = num_questions
+        for i, topic in enumerate(topics_by_avail):
+            remaining_topics = len(topics_by_avail) - i
+            desired = remaining_need // remaining_topics
+            available = len(self.questions_by_topic.get(topic, []))
+            actual = min(desired, available)
+            allocations[topic] = actual
+            remaining_need -= actual
+            logger.debug(
+                f"Allocating {actual} (wanted {desired}, available {available}) "
+                f"from topic '{topic}'; {remaining_need} still needed."
+            )
+
+        if remaining_need > 0:
+            total_available = sum(len(self.questions_by_topic.get(t, [])) for t in ordered_topics)
+            raise ValueError(
+                f"Requested {num_questions} questions but only {total_available} "
+                f"available across {len(ordered_topics)} topic(s)."
+            )
+
+        # Sample questions in the original topic order
         for topic in ordered_topics:
-            desired = num_questions // len(ordered_topics)
-            if desired <= 0:
+            n = allocations.get(topic, 0)
+            if n <= 0:
                 continue
-            
             pool = self.questions_by_topic.get(topic, [])
-            available = len(pool)
-            logger.debug(f"Selecting {desired} questions from topic '{topic}' with {available} available.")
-            if desired > available:
-                raise ValueError(
-                    f"Requested {desired} questions for topic '{topic}' "
-                    f"but only {available} available."
-                )
-
-            if desired == available:
-                # No need to sample, but we still want deterministic behavior
-                chosen = list(pool)
-            else:
-                # Sample without replacement
-                chosen = rng.sample(pool, desired)
-
+            chosen = list(pool) if n == len(pool) else rng.sample(pool, n)
             selected_questions.extend(chosen)
             logger.debug(f"Selected {len(chosen)}/{len(pool)} questions from topic '{topic}'.")
-            # show ID numbers of selected questions
             selected_ids = [q.get("id", "N/A") for q in chosen]
             logger.debug(f"  Selected question IDs: {selected_ids}")
             logger.debug(f"  Total selected so far: {len(selected_questions)}")
-            logger.debug(f" Selected question IDs so far: {[q.get('id', 'N/A') for q in selected_questions]}")
-        # if we have not yet selected enough questions (due to rounding down), fill in from the start
-        while len(selected_questions) < num_questions:
-            for topic in ordered_topics:
-                if len(selected_questions) >= num_questions:
-                    break
-                pool = self.questions_by_topic.get(topic, [])
-                available = len(pool)
-                logger.debug(f"Filling in from topic '{topic}' with {available} available.")
-                # select one additional question from this topic
-                remaining_pool = [q for q in pool if q not in selected_questions]
-                if not remaining_pool:
-                    logger.debug(f"No remaining questions to select from topic '{topic}'.")
-                    continue
-                chosen = rng.choice(remaining_pool)
-                selected_questions.append(chosen)
-                logger.debug(f"Added question ID {chosen.get('id', 'N/A')} from topic '{topic}'.")
-                logger.debug(f" Total selected so far: {len(selected_questions)}")
-                logger.debug(f" Selected question IDs so far: {[q.get('id', 'N/A') for q in selected_questions]}")
+            logger.debug(f"  Selected question IDs so far: {[q.get('id', 'N/A') for q in selected_questions]}")
 
         if shuffle:
             logger.debug('Shuffling selected questions.')

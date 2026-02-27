@@ -30,8 +30,10 @@ def serialize_layout_config(config, ureg: pint.UnitRegistry) -> Dict[str, Any]:
     result = {}
     
     for field in fields(config):
+        if not field.init:
+            continue
         value = getattr(config, field.name)
-        
+
         if isinstance(value, pint.Quantity):
             # Single quantity
             result[field.name] = serialize_quantity(value)
@@ -68,6 +70,8 @@ def deserialize_layout_config(data: Dict[str, Any], config_class, ureg: pint.Uni
     kwargs = {}
     
     for field in fields(config_class):
+        if not field.init:
+            continue
         if field.name not in data:
             # Use default if available
             continue

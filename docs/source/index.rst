@@ -22,6 +22,7 @@ Contents
 
    installation
    usage
+   examples
    question_schema
    changelog
    API Reference <api/API>

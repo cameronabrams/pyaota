@@ -3,7 +3,7 @@ LaTeX content templates for pyaota.
 """
 
 HEADMATTER = r"""
-\documentclass[12pt, letter]{article}
+\documentclass[<<<FONTSIZE>>>, letter]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{fancyhdr}
 \usepackage{setspace}
@@ -34,7 +34,7 @@ HEADMATTER = r"""
       draw,
       inner sep=0pt,
       minimum size=1.1em,      % slightly larger bubble
-      font=\footnotesize,   % <-- larger than scriptsize
+      font=\bubblefont,
       text height=1.5ex,       % fixed bounding box height
       text depth=0.4ex,        % fixed bounding box depth
       anchor=center
@@ -105,8 +105,7 @@ HEADMATTER = r"""
     \textbf{\thequestion.}\enspace
 }{%
   \end{minipage}%
-  \par\bigskip
-  \par\bigskip
+  \par\vspace{<<<QUESTIONSPACING>>>}%
 }
 
 \newenvironment{tf}[3]{%
@@ -119,14 +118,20 @@ HEADMATTER = r"""
     \textbf{\thequestion.}\enspace
 }{%
   \end{minipage}%
-  \par\bigskip
-  \par\bigskip
+  \par\vspace{<<<QUESTIONSPACING>>>}%
 }
 
-\newenvironment{choices}{%
-  \begin{enumerate}[label=\alph*., leftmargin=2em]
+\newenvironment{choices}[1][1]{%
+  \def\choicecols{#1}%
+  \ifnum#1>1\relax
+    \begin{multicols}{#1}%
+  \fi
+  \begin{enumerate}[label=\alph*., leftmargin=2em]%
 }{%
-  \end{enumerate}
+  \end{enumerate}%
+  \ifnum\choicecols>1\relax
+    \end{multicols}%
+  \fi
 }
 
 \newcommand{\choice}[2][]{%

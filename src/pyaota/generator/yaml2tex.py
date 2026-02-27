@@ -64,9 +64,9 @@ def tex_escape_plain(s: str) -> str:
 def tex_escape_inline_code(s: str) -> str:
     """
     Escape content that will go inside \\inl{...}.
-    We:
-      - normalize punctuation
-      - escape %, _, {, } so TeX doesn't get confused
+
+    - normalize punctuation
+    - escape %, _, {, } so TeX doesn't get confused
     """
     s = normalize_punctuation(s)
 
@@ -193,6 +193,35 @@ def render_stem_block(block: dict) -> str:
     else:
         return f"% [unhandled stem block type: {btype}]"
 
+def _visual_len(text: str) -> int:
+    """Estimate the visual character width of a raw YAML choice text string.
+
+    Strips ``...`` inline-code markers and @@...@@ math markers, which add
+    character overhead relative to their rendered width.
+    """
+    s = re.sub(r'``(.*?)``', r'\1', text)
+    s = re.sub(r'@@(.*?)@@', r'\1', s)
+    return len(s)
+
+
+def _choices_columns(choices: list[dict], max_len: int = 40) -> int:
+    """Return 2 if all choices are short enough for a 2-column layout, else 1."""
+    for choice in choices:
+        ctype = choice.get("type", "text")
+        raw = str(choice.get("text", ""))
+        if ctype == "code":
+            lines = [l for l in raw.splitlines() if l.strip()]
+            if not lines:
+                continue
+            # Reject only if any individual code line is too wide for a column
+            if max(len(l) for l in lines) > max_len:
+                return 1
+        else:
+            if _visual_len(raw) > max_len:
+                return 1
+    return 2
+
+
 def render_choice(
     choice: dict,
     correct_key: str | None = None,
@@ -306,8 +335,9 @@ def render_mcq(
     stem_tex = "\n".join(stem_lines).rstrip()
 
     # Render choices
+    ncols = _choices_columns(q.get("choices", []))
     choice_lines: list[str] = []
-    choice_lines.append(r"\begin{choices}")
+    choice_lines.append(rf"\begin{{choices}}[{ncols}]")
     for choice in q.get("choices", []):
         choice_lines.append(
             render_choice(
@@ -319,11 +349,16 @@ def render_mcq(
     choice_lines.append(r"\end{choices}")
     choices_tex = "\n".join(choice_lines)
 
+    # If the stem ends with a lstlisting block, cancel its belowskip so the
+    # choices don't have excess space above them.
+    last_stem_block = stem_blocks[-1] if stem_blocks else None
+    if last_stem_block is not None and last_stem_block.get("type") == "code":
+        choices_tex = r"\vspace{-\medskipamount}" + "\n" + choices_tex
+
     # Wrap in mcq environment; third arg is still the correct key
     mcq_lines = [
         rf"\begin{{mcq}}{{{qid}}}{{{points}}}{{{correct_key}}}",
         stem_tex,
-        "",
         choices_tex,
         r"\end{mcq}",
     ]
@@ -357,34 +392,29 @@ def render_tf(
                 block["text"] = f"({qid}) " + orig
                 break
 
-    # Render stem
+    # Build the T/F prefix label
+    if highlight_correct:
+        if correct_key == "T":
+            tf_label = r"\correctlabel{T}\,True\,/\,False\,(F)\enspace "
+        else:
+            tf_label = r"True\,(T)\,/\,\correctlabel{F}\,False\enspace "
+    else:
+        tf_label = r"\textbf{True\,(T)\,/\,False\,(F)}\enspace "
+
+    # Render stem, prepending the T/F label
     stem_lines: list[str] = []
-    for block in stem_blocks:
-        stem_lines.append(render_stem_block(block))
+    for i, block in enumerate(stem_blocks):
+        rendered = render_stem_block(block)
+        if i == 0 and block.get("type") == "text":
+            rendered = tf_label + rendered
+        stem_lines.append(rendered)
         stem_lines.append("")  # blank line between blocks
     stem_tex = "\n".join(stem_lines).rstrip()
-
-    # Render choices
-    choice_lines: list[str] = []
-    choice_lines.append(r"\begin{choices}")
-    for tf_key, tf_text in [("T", "True"), ("F", "False")]:
-        choice_dict = {"key": tf_key, "text": tf_text, "type": "text"}
-        choice_lines.append(
-            render_choice(
-                choice_dict,
-                correct_key=correct_key.upper(),
-                highlight_correct=highlight_correct,
-            )
-        )
-    choice_lines.append(r"\end{choices}")
-    choices_tex = "\n".join(choice_lines)
 
     # Wrap in tf environment; third arg is still the correct key
     tf_lines = [
         rf"\begin{{tf}}{{{qid}}}{{{points}}}{{{correct_key}}}",
         stem_tex,
-        "",
-        choices_tex,
         r"\end{tf}",
     ]
     return "\n".join(tf_lines)

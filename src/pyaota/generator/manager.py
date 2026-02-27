@@ -29,6 +29,18 @@ from ..util.collectors import on_rm_error
 import logging
 logger = logging.getLogger(__name__)
 
+def rasterize_pdf(pdf_path: Path, dpi: int = 300) -> None:
+    """Replace a PDF with a rasterized version for improved printer compatibility.
+
+    Converts each page to a raster image at *dpi* and re-encodes as a PDF.
+    This eliminates complex vector/TikZ paths that can confuse some printer RIPs.
+    """
+    images = convert_from_path(str(pdf_path), dpi=dpi)
+    if not images:
+        raise ValueError(f"rasterize_pdf: could not convert {pdf_path}")
+    images[0].save(str(pdf_path), save_all=True, append_images=images[1:])
+    logger.info(f"Rasterized {pdf_path} at {dpi} DPI")
+
 # def build_answer_key_tex(
 #     selected_questions: list[dict],
 #     head: str = HEADMATTER,
@@ -350,6 +362,8 @@ def compile_dump_subcommand(args):
         instructions=dump_instructions,
         question_renderer=lambda q: render_question(q, show_id=True, highlight_correct=True),
         question_list=selected_questions,
+        fontsize=getattr(args, 'font_size', '12pt'),
+        questionspacing=getattr(args, 'question_spacing', '24pt'),
         endmessage="End of Exam\n\\clearpage",)
 
     exam_doc = ExamDocument(document_specs=exam_doc_specs)
@@ -404,6 +418,8 @@ def make_exams_subcommand(args):
     answer_sheet_layout = LayoutConfig(
         bubble_field_num_cols = args.num_cols,
         num_questions = args.num_questions,
+        bubble_font_size_pt = getattr(args, 'bubble_font_size', 8.0),
+        force_odd_page = getattr(args, 'odd_page_answersheet', False),
     )
     json_answersheet_layout_path = output_dir/"answersheet_layout.json"
     save_layout_config(answer_sheet_layout, json_answersheet_layout_path, _ureg)
@@ -440,10 +456,15 @@ def make_exams_subcommand(args):
             question_renderer=render_question,
             question_list=selected_questions,
             answersheet_tex=answersheet_tex,
+            fontsize=getattr(args, 'font_size', '12pt'),
+            questionspacing=getattr(args, 'question_spacing', '24pt'),
             endmessage="End of Exam\n\\clearpage",)
 
         exam_doc = ExamDocument(document_specs=exam_doc_specs)
         latex_compiler.build_document(exam_doc, cleanup=args.cleanup)
+        if getattr(args, 'rasterize', False):
+            pdf_path = output_dir / f"exam-{version_label}.pdf"
+            rasterize_pdf(pdf_path)
 
     write_version_keys_csv(version_answer_records, output_path=output_dir/"exam_version_keys.csv")
 
@@ -462,7 +483,9 @@ def make_answersheet_subcommand(args):
     layout_config = LayoutConfig(
         bubble_field_num_cols = args.num_cols,
         num_questions = args.num_questions,
-        student_id_num_digits=args.student_id_num_digits
+        student_id_num_digits=args.student_id_num_digits,
+        bubble_font_size_pt = getattr(args, 'bubble_font_size', 8.0),
+        force_odd_page = getattr(args, 'odd_page_answersheet', False),
     )
     # let's gnerate a mock question list that only contains the type
     # of question, and let's make half of them 'mcq' and half 'tf'
@@ -501,6 +524,9 @@ def make_answersheet_subcommand(args):
 
     exam_doc = ExamDocument(document_specs=exam_doc_specs)
     latex_compiler.build_document(exam_doc, cleanup=False)
+    if getattr(args, 'rasterize', False):
+        pdf_path = Path(args.output_dir) / f"{args.output_pdf}-SAMPLE.pdf"
+        rasterize_pdf(pdf_path)
 
 def tune_answersheetreader_subcommand(args):
     pdf = args.sample_pdf
