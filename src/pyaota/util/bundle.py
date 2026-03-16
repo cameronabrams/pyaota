@@ -55,14 +55,22 @@ def bundle_pdfs(input_dir: Path, output_dir: Path, bundle_size: int,
         end = min(start + bundle_size, len(pdf_files))
         chunk = pdf_files[start:end]
 
-        merger = PyPDF2.PdfMerger()
-        for pdf_path in chunk:
-            merger.append(str(pdf_path))
+        writer = PyPDF2.PdfWriter()
+        for doc_idx, pdf_path in enumerate(chunk):
+            reader = PyPDF2.PdfReader(str(pdf_path))
+            for page in reader.pages:
+                writer.add_page(page)
+            # Insert a blank page after every document except the last
+            if doc_idx < len(chunk) - 1:
+                last_page = reader.pages[-1]
+                w = float(last_page.mediabox.width)
+                h = float(last_page.mediabox.height)
+                writer.add_blank_page(width=w, height=h)
 
         bundle_name = f"bundle_{bundle_idx + 1:03d}.pdf"
         bundle_path = output_dir / bundle_name
-        merger.write(str(bundle_path))
-        merger.close()
+        with open(bundle_path, "wb") as f:
+            writer.write(f)
         print(f"  {bundle_name}: {len(chunk)} documents")
 
     if co_bundle:

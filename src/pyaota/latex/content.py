@@ -9,7 +9,6 @@ HEADMATTER = r"""
 \usepackage{setspace}
 \usepackage{enumitem}
 \usepackage{verbatim}
-\usepackage{listings}
 \usepackage{xcolor}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -68,24 +67,6 @@ HEADMATTER = r"""
   }%
 }
 
-\definecolor{lightlightgray}{gray}{0.9}\lstdefinestyle{mypython}{
-  language=Python,
-  basicstyle=\ttfamily\small,
-  showstringspaces=false,
-  breaklines=true,
-  upquote=true,
-  commentstyle=\ttfamily\upshape,
-}
-\newcommand{\inl}[1]{\lstinline[style=mypython,breaklines=false]|#1|}
-\lstdefinestyle{pseudocode}{
-    basicstyle=\ttfamily,
-    keywordstyle=\bfseries,
-    keywords={if,then,else,elseif,while,for,return,end,endif,endwhile,endfor,print},
-    columns=fullflexible,
-    frame=single,
-    mathescape=true,
-    escapechar=§
-}
 
 \newcommand{\blank}[1][2cm]{\underline{\hspace{#1}}}
 \newcommand{\smallblank}[1][0.5cm]{\ \underline{\hspace{#1}}\ }

@@ -21,6 +21,17 @@ def normalize_punctuation(s: str) -> str:
         "–": "-",
         "—": "--",
         "\u2011": "-",  # non-breaking hyphen
+        # Superscript digits
+        "\u00b9": r"\textsuperscript{1}",
+        "\u00b2": r"\textsuperscript{2}",
+        "\u00b3": r"\textsuperscript{3}",
+        "\u2070": r"\textsuperscript{0}",
+        "\u2074": r"\textsuperscript{4}",
+        "\u2075": r"\textsuperscript{5}",
+        "\u2076": r"\textsuperscript{6}",
+        "\u2077": r"\textsuperscript{7}",
+        "\u2078": r"\textsuperscript{8}",
+        "\u2079": r"\textsuperscript{9}",
     }
     for k, v in replacements.items():
         s = s.replace(k, v)
@@ -61,6 +72,32 @@ def tex_escape_plain(s: str) -> str:
     esc = esc.replace('<<SMALLBLANK>>', r'\smallblank{}')
     return esc
 
+def tex_escape_texttt(s: str) -> str:
+    """
+    Escape content for use inside \\texttt{...} (non-verbatim monospace).
+
+    Unlike tex_escape_inline_code, this must escape \\ because \\texttt
+    processes its argument as normal LaTeX, so \\n would be an undefined
+    control sequence.
+    """
+    replacements = {
+        '\\': r'\textbackslash{}',
+        '$': r'\$',
+        '%': r'\%',
+        '#': r'\#',
+        '&': r'\&',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\textasciicircum{}',
+    }
+    out = []
+    for ch in s:
+        out.append(replacements.get(ch, ch))
+    return ''.join(out)
+
+
 def tex_escape_inline_code(s: str) -> str:
     """
     Escape content that will go inside \\inl{...}.
@@ -85,12 +122,13 @@ def tex_escape_inline_code(s: str) -> str:
 
 # ---------- Render helpers ----------
 
-def render_text(s: str) -> str:
+def render_text(s: str, default_style: str | None = None) -> str:
     """
     Render a text string that may contain ``inline code`` and
     ``@@inline math@@`` markers into LaTeX.
 
-    - ``code`` regions are rendered with ``\\inl{...}``
+    - ``code`` regions use \\verb|...| (verbatim mode, default_style=None)
+      or \\inl{...} (listings mode, default_style set)
     - ``@@math@@`` regions are passed through as ``$...$``
     - Everything else is escaped for normal text.
     """
@@ -110,7 +148,13 @@ def render_text(s: str) -> str:
             result_parts.append(f"${m.group(1)}$")
         else:
             # ``...`` → inline code
-            result_parts.append(f"\\inl{{{tex_escape_inline_code(m.group(2))}}}")
+            # \verb cannot be used inside command arguments (e.g. \choice{...}),
+            # so always use \texttt with escaping for text-embedded inline code.
+            code = m.group(2)
+            if default_style:
+                result_parts.append(f"\\inl{{{tex_escape_inline_code(code)}}}")
+            else:
+                result_parts.append(f"\\texttt{{{tex_escape_texttt(code)}}}")
 
         pos = m.end()
 
@@ -120,11 +164,26 @@ def render_text(s: str) -> str:
 
     return ''.join(result_parts)
 
-def render_code_block(text: str, style: str = "mypython", force_env: bool = True) -> tuple[str, str]:
+_VERB_DELIMITERS = '|@!~+'
+
+def _choose_verb_delimiter(code: str) -> str | None:
+    for c in _VERB_DELIMITERS:
+        if c not in code:
+            return c
+    return None
+
+
+def render_code_block(text: str, style: str | None = None, force_env: bool = True) -> tuple[str, str]:
     """
-    Render code as either:
-      - ("inline",  '\\inl{...}')    for a single nonblank line
-      - ("block",  '\\begin{lstlisting}...\\end{lstlisting}') for multi-line
+    Render code as either an inline or block snippet.
+
+    When *style* is None (the default) the output uses plain LaTeX verbatim:
+      - ("inline",  '\\verb|...|')          for a single nonblank line
+      - ("block",   '\\begin{verbatim}...') for multi-line
+
+    When *style* is a listings style name the output uses listings:
+      - ("inline",  '\\inl{...}')                          single line
+      - ("block",   '\\begin{lstlisting}[style=...]...')   multi-line
 
     Caller decides how to embed the result.
     """
@@ -137,40 +196,54 @@ def render_code_block(text: str, style: str = "mypython", force_env: bool = True
     while code_lines and not code_lines[-1].strip():
         code_lines.pop()
 
-    # No code at all → treat as empty block
+    # No code at all → empty block
     if not code_lines:
-        return "block", (
-            f"\\begin{{lstlisting}}[style={style}]\n"
-            "\\end{lstlisting}"
-        )
+        if style:
+            return "block", f"\\begin{{lstlisting}}[style={style}]\n\\end{{lstlisting}}"
+        else:
+            return "block", "\\begin{verbatim}\n\\end{verbatim}"
 
-    # Single line → inline
+    # Single line → inline (only when force_env is False)
     if len(code_lines) == 1 and not force_env:
         single = code_lines[0]
-        if style == "mypython":
+        if style:
             return "inline", f"\n\\inl{{{tex_escape_inline_code(single)}}}"
-        elif style == "pseudocode":
-            return "inline", f"\n\\texttt{{{tex_escape_inline_code(single)}}}"
-    # Multi-line → block lstlisting
+        else:
+            delim = _choose_verb_delimiter(single)
+            if delim:
+                return "inline", f"\n\\verb{delim}{single}{delim}"
+            # Fallback: escape and use \texttt when no safe delimiter exists
+            return "inline", f"\n\\texttt{{{tex_escape_texttt(single)}}}"
+
+    # Multi-line → block
     code = "\n".join(code_lines)
-    return "block", (
-        f"\\begin{{lstlisting}}[style={style}]\n"
-        + code +
-        "\n\\end{lstlisting}"
-    )
+    if style:
+        return "block", (
+            f"\\begin{{lstlisting}}[style={style}]\n"
+            + code +
+            "\n\\end{lstlisting}"
+        )
+    else:
+        return "block", (
+            "\\begin{verbatim}\n"
+            + code +
+            "\n\\end{verbatim}"
+        )
 
 
-def render_stem_block(block: dict) -> str:
+def render_stem_block(block: dict, default_style: str | None = None) -> str:
     """
     Render a single stem block (text, code, or image) to LaTeX.
     """
     btype = block.get("type", "text")
     if btype == "text":
         txt = block.get("text", "")
-        return render_text(txt)
+        return render_text(txt, default_style=default_style)
     elif btype == "code":
         text = block.get("text", "")
-        style = block.get("style", "mypython")
+        # Only use the block's style override when listings mode is active;
+        # in verbatim mode (default_style is None) always use None.
+        style = block.get("style", default_style) if default_style is not None else None
         kind, tex = render_code_block(text, style)
         # For stems, just return whatever tex we got (inline or block)
         return tex
@@ -204,8 +277,12 @@ def _visual_len(text: str) -> int:
     return len(s)
 
 
-def _choices_columns(choices: list[dict], max_len: int = 40) -> int:
-    """Return 2 if all choices are short enough for a 2-column layout, else 1."""
+def _choices_columns(choices: list[dict], max_text_len: int = 40, max_code_len: int = 28) -> int:
+    """Return 2 if all choices are short enough for a 2-column layout, else 1.
+
+    Code choices use a tighter threshold because monospace glyphs are wider
+    than proportional-font glyphs at the same point size.
+    """
     for choice in choices:
         ctype = choice.get("type", "text")
         raw = str(choice.get("text", ""))
@@ -213,11 +290,10 @@ def _choices_columns(choices: list[dict], max_len: int = 40) -> int:
             lines = [l for l in raw.splitlines() if l.strip()]
             if not lines:
                 continue
-            # Reject only if any individual code line is too wide for a column
-            if max(len(l) for l in lines) > max_len:
+            if max(len(l) for l in lines) > max_code_len:
                 return 1
         else:
-            if _visual_len(raw) > max_len:
+            if _visual_len(raw) > max_text_len:
                 return 1
     return 2
 
@@ -226,6 +302,7 @@ def render_choice(
     choice: dict,
     correct_key: str | None = None,
     highlight_correct: bool = False,
+    default_style: str | None = None,
 ) -> str:
     """
     Render a single choice dict to LaTeX.
@@ -238,7 +315,8 @@ def render_choice(
     key = choice["key"]
     raw_text = str(choice.get("text", ""))
     ctype = choice.get("type", "text")
-    style = choice.get("style", "mypython")
+    # Only use the choice's style override when listings mode is active.
+    style = choice.get("style", default_style) if default_style is not None else None
 
     is_correct = (correct_key is not None) and (key == correct_key)
 
@@ -253,20 +331,18 @@ def render_choice(
     if ctype == "code":
         kind, tex = render_code_block(raw_text, style, force_env=False)
 
-        if kind == "inline":
-            # Single-line code as inline body (\inl{...})
-            body = tex
-            return rf"  \choice[{label}]{{{body}}}"
-
-        # Multi-line code block: empty body, listing follows
+        # Emit code after empty choice body so \lstinline is not nested inside
+        # a command argument — pre-tokenized args break \lstinline's verbatim
+        # space handling, causing spaces inside string literals (e.g. " ") to
+        # disappear in the rendered output.
         lines = []
         lines.append(rf"  \choice[{label}]{{}}")
-        lines.append(tex)
+        lines.append(tex.lstrip('\n'))
         lines.append("")  # blank line between code choices
         return "\n".join(lines)
 
     # --- Text choices ---
-    body = render_text(raw_text)
+    body = render_text(raw_text, default_style=default_style)
     return rf"  \choice[{label}]{{{body}}}"
 
 def render_question(
@@ -288,6 +364,7 @@ def render_mcq(
     show_id: bool = False,
     highlight_correct: bool = False,
     scramble_choices: bool = False,
+    default_style: str | None = None,
 ) -> str:
     """
     Render a single multiple-choice question to LaTeX.
@@ -330,7 +407,7 @@ def render_mcq(
     # Render stem
     stem_lines: list[str] = []
     for block in stem_blocks:
-        stem_lines.append(render_stem_block(block))
+        stem_lines.append(render_stem_block(block, default_style=default_style))
         stem_lines.append("")  # blank line between blocks
     stem_tex = "\n".join(stem_lines).rstrip()
 
@@ -344,6 +421,7 @@ def render_mcq(
                 choice,
                 correct_key=correct_key,
                 highlight_correct=highlight_correct,
+                default_style=default_style,
             )
         )
     choice_lines.append(r"\end{choices}")
@@ -368,6 +446,7 @@ def render_tf(
     q: dict,
     show_id: bool = False,
     highlight_correct: bool = False,
+    default_style: str | None = None,
 ) -> str:
     """
     Render a single true/false question to LaTeX.
@@ -404,7 +483,7 @@ def render_tf(
     # Render stem, prepending the T/F label
     stem_lines: list[str] = []
     for i, block in enumerate(stem_blocks):
-        rendered = render_stem_block(block)
+        rendered = render_stem_block(block, default_style=default_style)
         if i == 0 and block.get("type") == "text":
             rendered = tf_label + rendered
         stem_lines.append(rendered)

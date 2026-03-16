@@ -69,8 +69,12 @@ class ExamDocument(Document):
             'FONTSIZE': self.specs.get('fontsize', '12pt'),
             'QUESTIONSPACING': self.specs.get('questionspacing', '24pt'),
         }
+        self.extra_preamble = self.specs.get('extra_preamble', '')
         logger.debug(f'Number of questions: {len(self.question_list)}')
-        content = HEADMATTER + '\n\n' + DEFAULT_PAGESTYLES_TEMPLATE + '\n\n' + BEGIN_DOCUMENT + '\n\n' + self.instructions + '\n\n'
+        content = HEADMATTER
+        if self.extra_preamble:
+            content += '\n' + self.extra_preamble
+        content += '\n\n' + DEFAULT_PAGESTYLES_TEMPLATE + '\n\n' + BEGIN_DOCUMENT + '\n\n' + self.instructions + '\n\n'
         for q in self.question_list:
             logger.debug(f'Rendering question: {q["id"]} {q["type"]}')
             content += self.question_renderer(q).rstrip() + '\n\n'

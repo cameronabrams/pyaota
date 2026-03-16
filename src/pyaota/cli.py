@@ -284,6 +284,23 @@ def main(argv: list[str] | None = None) -> int:
         action=ap.BooleanOptionalAction,
         help="Rasterize output PDFs at 300 DPI for improved printer compatibility",
     )
+    command_parsers["build"].add_argument(
+        "--use-listings-from",
+        type=str,
+        default=None,
+        metavar="TEX_FILE",
+        help="Path to a .tex file defining an lstdefinestyle; enables listings/\\inl rendering instead of verbatim",
+    )
+    command_parsers["build"].add_argument(
+        "--balance-difficulty",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help=(
+            "Select questions proportionally across difficulty levels (1–5) so "
+            "each exam version has roughly the same difficulty distribution. "
+            "Questions without a 'difficulty' attribute are treated as difficulty 1."
+        ),
+    )
     command_parsers["compile-dump"].add_argument(
         "-od",
         "--output-dir",
@@ -336,6 +353,19 @@ def main(argv: list[str] | None = None) -> int:
         metavar="LENGTH",
         help="Vertical space between questions as a LaTeX length (default: 24pt)",
     )
+    command_parsers["compile-dump"].add_argument(
+        "--keep-latex",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Keep intermediate LaTeX file after compilation",
+    )
+    command_parsers["compile-dump"].add_argument(
+        "--use-listings-from",
+        type=str,
+        default=None,
+        metavar="TEX_FILE",
+        help="Path to a .tex file defining an lstdefinestyle; enables listings/\\inl rendering instead of verbatim",
+    )
 
     command_parsers["grade"].add_argument(
         "-i",
@@ -384,6 +414,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Column name in the gradebook(s) for the score (default: 'score')",
     )
     command_parsers["grade"].add_argument(
+        "--column-id",
+        default=None,
+        metavar="SUBSTRING",
+        help="Substring to match against gradebook column names for score output "
+             "(e.g. 'Final' matches 'Final Exam [Total Pts: 100 Score] |3766016'). "
+             "Takes precedence over --score-column when a unique match is found.",
+    )
+    command_parsers["grade"].add_argument(
         "-nc",
         "--num-counted",
         type=int,
@@ -394,6 +432,12 @@ def main(argv: list[str] | None = None) -> int:
         "-qt",
         "--question-tally",
         help="Path to output CSV file summarizing question tallies",
+    )
+    command_parsers["grade"].add_argument(
+        "--interactive",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Pause and prompt for manual input when no fill is detected on a question",
     )
 
     command_parsers["make-answersheet"].add_argument(

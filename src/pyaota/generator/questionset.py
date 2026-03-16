@@ -12,6 +12,47 @@ logger = logging.getLogger(__name__)
 import random
 from pathlib import Path
 
+def _proportional_allocate(available: dict[int, int], total: int) -> dict[int, int]:
+    """Allocate *total* items proportionally to *available* counts.
+
+    Uses the largest-remainder (Hamilton) method so allocations sum to exactly
+    *total*.  No bucket receives more than its available count.
+    """
+    grand = sum(available.values())
+    if grand == 0:
+        return {k: 0 for k in available}
+
+    exact = {k: v / grand * total for k, v in available.items()}
+    result = {k: int(v) for k, v in exact.items()}
+    remainder = total - sum(result.values())
+
+    # Distribute remainder to keys with the largest fractional parts first,
+    # skipping any bucket already at its cap.
+    by_frac = sorted(available.keys(), key=lambda k: -(exact[k] - result[k]))
+    for k in by_frac:
+        if remainder <= 0:
+            break
+        if result[k] < available[k]:
+            result[k] += 1
+            remainder -= 1
+
+    # Fallback: if rounding pushed any bucket over its cap, redistribute.
+    for k in list(result.keys()):
+        if result[k] > available[k]:
+            remainder += result[k] - available[k]
+            result[k] = available[k]
+    for k in by_frac:
+        if remainder <= 0:
+            break
+        room = available[k] - result[k]
+        if room > 0:
+            add = min(room, remainder)
+            result[k] += add
+            remainder -= add
+
+    return result
+
+
 class QuestionSet:
     """
     Class to manage a set of questions loaded from YAML files.
@@ -79,13 +120,14 @@ class QuestionSet:
         if count:
             logger.debug(f"Copied {count} image(s) to {target}")
 
-    def get_random_selection(self, 
-            num_questions: int, 
-            topics_order: list[str] | None = None, 
-            seed: int = 0, 
-            rng: callable = None, 
-            shuffle: bool = True, 
-            shuffle_choices: bool = True) -> list[dict]:
+    def get_random_selection(self,
+            num_questions: int,
+            topics_order: list[str] | None = None,
+            seed: int = 0,
+            rng: callable = None,
+            shuffle: bool = True,
+            shuffle_choices: bool = True,
+            balance_difficulty: bool = False) -> list[dict]:
         """
         Selects a random set of questions from the question set.
 
@@ -104,6 +146,11 @@ class QuestionSet:
             If True, shuffle the selected questions before returning.
         shuffle_choices : bool
             If True, shuffle the choices within each multiple-choice question.
+        balance_difficulty : bool
+            If True, select questions proportionally across difficulty levels
+            (1–5). Questions without a ``difficulty`` attribute are treated as
+            difficulty 1.  The target counts are proportional to the
+            representation of each difficulty level in the available pool.
 
         Returns
         -------
@@ -154,19 +201,54 @@ class QuestionSet:
                 f"available across {len(ordered_topics)} topic(s)."
             )
 
-        # Sample questions in the original topic order
-        for topic in ordered_topics:
-            n = allocations.get(topic, 0)
-            if n <= 0:
-                continue
-            pool = self.questions_by_topic.get(topic, [])
-            chosen = list(pool) if n == len(pool) else rng.sample(pool, n)
-            selected_questions.extend(chosen)
-            logger.debug(f"Selected {len(chosen)}/{len(pool)} questions from topic '{topic}'.")
-            selected_ids = [q.get("id", "N/A") for q in chosen]
-            logger.debug(f"  Selected question IDs: {selected_ids}")
-            logger.debug(f"  Total selected so far: {len(selected_questions)}")
-            logger.debug(f"  Selected question IDs so far: {[q.get('id', 'N/A') for q in selected_questions]}")
+        if balance_difficulty:
+            # Build the full pool from selected topics (respecting topics_order filter)
+            full_pool: list[dict] = []
+            for topic in ordered_topics:
+                full_pool.extend(self.questions_by_topic.get(topic, []))
+
+            # Group by difficulty (missing → 1)
+            by_difficulty: dict[int, list[dict]] = {}
+            for q in full_pool:
+                d = int(q.get("difficulty", 1))
+                by_difficulty.setdefault(d, []).append(q)
+
+            logger.debug(
+                f"Difficulty distribution in pool: "
+                + ", ".join(f"lvl {d}: {len(qs)}" for d, qs in sorted(by_difficulty.items()))
+            )
+
+            # Proportional allocation using largest-remainder method
+            diff_available = {d: len(qs) for d, qs in by_difficulty.items()}
+            diff_allocations = _proportional_allocate(diff_available, num_questions)
+
+            logger.debug(
+                f"Difficulty allocations: "
+                + ", ".join(f"lvl {d}: {diff_allocations[d]}" for d in sorted(diff_allocations))
+            )
+
+            for d in sorted(by_difficulty.keys()):
+                n = diff_allocations.get(d, 0)
+                if n <= 0:
+                    continue
+                pool = by_difficulty[d]
+                chosen = list(pool) if n == len(pool) else rng.sample(pool, n)
+                selected_questions.extend(chosen)
+                logger.debug(f"Selected {len(chosen)}/{len(pool)} questions at difficulty {d}.")
+        else:
+            # Sample questions in the original topic order
+            for topic in ordered_topics:
+                n = allocations.get(topic, 0)
+                if n <= 0:
+                    continue
+                pool = self.questions_by_topic.get(topic, [])
+                chosen = list(pool) if n == len(pool) else rng.sample(pool, n)
+                selected_questions.extend(chosen)
+                logger.debug(f"Selected {len(chosen)}/{len(pool)} questions from topic '{topic}'.")
+                selected_ids = [q.get("id", "N/A") for q in chosen]
+                logger.debug(f"  Selected question IDs: {selected_ids}")
+                logger.debug(f"  Total selected so far: {len(selected_questions)}")
+                logger.debug(f"  Selected question IDs so far: {[q.get('id', 'N/A') for q in selected_questions]}")
 
         if shuffle:
             logger.debug('Shuffling selected questions.')

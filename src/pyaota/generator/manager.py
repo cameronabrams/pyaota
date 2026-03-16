@@ -14,6 +14,7 @@ from pathlib import Path
 from dataclasses import asdict
 from pdf2image import convert_from_path
 
+import re as _re
 from .yaml2tex import render_question, tex_escape
 from .questionset import QuestionSet
 from .document import Document, ExamDocument
@@ -325,6 +326,40 @@ def write_version_keys_pdf(
     output_pdf = output_dir / "answer_keys.pdf"
     logger.info(f"Answer keys PDF generated: {output_pdf}")
 
+_PSEUDOCODE_STYLE = r"""\lstdefinestyle{pseudocode}{
+    basicstyle=\ttfamily,
+    keywordstyle=\bfseries,
+    keywords={if,then,else,elseif,while,for,return,end,endif,endwhile,endfor,print},
+    columns=fullflexible,
+    frame=single,
+    mathescape=true,
+    escapechar=§
+}"""
+
+def _build_listings_extra_preamble(style_file: str) -> tuple[str, str]:
+    """Parse *style_file* for the first \\lstdefinestyle name and build an
+    extra-preamble block that loads listings, the pseudocode style, the user
+    style, and defines \\inl.
+
+    Returns (style_name, preamble_str).
+    """
+    with open(style_file, 'r', encoding='utf-8') as f:
+        style_content = f.read()
+    m = _re.search(r'\\lstdefinestyle\{(\w+)\}', style_content)
+    if not m:
+        raise ValueError(
+            f"--use-listings-from: no \\lstdefinestyle{{...}} found in {style_file}"
+        )
+    style_name = m.group(1)
+    preamble = (
+        "\\usepackage{listings}\n"
+        + _PSEUDOCODE_STYLE + "\n"
+        + style_content + "\n"
+        + f"\\newcommand{{\\inl}}[1]{{\\lstinline[style={style_name},breaklines=false]|#1|}}\n"
+    )
+    return style_name, preamble
+
+
 def compile_dump_subcommand(args):
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
@@ -353,6 +388,12 @@ def compile_dump_subcommand(args):
     else:
         dump_instructions = QUESTION_BANK_DUMP_INSTRUCTIONS
 
+    default_style = None
+    extra_preamble = ''
+    use_listings_from = getattr(args, 'use_listings_from', None)
+    if use_listings_from:
+        default_style, extra_preamble = _build_listings_extra_preamble(use_listings_from)
+
     exam_doc_specs = dict(
         institution=args.institution,
         course=args.course,
@@ -360,14 +401,17 @@ def compile_dump_subcommand(args):
         examname=f"{len(selected_questions)}-question dump",
         version=version_label,
         instructions=dump_instructions,
-        question_renderer=lambda q: render_question(q, show_id=True, highlight_correct=True),
+        question_renderer=lambda q: render_question(q, show_id=True, highlight_correct=True, default_style=default_style),
         question_list=selected_questions,
         fontsize=getattr(args, 'font_size', '12pt'),
         questionspacing=getattr(args, 'question_spacing', '24pt'),
-        endmessage="End of Exam\n\\clearpage",)
+        endmessage="End of Exam\n\\clearpage",
+        extra_preamble=extra_preamble,
+    )
 
     exam_doc = ExamDocument(document_specs=exam_doc_specs)
-    latex_compiler.build_document(exam_doc, cleanup=True)
+    cleanup = not getattr(args, 'keep_latex', False)
+    latex_compiler.build_document(exam_doc, cleanup=cleanup)
 
 
 def make_exams_subcommand(args):
@@ -415,6 +459,12 @@ def make_exams_subcommand(args):
     else:
         exam_instructions = DEFAULT_EXAM_INSTRUCTIONS
 
+    default_style = None
+    extra_preamble = ''
+    use_listings_from = getattr(args, 'use_listings_from', None)
+    if use_listings_from:
+        default_style, extra_preamble = _build_listings_extra_preamble(use_listings_from)
+
     answer_sheet_layout = LayoutConfig(
         bubble_field_num_cols = args.num_cols,
         num_questions = args.num_questions,
@@ -433,9 +483,10 @@ def make_exams_subcommand(args):
 
         selected_questions = question_set.get_random_selection(num_questions=args.num_questions,
                                                                topics_order=args.topics,
-                                                               seed=version_rng_seed, 
-                                                               shuffle=args.shuffle_questions, 
-                                                               shuffle_choices=args.shuffle_choices)
+                                                               seed=version_rng_seed,
+                                                               shuffle=args.shuffle_questions,
+                                                               shuffle_choices=args.shuffle_choices,
+                                                               balance_difficulty=getattr(args, 'balance_difficulty', False))
         logger.debug(f'Generated exam version {version_label} with {len(selected_questions)} questions.')
         answers = [str(q.get("correct", "")).strip() for q in selected_questions]
         version_answer_records.append((version_label, answers))
@@ -453,12 +504,14 @@ def make_exams_subcommand(args):
             examname=args.exam_name,
             version=version_label,
             instructions=exam_instructions,
-            question_renderer=render_question,
+            question_renderer=lambda q: render_question(q, default_style=default_style),
             question_list=selected_questions,
             answersheet_tex=answersheet_tex,
             fontsize=getattr(args, 'font_size', '12pt'),
             questionspacing=getattr(args, 'question_spacing', '24pt'),
-            endmessage="End of Exam\n\\clearpage",)
+            endmessage="End of Exam\n\\clearpage",
+            extra_preamble=extra_preamble,
+        )
 
         exam_doc = ExamDocument(document_specs=exam_doc_specs)
         latex_compiler.build_document(exam_doc, cleanup=args.cleanup)
@@ -582,8 +635,10 @@ def autograde_subcommand(args):
         debug_output_dir_path=debug_output_dir_path,
         gradebook_paths=gradebook_paths,
         score_column=args.score_column,
+        column_id=args.column_id,
         num_counted=args.num_counted,
-        question_tally_path=question_tally_path)
+        question_tally_path=question_tally_path,
+        interactive=args.interactive)
 
 def return_subcommand(args):
     gradebook_paths = args.gradebooks

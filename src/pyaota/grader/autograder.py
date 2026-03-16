@@ -90,7 +90,9 @@ class Autograder:
         score_column: str = "score",
         num_counted: Optional[int] = None,
         question_tally_path: Optional[Path | str] = None,
-        debug_output_dir_path: Optional[Path | str] = None):
+        debug_output_dir_path: Optional[Path | str] = None,
+        interactive: bool = False,
+        column_id: Optional[str] = None):
         """
         Grade the given PDF of answer sheets.
 
@@ -175,7 +177,7 @@ class Autograder:
             )[0]
             pages.append(page)
             img = np.array(page)
-            reader = AnswerSheetReader(img, layout_config=self.layout, debug_output_dir=debug_output_dir_path)
+            reader = AnswerSheetReader(img, layout_config=self.layout, debug_output_dir=debug_output_dir_path, interactive=interactive)
             read_results = reader.read()
 
             read_status = read_results.get("read_status", "success")
@@ -359,19 +361,50 @@ class Autograder:
                 logger.debug(f"grades keys NOT in gradebook: {sorted(grades_keys - gb_keys)}")
                 logger.debug(f"gradebook keys NOT in grades (first 20): {sorted(gb_keys - grades_keys)[:20]}")
 
+                # Resolve the target score column for this gradebook.
+                # If --column-id was given, find the unique column whose name
+                # contains that substring; fall back to score_column on ambiguity.
+                target_score_col = score_column
+                if column_id is not None:
+                    matches = [c for c in gb_df.columns if column_id in c]
+                    if len(matches) == 1:
+                        target_score_col = matches[0]
+                        logger.info(f"column-id '{column_id}' matched '{target_score_col}' in {gb_path.name}")
+                    elif len(matches) == 0:
+                        logger.warning(
+                            f"No column in {gb_path.name} contains '{column_id}' "
+                            f"— falling back to '{score_column}'"
+                        )
+                    else:
+                        logger.warning(
+                            f"column-id '{column_id}' matched multiple columns in {gb_path.name}: "
+                            f"{matches} — falling back to '{score_column}'"
+                        )
+
+                # Build effective field list, substituting the resolved score column.
+                effective_grade_fields = [
+                    target_score_col if gf == score_column else gf
+                    for gf in grade_fields
+                ]
+
                 # Update only rows that have new grade data, preserving
                 # grades written by earlier runs.
-                for gf in grade_fields:
+                for gf in effective_grade_fields:
                     if gf not in gb_df.columns:
                         gb_df[gf] = ""
 
                 new_grades = grades_df.drop_duplicates(subset="_match_key", keep="last") \
                                       .set_index("_match_key")[grade_fields]
+                if target_score_col != score_column:
+                    new_grades = new_grades.rename(columns={score_column: target_score_col})
+
                 update_mask = gb_df["_match_key"].isin(new_grades.index)
-                for gf in grade_fields:
-                    gb_df.loc[update_mask, gf] = (
-                        gb_df.loc[update_mask, "_match_key"].map(new_grades[gf]).values
-                    )
+                for gf in effective_grade_fields:
+                    mapped = gb_df.loc[update_mask, "_match_key"].map(new_grades[gf])
+                    gb_df.loc[update_mask, gf] = [
+                        str(v) if v not in ("", None) and not (isinstance(v, float) and pd.isna(v)) else ""
+                        for v in mapped
+                    ]
                 logger.debug(f"After update, 'status' values: {gb_df['status'].tolist()}")
 
                 updated_count = int(update_mask.sum())

@@ -6,6 +6,7 @@ from typing import Any, Dict, Tuple, List, Optional
 import numpy as np
 import cv2
 import logging
+import sys
 from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
@@ -79,13 +80,14 @@ def x_marks_the_spot(image, x_px, y_px):
 #     return _DIGIT_MODEL
 
 class AnswerSheetReader:
-    def __init__(self, img: np.ndarray, layout_config: LayoutConfig, debug_output_dir: Path = Path("debug")):
+    def __init__(self, img: np.ndarray, layout_config: LayoutConfig, debug_output_dir: Path = Path("debug"), interactive: bool = False):
         self.rawimg = img.copy()
         self.img_original = img.copy()
         self.working_image = None
         self.original_size = img.shape[:2]  # (height, width)
         self.layout_config = layout_config
         self.debug_output_path = debug_output_dir
+        self.interactive = interactive
         self.results = {}
         self.diagnostics = {'original_size': img.shape[:2]}  # (height, width)
         self.diagnostics['debug_image'] = None # we'll save the warped image here
@@ -593,6 +595,57 @@ class AnswerSheetReader:
             bubble_fills[qnum][choice_key] = (fill_pct, x_px, y_px)
         return bubble_fills
 
+    def _interactive_resolve(self, qnum: int, centers: dict, answers: dict, answer_coords: dict):
+        """
+        Show the bubble row for *qnum* in a matplotlib window and prompt the
+        user to type the answer.  Updates *answers* and *answer_coords* in place.
+        Does nothing if not running in an interactive TTY.
+        """
+        import matplotlib.pyplot as plt
+
+        # Gather all bubble centers for this question
+        q_centers = {k: v for (q, k), v in centers.items() if q == qnum}
+        if not q_centers:
+            return
+
+        valid_choices = list(q_centers.keys())
+        xs = [x for x, y in q_centers.values()]
+        ys = [y for x, y in q_centers.values()]
+
+        pad = int(self.layout_config.bubble_radius.to('pxl').magnitude * 4)
+        x1 = max(0, min(xs) - pad)
+        x2 = min(self.working_image.shape[1], max(xs) + pad)
+        y1 = max(0, min(ys) - pad)
+        y2 = min(self.working_image.shape[0], max(ys) + pad)
+
+        crop_bgr = self.working_image[y1:y2, x1:x2]
+        crop_rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
+
+        fig, ax = plt.subplots(figsize=(max(4, (x2 - x1) / 60), 2))
+        ax.imshow(crop_rgb)
+        student_id = self.results.get('student_id_bubbles') or '?'
+        ax.set_title(f"Student {student_id} — Q{qnum} — no fill detected  (choices: {', '.join(valid_choices)})")
+        ax.axis('off')
+        plt.tight_layout()
+        plt.show(block=False)
+        plt.pause(0.1)
+
+        try:
+            while True:
+                raw = input(f"  Q{qnum}: enter answer ({'/'.join(valid_choices)}) or '-' to leave blank: ").strip()
+                if raw == '-':
+                    break
+                if raw in valid_choices:
+                    answers[qnum] = raw
+                    answer_coords[qnum] = q_centers[raw]
+                    logger.info(f"Q{qnum}: manually resolved as '{raw}'")
+                    break
+                print(f"  Invalid choice '{raw}'. Valid options: {', '.join(valid_choices)}")
+        except EOFError:
+            logger.warning(f"Q{qnum}: stdin not readable — skipping interactive prompt")
+
+        plt.close(fig)
+
     def _read_bubblefield(self):
         """
         Read all question answers from the bubble field.
@@ -651,14 +704,27 @@ class AnswerSheetReader:
                 if len(filled) == 0:
                     answers[qnum] = "?"
                 elif len(filled) > 1:
-                    # More than one bubble above fill threshold — explicit multiple fill.
+                    # More than one bubble above fill threshold.
                     filled.sort(key=lambda f: f[1], reverse=True)
+                    top_choice, top_fill, top_x, top_y = filled[0]
+                    second_fill = filled[1][1]
                     logger.debug(
                         f"Q{qnum}: multiple fills at pixel_threshold={pixel_thresh} "
                         f"({[(c, round(f, 3)) for c, f, _, _ in filled]})"
                     )
-                    answers[qnum] = "?"
-                    ambiguous_bubbles[qnum] = [(c, x, y) for c, _, x, y in filled]
+                    if top_fill - second_fill >= config.runner_up_margin:
+                        # One bubble clearly dominates — accept it.
+                        answers[qnum] = top_choice
+                        answer_coords[qnum] = (top_x, top_y)
+                        ambiguous_bubbles.pop(qnum, None)
+                        logger.debug(
+                            f"Q{qnum}: dominant fill accepted "
+                            f"(answer={top_choice}, fill={top_fill:.3f}, "
+                            f"margin={top_fill - second_fill:.3f})"
+                        )
+                    else:
+                        answers[qnum] = "?"
+                        ambiguous_bubbles[qnum] = [(c, x, y) for c, _, x, y in filled]
                 else:
                     # Exactly one bubble above fill threshold.
                     top_choice, top_fill, top_x, top_y = filled[0]
@@ -701,10 +767,17 @@ class AnswerSheetReader:
 
         self.diagnostics['bubbles'] = centers
         self.diagnostics['ambiguous_bubbles'] = ambiguous_bubbles
-        self.results['answers'] = answers
 
         blank_qs = [q for q, a in answers.items() if a == "?" and q not in ambiguous_bubbles]
         ambig_qs = [q for q in ambiguous_bubbles]
+        if self.interactive:
+            for qnum in blank_qs + ambig_qs:
+                self._interactive_resolve(qnum, centers, answers, answer_coords)
+            blank_qs = [q for q in blank_qs if answers.get(q) == "?"]
+            ambig_qs = [q for q in ambig_qs if answers.get(q) == "?"]
+
+        self.results['answers'] = answers
+
         if blank_qs:
             logger.warning(
                 f"No fill detected for question(s) {blank_qs} "
