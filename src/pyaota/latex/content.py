@@ -10,16 +10,11 @@ HEADMATTER = r"""
 \usepackage{enumitem}
 \usepackage{verbatim}
 \usepackage{xcolor}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{lmodern}
-\usepackage{upquote}
-\usepackage[scaled]{helvet}
-\renewcommand\familydefault{\sfdefault}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Heros}
 \usepackage{pifont}
 \usepackage{tikz}
 \usetikzlibrary{calc}
-\usepackage{qrcode}
 \usepackage{multicol}
 \usepackage{graphicx}
 
@@ -147,6 +142,7 @@ BEGIN_DOCUMENT = r"""
 
 """
 
+# used if --instructions argument is not provided for the build subcommand
 DEFAULT_EXAM_INSTRUCTIONS = r"""
 INSTRUCTIONS:
 \begin{enumerate}
@@ -162,28 +158,11 @@ Questions begin on the next page.
 \clearpage
 """
 
+# used if --instructions argument is not provided for the build-answersheet subcommand
 QUESTION_BANK_DUMP_INSTRUCTIONS = r"""
 This document contains a full dump of all questions in the selected question banks.
 Questions begin on the next page.
 \clearpage
-"""
-
-
-DEFAULT_ANSWER_SHEET_INSTRUCTIONS = r"""
-Your name: \underline{\hspace{12cm}}\\*[0.5em]
-\begin{minipage}[t]{0.4\linewidth}
-\raggedleft
-Your Drexel Student ID:\\
-Please fill in a bubble for each digit of your ID:\\*[0.5em]
-\begin{center}
-\qrcode[height=1cm]{<<<VERSION>>>}\\*[0.5em]
-{\footnotesize Version: <<<VERSION>>>}
-\end{center}
-\end{minipage}\ \ 
-\begin{minipage}[t]{0.6\linewidth}
-\idboxes[8]
-\end{minipage}
-Please fill in one bubble per question.  Give only this page to a TA or instructor at the end of the exam.
 """
 
 ENDMESSAGE = r"""

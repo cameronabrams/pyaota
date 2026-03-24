@@ -5,7 +5,7 @@ pyaota
 and true/false exams. It provides:
 
 - Exam generation with randomizable questions from YAML question banks
-- Automatic grading of scanned answer sheets using computer vision and OCR
+- Automatic grading of scanned answer sheets
 - Answer sheet rendering with QR codes and bubble fields via LaTeX/TikZ
 - Email delivery of graded exams to students
 - PDF bundling utilities for print management

@@ -862,8 +862,21 @@ class AnswerSheetReader:
                 logger.debug(f"QR attempt '{label}' raised: {e}")
                 continue
             if data:
-                self.results['version'] = data.strip()
-                logger.debug(f"QR code detected via '{label}': {self.results['version']}")
+                raw = data.strip()
+                if ':' in raw and self.layout_config.qr_answer_key:
+                    version_part, payload = raw.split(':', 1)
+                    self.results['version'] = version_part
+                    try:
+                        from ..util.qrcrypto import decrypt_answers
+                        self.results['embedded_answers'] = decrypt_answers(
+                            self.layout_config.qr_answer_key, payload
+                        )
+                        logger.debug(f"QR code decoded with embedded answers via '{label}': version={version_part}")
+                    except ValueError as exc:
+                        raise RuntimeError(f"QR answer decryption failed: {exc}") from exc
+                else:
+                    self.results['version'] = raw
+                    logger.debug(f"QR code detected via '{label}': {self.results['version']}")
                 break
         else:
             raise RuntimeError("Failed to read QR code from answer sheet.")

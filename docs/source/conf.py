@@ -24,6 +24,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx_autodoc_typehints',
     'myst_parser',
+    'sphinx_copybutton',
 ]
 
 autosummary_generate = True

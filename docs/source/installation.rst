@@ -5,8 +5,16 @@ Requirements
 ------------
 
 - Python 3.10 or later
-- A working ``pdflatex`` installation (e.g., TeX Live or MiKTeX)
-- `Poppler <https://poppler.freedesktop.org/>`_ (for ``pdf2image``)
+- A working ``xelatex`` installation (e.g., TeX Live or MiKTeX)
+- `Poppler <https://poppler.freedesktop.org/>`_ (required by ``pdf2image``;
+  not installed by ``pip`` — see below)
+
+Install from PyPI
+-----------------
+
+.. code-block:: bash
+
+   pip install pyaota
 
 Install from source
 -------------------
@@ -19,17 +27,27 @@ Clone the repository and install in editable mode:
    cd pyaota
    pip install -e .
 
-Optional dependencies
----------------------
 
-To install documentation build tools:
+Installing Poppler
+------------------
 
-.. code-block:: bash
+Poppler is a system-level PDF library required by ``pdf2image``. It is not
+installed automatically by ``pip``.
 
-   pip install -e ".[docs]"
-
-To install development tools (pytest, ruff, black):
+**Windows (conda):**
 
 .. code-block:: bash
 
-   pip install -e ".[dev]"
+   conda install -c conda-forge poppler
+
+**macOS:**
+
+.. code-block:: bash
+
+   brew install poppler
+
+**Linux (Debian/Ubuntu):**
+
+.. code-block:: bash
+
+   sudo apt install poppler-utils

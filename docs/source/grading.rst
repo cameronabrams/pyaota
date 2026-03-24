@@ -139,6 +139,43 @@ summary after grading.  Each row contains the question number, how many
 students answered each choice, and how many answered correctly.  This is
 useful for identifying questions that were poorly worded or unusually difficult.
 
+Encrypted answer embedding
+--------------------------
+
+Pass ``--encode-answers-in-qr`` to ``pyaota build`` to encrypt and embed the
+correct answers directly in each answer sheet's QR code:
+
+.. code-block:: bash
+
+   pyaota build -q banks/*.yaml -n 4 -nq 25 --encode-answers-in-qr ...
+
+At build time, a random 32-byte key is generated for the exam set and stored
+in ``answersheet_layout.json`` alongside the layout geometry.  Each answer
+sheet's QR code then contains the version label and the encrypted answer
+string rather than the version label alone.
+
+At grade time, the grader reads the key from the layout JSON, decrypts the
+answers from the QR code, and grades without consulting
+``exam_version_keys.csv``.  No additional flags or arguments are needed —
+grading works exactly as before:
+
+.. code-block:: bash
+
+   pyaota grade -i scanned.pdf -alj answersheet_layout.json -od results/
+
+The ``-k`` / ``--keyfiles`` argument becomes optional when all sheets have
+embedded answers; it remains useful as a fallback for any page where the QR
+could not be read and the operator supplies the version label manually in
+interactive mode.
+
+.. note::
+
+   The security boundary is the ``answersheet_layout.json`` file.  Anyone
+   who has that file can decrypt the QR codes, so it should be treated as a
+   privileged document and not distributed to students.  Answer sheets without
+   a corresponding layout key (e.g., from an older exam set) are graded via
+   CSV lookup as usual.
+
 Debug output
 ------------
 

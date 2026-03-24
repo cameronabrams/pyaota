@@ -23,9 +23,10 @@ from .layout_config_serialization import save_layout_config, load_layout_config
 from ..grader.answersheetreader import AnswerSheetReader
 from ..grader.autograder import Autograder
 from ..grader.returner import return_graded_exams
-from ..latex.content import DEFAULT_ANSWER_SHEET_INSTRUCTIONS, DEFAULT_EXAM_INSTRUCTIONS, QUESTION_BANK_DUMP_INSTRUCTIONS
+from ..latex.content import DEFAULT_EXAM_INSTRUCTIONS, DEFAULT_PAGESTYLES_TEMPLATE, QUESTION_BANK_DUMP_INSTRUCTIONS
 from ..latex.latexcompiler import LatexCompiler
 from ..util.collectors import on_rm_error
+from ..util.qrcrypto import generate_key, encrypt_answers, generate_qr_png
 
 import logging
 logger = logging.getLogger(__name__)
@@ -313,7 +314,7 @@ def write_version_keys_pdf(
     # Write LaTeX to a temporary file and compile
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
-            'pdflatex': 'pdflatex',
+            'latex-engine': 'xelatex',
             'build-dir': str(output_dir),
         },
         'job-name': 'answer_keys',
@@ -363,7 +364,7 @@ def _build_listings_extra_preamble(style_file: str) -> tuple[str, str]:
 def compile_dump_subcommand(args):
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
-            'pdflatex': 'pdflatex',
+            'latex-engine': 'xelatex',
             'build-dir': args.output_dir,
         },
         'job-name': 'banks_full_dump',
@@ -388,6 +389,14 @@ def compile_dump_subcommand(args):
     else:
         dump_instructions = QUESTION_BANK_DUMP_INSTRUCTIONS
 
+    pagestyles_file = getattr(args, 'pagestyles_file', None)
+    if pagestyles_file is not None:
+        logger.info(f'Loading custom page styles from {pagestyles_file}')
+        with open(pagestyles_file, 'r', encoding='utf-8') as f:
+            dump_pagestyles = f.read()
+    else:
+        dump_pagestyles = DEFAULT_PAGESTYLES_TEMPLATE
+
     default_style = None
     extra_preamble = ''
     use_listings_from = getattr(args, 'use_listings_from', None)
@@ -401,6 +410,7 @@ def compile_dump_subcommand(args):
         examname=f"{len(selected_questions)}-question dump",
         version=version_label,
         instructions=dump_instructions,
+        pagestyles=dump_pagestyles,
         question_renderer=lambda q: render_question(q, show_id=True, highlight_correct=True, default_style=default_style),
         question_list=selected_questions,
         fontsize=getattr(args, 'font_size', '12pt'),
@@ -417,7 +427,7 @@ def compile_dump_subcommand(args):
 def make_exams_subcommand(args):
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
-            'pdflatex': 'pdflatex',
+            'latex-engine': 'xelatex',
             'build-dir': args.output_dir,
         },
         'job-name': 'exam',
@@ -459,21 +469,35 @@ def make_exams_subcommand(args):
     else:
         exam_instructions = DEFAULT_EXAM_INSTRUCTIONS
 
+    pagestyles_file = getattr(args, 'pagestyles_file', None)
+    if pagestyles_file is not None:
+        logger.info(f'Loading custom page styles from {pagestyles_file}')
+        with open(pagestyles_file, 'r', encoding='utf-8') as f:
+            exam_pagestyles = f.read()
+    else:
+        exam_pagestyles = DEFAULT_PAGESTYLES_TEMPLATE
+
     default_style = None
     extra_preamble = ''
     use_listings_from = getattr(args, 'use_listings_from', None)
     if use_listings_from:
         default_style, extra_preamble = _build_listings_extra_preamble(use_listings_from)
 
+    encode_answers = getattr(args, 'encode_answers_in_qr', False)
+    qr_key = generate_key() if encode_answers else None
+
     answer_sheet_layout = LayoutConfig(
         bubble_field_num_cols = args.num_cols,
         num_questions = args.num_questions,
         bubble_font_size_pt = getattr(args, 'bubble_font_size', 8.0),
         force_odd_page = getattr(args, 'odd_page_answersheet', False),
+        qr_answer_key = qr_key,
     )
     json_answersheet_layout_path = output_dir/"answersheet_layout.json"
     save_layout_config(answer_sheet_layout, json_answersheet_layout_path, _ureg)
     logger.info(f'Wrote JSON answer sheet layout config to {json_answersheet_layout_path}')
+    if encode_answers:
+        logger.info('Answer encoding enabled: correct answers will be encrypted in each QR code')
     # write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
     # generate the list of version numbers as 8-byte hexadecimal strings
 
@@ -493,12 +517,28 @@ def make_exams_subcommand(args):
             for q in selected_questions
         ]
         version_answer_records.append((version_label, answers))
+
+        if encode_answers:
+            # Normalise to single characters (same as autograder CSV loading)
+            normalised = [
+                'a' if a == 'True' else 'b' if a == 'False' else a.lower()
+                for a in answers
+            ]
+            qr_content = f"{version_label}:{encrypt_answers(qr_key, normalised)}"
+        else:
+            qr_content = version_label
+
+        qr_image_filename = f"qr_{version_label}.png"
+        generate_qr_png(qr_content, output_dir / qr_image_filename,
+                        display_size_cm=answer_sheet_layout.qr_size.to('cm').magnitude)
+        logger.debug(f"Generated QR image {qr_image_filename}")
+
         answersheet_generator = AnswerSheetGenerator(
             layout_config=answer_sheet_layout,
             question_list=selected_questions,
         )
 
-        answersheet_tex = answersheet_generator.generate_tex(version_label=version_label,)
+        answersheet_tex = answersheet_generator.generate_tex(version_label=version_label, qr_image_filename=qr_image_filename)
 
         exam_doc_specs = dict(
             institution=args.institution,
@@ -507,6 +547,7 @@ def make_exams_subcommand(args):
             examname=args.exam_name,
             version=version_label,
             instructions=exam_instructions,
+            pagestyles=exam_pagestyles,
             question_renderer=lambda q: render_question(q, default_style=default_style),
             question_list=selected_questions,
             answersheet_tex=answersheet_tex,
@@ -557,11 +598,14 @@ def make_answersheet_subcommand(args):
         layout_config=layout_config,
         question_list=mock_question_list,
     )
-    answersheet_tex = answersheet_generator.generate_tex(version_label="SAMPLE",)
+    qr_image_filename = "qr_SAMPLE.png"
+    generate_qr_png("SAMPLE", Path(args.output_dir) / qr_image_filename,
+                    display_size_cm=layout_config.qr_size.to('cm').magnitude)
+    answersheet_tex = answersheet_generator.generate_tex(version_label="SAMPLE", qr_image_filename=qr_image_filename)
 
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
-            'pdflatex': 'pdflatex',
+            'latex-engine': 'xelatex',
             'build-dir': args.output_dir,
         },
         'job-name': args.output_pdf,
@@ -630,7 +674,7 @@ def autograde_subcommand(args):
     layout_config = load_layout_config(answersheetlayoutjson, LayoutConfig, _ureg)
 
     autograder = Autograder(layout_config=layout_config)
-    for keyfile in keyfiles:
+    for keyfile in (keyfiles or []):
         autograder.load_version_keys_csv(keyfile)
 
     autograder.grade_pdf(pdf, output_dir_path=output_dir_path,

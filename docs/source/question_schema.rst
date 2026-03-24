@@ -49,8 +49,7 @@ Rules:
 * ``type: text`` blocks may contain inline code using double-backticks (``like this``).
 * ``type: code`` blocks contain literal Python code.
 * Printed output in code must not include quotes.
-* Any literal newline (``
-``) in quoted YAML strings must appear as ``\n``.
+* Any literal newline in quoted YAML strings must appear as ``\n``.
 * Multi-line code is preferably written using YAML block scalars (``|``).
 
 Acceptable stem shapes include:

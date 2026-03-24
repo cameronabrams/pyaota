@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyaota"
-version = "0.4.0"
+version = "0.5.0"
 description = "Python app for generating and grading exams."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,6 +22,7 @@ dependencies = [
   "pandas",
   "Pillow",
   "python-docx",
+  "qrcode[pil]",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +40,7 @@ docs = [
   "furo",
   "sphinx-autodoc-typehints",
   "myst-parser",
+  "sphinx-copybutton",
 ]
 
 [project.scripts]

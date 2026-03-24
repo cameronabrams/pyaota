@@ -275,7 +275,13 @@ class Autograder:
                 "overlay_path": output_dir_path / f"graded_page_{page_index:03d}.pdf" if output_dir_path is not None else None,
             }
 
-            key = self.version_keys.get(read_results['version']) if read_results['version'] else None
+            embedded = read_results.get('embedded_answers')
+            key = (
+                embedded if embedded is not None
+                else self.version_keys.get(read_results['version']) if read_results['version'] else None
+            )
+            if embedded is not None:
+                logger.debug(f"Grading page {page_index}: using embedded answers from QR code")
             logger.debug(f"Grading page {page_index}: version={read_results['version']}, student_id={read_results['student_id_bubbles']}, key_found={key is not None}")
             logger.debug(f'key={key}, detected_answers={read_results["answers"]}')
             if not read_results['version']:
@@ -290,6 +296,24 @@ class Autograder:
                 })
                 results.append(page_result)
                 continue
+            if key is None and interactive:
+                sys.stderr.write(
+                    f"\n[Page {page_index}] No answer key for version '{read_results['version']}'\n"
+                )
+                sys.stderr.flush()
+                try:
+                    kf_input = input(
+                        f"  Enter path to answer-key CSV (or blank to skip): "
+                    ).strip()
+                except EOFError:
+                    kf_input = ""
+                if kf_input:
+                    try:
+                        self.load_version_keys_csv(kf_input)
+                        key = self.version_keys.get(read_results['version'])
+                    except Exception as _exc:
+                        sys.stderr.write(f"  Could not load keyfile: {_exc}\n")
+                        sys.stderr.flush()
             if key is None:
                 page_result["status"] = "unknown_version"
                 failed_pdf_name = f"failed_page_{page_index:03d}_unknown_version_{read_results['version']}.pdf"

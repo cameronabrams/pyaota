@@ -134,12 +134,14 @@ class LayoutConfig:
     student_id_digits_cell_margin_frac: float = 0.06  # margin inside each cell for OCR crop
     bubble_column_vert_gap: pint.Quantity = 12 * _ureg.pxl  # vertical gap between bubble centers in a column
 
-    qr_ul: Tuple[pint.Quantity, pint.Quantity] = (6.5 * _ureg.inch, 2.5 * _ureg.inch)
-    qr_size: pint.Quantity = 1.5 * _ureg.cm
+    qr_ul: Tuple[pint.Quantity, pint.Quantity] = (6.0 * _ureg.inch, 2.0 * _ureg.inch)
+    qr_size: pint.Quantity = 3.0 * _ureg.cm
 
     bubble_font_size_pt: float = 8.0
 
     force_odd_page: bool = False
+
+    qr_answer_key: str = None  # hex-encoded 32-byte key; if set, answers are encrypted in the QR code
 
     warning_line_opacity: float = 0.75
 
@@ -289,7 +291,7 @@ class AnswerSheetGenerator:
         lines.append(r"\end{tikzpicture}")
         return "\n".join(lines)
 
-    def _place_qr_code(self, version_label: str = "") -> str:
+    def _place_qr_code(self, qr_image_filename: str = "") -> str:
         config = self.layout_config
         opacity = config.warning_line_opacity
         ul_x = config.qr_ul[0].to(_ureg.cm).magnitude
@@ -309,7 +311,7 @@ class AnswerSheetGenerator:
         )
         lines.append(
             rf"\node at ({ul_x + size/2}cm, {ul_y - size/2}cm) "
-            rf"{{\qrcode[height={size}cm]{{{version_label}}}}};"
+            rf"{{\includegraphics[width={size}cm,keepaspectratio]{{{qr_image_filename}}}}};"
         )
         # add warning text below the QR code
         lines.append(
@@ -443,6 +445,7 @@ class AnswerSheetGenerator:
 
     def generate_tex(self,
         version_label: str = "",
+        qr_image_filename: str = "",
     ) -> str:
         config = self.layout_config
         top = config.page_top_margin.to(_ureg.inch).magnitude
@@ -463,7 +466,7 @@ class AnswerSheetGenerator:
         lines.append(self._place_indicials_tex())
         lines.append(self._place_name_blank())
         lines.append(self._place_student_id_boxes())
-        lines.append(self._place_qr_code(version_label=version_label))
+        lines.append(self._place_qr_code(qr_image_filename=qr_image_filename))
         lines.append(self._place_bubblefield())
         lines.append(self._place_boundary_warnings())
 

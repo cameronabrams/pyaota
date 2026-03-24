@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class LatexCompiler:
     def __init__(self, build_specs: dict):
         self.specs = build_specs
-        self.pdflatex = self.specs['paths']['pdflatex']
+        self.latex_engine = self.specs['paths'].get('latex-engine', 'xelatex')
         self.build_dir: str = self.specs.get('paths', {}).get('build-dir', '.')
         self.job_name = self.specs.get('job-name', 'document')
         self.working_job_name = self.job_name
@@ -52,7 +52,7 @@ class LatexCompiler:
         if not build_path.exists():
             build_path.mkdir(parents=True, exist_ok=True)
         
-        repeated_command = (f'{self.pdflatex} -interaction=nonstopmode -file-line-error '
+        repeated_command = (f'{self.latex_engine} -interaction=nonstopmode -file-line-error '
                                 f'-jobname={self.working_job_name} {output_option} {self.working_job_name}.tex')
         commands.append(Command(repeated_command, ignore_codes=[1]))
 

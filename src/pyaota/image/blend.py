@@ -3,22 +3,15 @@ import cv2
 def blend_images(img1_path, img2_path, alpha=0.5, output_path=None):
     """
     Blend two images with alpha transparency to see through the top one.
-    
-    Parameters:
-    -----------
-    img1_path : str
-        Path to first image
-    img2_path : str
-        Path to second image
-    alpha : float, optional
-        Transparency of first image (0-1, default 0.5)
-    output_path : str, optional
-        Path to save result. If None, displays instead.
-    
+
+    Args:
+        img1_path (str): Path to first image.
+        img2_path (str): Path to second image.
+        alpha (float, optional): Transparency of first image (0–1, default 0.5).
+        output_path (str, optional): Path to save result. If None, displays instead.
+
     Returns:
-    --------
-    overlay : numpy.ndarray
-        Blended image
+        numpy.ndarray: Blended image.
     """
     # Load images
     img1 = cv2.imread(img1_path)

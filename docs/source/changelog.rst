@@ -8,12 +8,19 @@ All notable changes to pyaota will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-[0.4.0] - 2026-03-24
+[0.5.0] - 2026-03-24
 --------------------
 
 Added
 ~~~~~
 
+* **Encrypted answer embedding in QR codes** (``--encode-answers-in-qr`` flag
+  on ``build``) -- correct answers are encrypted and stored directly in each
+  answer sheet's QR code.  A random per-exam-set key is generated at build
+  time and stored in ``answersheet_layout.json``; the grader decrypts
+  automatically using that file, making the answer-key CSV optional for
+  day-of grading.  Old answer sheets without embedded answers continue to
+  work unchanged via CSV lookup.
 * **Interactive grading** (``--interactive`` flag on ``grade``) -- when a QR
   code, student-ID field, or answer bubble cannot be read automatically, pyaota
   pauses and prompts the operator at the terminal to supply the missing value.

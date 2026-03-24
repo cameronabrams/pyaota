@@ -51,7 +51,12 @@ Key options:
 - ``-sc`` / ``--shuffle-choices`` -- shuffle answer choices per version
 - ``-en`` / ``--exam-name`` -- exam title used in the header
 - ``-if`` / ``--instructions-file`` -- custom LaTeX instructions file
+- ``-pf`` / ``--pagestyles-file`` -- custom LaTeX page-styles file
 - ``--institution``, ``--course``, ``--term`` -- metadata for headers
+- ``--encode-answers-in-qr`` -- encrypt the correct answers into each answer
+  sheet's QR code; when set, ``pyaota grade`` does not require a ``-k``
+  keyfile — the grader decrypts the answers directly from the scanned QR.
+  The encryption key is stored in ``answersheet_layout.json``.
 - ``--cleanup`` -- remove intermediate LaTeX files after compilation
 - ``-ow`` / ``--overwrite`` -- overwrite output directory if it exists
 - ``--font-size {10pt,11pt,12pt}`` -- document font size (default: ``12pt``)
@@ -64,6 +69,15 @@ Key options:
   printing)
 - ``--rasterize`` -- rasterize output PDFs at 300 DPI after compilation for
   improved printer compatibility
+- ``--use-listings-from <TEX_FILE>`` -- path to a ``.tex`` file defining an
+  ``lstdefinestyle``; enables ``listings``/``\inl`` rendering instead of
+  verbatim for code in questions
+- ``--balance-difficulty`` -- select questions proportionally across difficulty
+  levels (1–5) so each exam version has roughly the same difficulty
+  distribution; questions without a ``difficulty`` attribute are treated as
+  difficulty 1
+- ``-nc`` / ``--num-cols`` -- number of bubble columns on the answer sheet
+  (default: ``3``)
 
 compile-dump
 ~~~~~~~~~~~~
@@ -91,22 +105,30 @@ Automatically grade a scanned PDF of answer sheets.
 
 .. code-block:: bash
 
-   pyaota grade -i scanned.pdf -k keys.csv -od results/
+   pyaota grade -i scanned.pdf -alj answersheet_layout.json -od results/
 
 Key options:
 
 - ``-i`` / ``--input-pdf`` -- PDF of scanned answer sheets
-- ``-k`` / ``--keyfiles`` -- CSV answer key file(s)
-- ``-alj`` / ``--answersheet-layout-json`` -- answer sheet layout JSON
+- ``-k`` / ``--keyfiles`` -- CSV answer key file(s); optional when answers are
+  embedded in the QR code via ``--encode-answers-in-qr``
+- ``-alj`` / ``--answersheet-layout-json`` -- answer sheet layout JSON (required;
+  also carries the QR decryption key when ``--encode-answers-in-qr`` was used)
 - ``-od`` / ``--output-dir`` -- output directory for graded results
 - ``--debug-output-dir`` -- directory for debug overlay images
 - ``-fp`` / ``--failed-pages-dir`` -- directory for unreadable pages
 - ``-gb`` / ``--gradebooks`` -- gradebook CSV file(s) to update
-- ``-sc`` / ``--score-column`` -- gradebook column name for scores
+- ``-sc`` / ``--score-column`` -- gradebook column name for scores (default:
+  ``'score'``)
+- ``--column-id <SUBSTRING>`` -- substring matched against gradebook column
+  names to identify the score column (e.g. ``'Final'`` matches
+  ``'Final Exam [Total Pts: 100 Score] |3766016'``); takes precedence over
+  ``--score-column`` when a unique match is found
 - ``-nc`` / ``--num-counted`` -- number of questions counted toward score
 - ``-qt`` / ``--question-tally`` -- output CSV for question-level statistics
 - ``--interactive`` -- pause and prompt for manual input when a QR code, student ID,
-  or bubble fill cannot be read automatically; see :doc:`grading` for details
+  or bubble fill cannot be read automatically; if a QR-encoded answer key cannot
+  be decrypted, also prompts for a fallback keyfile CSV; see :doc:`grading` for details
 
 make-answersheet
 ~~~~~~~~~~~~~~~~

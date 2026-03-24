@@ -252,6 +252,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Path to file containing custom exam instructions in LaTeX format (if not provided, default instructions will be used)",
     )
     command_parsers["build"].add_argument(
+        "-pf",
+        "--pagestyles-file",
+        type=str,
+        default=None,
+        help="Path to file containing custom LaTeX page style commands (if not provided, default page styles will be used)",
+    )
+    command_parsers["build"].add_argument(
         "--font-size",
         type=str,
         default="12pt",
@@ -283,6 +290,13 @@ def main(argv: list[str] | None = None) -> int:
         default=False,
         action=ap.BooleanOptionalAction,
         help="Rasterize output PDFs at 300 DPI for improved printer compatibility",
+    )
+    command_parsers["build"].add_argument(
+        "--encode-answers-in-qr",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Encrypt and embed the correct answers in each answer sheet's QR code; "
+             "enables grading without a separate answer-key CSV file",
     )
     command_parsers["build"].add_argument(
         "--use-listings-from",
@@ -338,6 +352,13 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         default=None,
         help="Path to file containing custom instructions in LaTeX format (if not provided, default instructions will be used)",
+    )
+    command_parsers["compile-dump"].add_argument(
+        "-pf",
+        "--pagestyles-file",
+        type=str,
+        default=None,
+        help="Path to file containing custom LaTeX page style commands (if not provided, default page styles will be used)",
     )
     command_parsers["compile-dump"].add_argument(
         "--font-size",

@@ -1,0 +1,434 @@
+
+\documentclass[10pt, letter]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{verbatim}
+\usepackage{xcolor}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Heros}
+\usepackage{pifont}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{multicol}
+\usepackage{graphicx}
+
+
+\definecolor{bubblegray}{gray}{0.3}
+
+\newcommand{\circledletter}[1]{%
+  \tikz[baseline=-0.6ex]{%
+    \node[
+      circle,
+      draw,
+      inner sep=0pt,
+      minimum size=1.1em,      % slightly larger bubble
+      font=\bubblefont,
+      text height=1.5ex,       % fixed bounding box height
+      text depth=0.4ex,        % fixed bounding box depth
+      anchor=center
+    ] {\textcolor{bubblegray}{#1}};
+  }%
+}
+
+\newcommand{\idboxwbubbles}{%
+  \tikz[baseline=-0.6ex]{
+    \node[draw, minimum width=0.7cm, minimum height=0.7cm] (box) at (0,0) {};
+    \foreach \i in {0,...,9} {
+      \node at (0, -0.7 - \i*0.5) {\circledletter{\i}};
+    }
+  }%
+}
+
+\newcommand{\idboxes}[1][8]{%
+  \foreach \i in {1,...,#1}{\idboxwbubbles\hspace{0.15cm}}%
+}
+
+\newcommand{\correctlabel}[1]{%
+  \tikz[baseline=(char.base)]{
+    \node[
+      circle,
+      fill=black,
+      draw=black,
+      inner sep=0pt,
+      minimum size=1.0em,
+      font=\normalsize
+    ] (char) {\textcolor{white}{#1}};
+  }%
+}
+
+
+\newcommand{\blank}[1][2cm]{\underline{\hspace{#1}}}
+\newcommand{\smallblank}[1][0.5cm]{\ \underline{\hspace{#1}}\ }
+
+\newif\ifshowanswers
+\showanswersfalse
+
+\newcounter{question}
+
+\newenvironment{mcq}[3]{%
+  \refstepcounter{question}%
+  \par\medskip
+  \def\questionid{#1}%
+  \def\questionpoints{#2}%
+  \def\questioncorrect{#3}%
+  \noindent\begin{minipage}{\linewidth}%
+    \textbf{\thequestion.}\enspace
+}{%
+  \end{minipage}%
+  \par\vspace{24pt}%
+}
+
+\newenvironment{tf}[3]{%
+  \refstepcounter{question}%
+  \par\medskip
+  \def\questionid{#1}%
+  \def\questionpoints{#2}%
+  \def\questioncorrect{#3}%
+  \noindent\begin{minipage}{\linewidth}%
+    \textbf{\thequestion.}\enspace
+}{%
+  \end{minipage}%
+  \par\vspace{24pt}%
+}
+
+\newenvironment{choices}[1][1]{%
+  \def\choicecols{#1}%
+  \ifnum#1>1\relax
+    \begin{multicols}{#1}%
+  \fi
+  \begin{enumerate}[label=\alph*., leftmargin=2em]%
+}{%
+  \end{enumerate}%
+  \ifnum\choicecols>1\relax
+    \end{multicols}%
+  \fi
+}
+
+\newcommand{\choice}[2][]{%
+  \item[#1] #2%
+}
+
+\newcommand{\choicecode}[1][]{%
+  \item[#1]
+}
+\setlength{\parindent}{0pt}
+
+
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Example University -- MATH 101 --- Spring 2026}
+\lhead{Quiz 1 {\footnotesize (ver. d82c07cd)}}
+\rfoot{\thepage}
+
+% Special pagestyle for answer sheet: same header, no footer / page number
+\fancypagestyle{answersheet}{%
+  \fancyhf{}%
+  \rhead{Example University -- MATH 101 --- Spring 2026}%
+  \lhead{Quiz 1 {\footnotesize (ver. d82c07cd)}}%
+  \rfoot{}
+}
+
+
+
+
+\begin{document}
+
+
+
+
+INSTRUCTIONS:
+\begin{enumerate}
+\item Be sure you have a pencil and an eraser.
+\item \textbf{Carefully} detach the answer sheet from the back of this exam packet.
+\item Enter your name and student ID number on the answer sheet in the spaces provided, and fill in the corresponding bubbles for each digit of your student ID.
+\item Fill in the bubbles on the answer sheet corresponding to your answers.  You only get one answer sheet so do not lose it or damage it!
+\item Time allowed: 60 minutes.
+\item Any use of phones, calculators, notes, textbooks, or other aids is strictly prohibited.
+\item \textbf{Turn in only your answer sheet}.  You should keep your exam packet for later review.
+\end{enumerate}
+Questions begin on the next page.
+\clearpage
+
+
+\begin{tf}{19}{1}{T}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 10 multiplied by 3 is equal to 30
+\end{tf}
+
+\begin{tf}{26}{1}{F}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 42 divided by 7 equals 5
+\end{tf}
+
+\begin{tf}{97}{1}{T}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 4 multiplied by 7 is equal to 28.
+\end{tf}
+
+\begin{tf}{14}{1}{F}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 24 divided by 8 equals 2
+\end{tf}
+
+\begin{tf}{3}{1}{T}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 6 multiplied by 4 is equal to 24
+\end{tf}
+
+\begin{tf}{8}{1}{F}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 16 divided by 4 equals 5
+\end{tf}
+
+\begin{tf}{16}{1}{F}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 50 divided by 10 equals 6
+\end{tf}
+
+\begin{mcq}{88}{1}{c}
+What is 70 - 55?
+\begin{choices}[2]
+  \choice[a.]{16}
+  \choice[b.]{14}
+  \choice[c.]{15}
+  \choice[d.]{17}
+\end{choices}
+\end{mcq}
+
+\begin{mcq}{68}{1}{a}
+What is 25 - 10?
+\begin{choices}[2]
+  \choice[a.]{15}
+  \choice[b.]{14}
+  \choice[c.]{16}
+  \choice[d.]{17}
+\end{choices}
+\end{mcq}
+
+\begin{tf}{65}{1}{T}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 6 multiplied by 6 is equal to 36.
+\end{tf}
+
+\begin{mcq}{89}{1}{c}
+What is 9 + 8?
+\begin{choices}[2]
+  \choice[a.]{18}
+  \choice[b.]{16}
+  \choice[c.]{17}
+  \choice[d.]{19}
+\end{choices}
+\end{mcq}
+
+\begin{tf}{25}{1}{T}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 12 multiplied by 2 is equal to 24
+\end{tf}
+
+\begin{tf}{68}{1}{F}
+\textbf{True\,(T)\,/\,False\,(F)}\enspace 56 divided by 7 equals 9.
+\end{tf}
+
+\begin{mcq}{60}{1}{d}
+What is 12 - 5?
+\begin{choices}[2]
+  \choice[a.]{8}
+  \choice[b.]{6}
+  \choice[c.]{9}
+  \choice[d.]{7}
+\end{choices}
+\end{mcq}
+
+\begin{mcq}{27}{1}{a}
+What is 8 + 6?
+\begin{choices}[2]
+  \choice[a.]{14}
+  \choice[b.]{13}
+  \choice[c.]{15}
+  \choice[d.]{16}
+\end{choices}
+\end{mcq}
+
+\begin{mcq}{52}{1}{a}
+What is 20 - 8?
+\begin{choices}[2]
+  \choice[a.]{12}
+  \choice[b.]{11}
+  \choice[c.]{13}
+  \choice[d.]{14}
+\end{choices}
+\end{mcq}
+
+\begin{mcq}{49}{1}{c}
+What is 4 + 8?
+\begin{choices}[2]
+  \choice[a.]{11}
+  \choice[b.]{13}
+  \choice[c.]{12}
+  \choice[d.]{14}
+\end{choices}
+\end{mcq}
+
+\begin{mcq}{42}{1}{a}
+What is 70 - 55?
+\begin{choices}[2]
+  \choice[a.]{15}
+  \choice[b.]{16}
+  \choice[c.]{14}
+  \choice[d.]{17}
+\end{choices}
+\end{mcq}
+
+\begin{mcq}{87}{1}{a}
+What is 11 + 7?
+\begin{choices}[2]
+  \choice[a.]{18}
+  \choice[b.]{20}
+  \choice[c.]{19}
+  \choice[d.]{17}
+\end{choices}
+\end{mcq}
+
+\begin{mcq}{29}{1}{d}
+What is 4 + 9?
+\begin{choices}[2]
+  \choice[a.]{14}
+  \choice[b.]{12}
+  \choice[c.]{15}
+  \choice[d.]{13}
+\end{choices}
+\end{mcq}
+
+End of Exam
+\clearpage
+
+% Answer Sheet
+
+\thispagestyle{answersheet}
+\newgeometry{top=1.0in,bottom=1.0in,left=1.0in,right=1.0in}
+\fontsize{12pt}{14.4pt}\selectfont
+\newcommand{\bubblefont}{\fontsize{8.0pt}{9.6pt}\selectfont}
+\begin{tikzpicture}[remember picture,overlay]
+\node[fill=black,circle,inner sep=1.4226377952755906,xshift=28.45275590551181,yshift=-76.82244094488189] at (current page.north west) {};
+\node[fill=black,circle,inner sep=1.4226377952755906,xshift=-28.45275590551181,yshift=-76.82244094488189] at (current page.north east) {};
+\node[fill=black,circle,inner sep=1.4226377952755906,xshift=28.45275590551181,yshift=28.45275590551181] at (current page.south west) {};
+\node[fill=black,circle,inner sep=1.4226377952755906,xshift=-28.45275590551181,yshift=28.45275590551181] at (current page.south east) {};
+\end{tikzpicture}
+\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]
+\draw[line width=0.4pt] (1.75in, -1.25in) -- (7.25in, -1.25in);
+\node[anchor=east] at (1.65in, -1.175in)  {\textbf{Name:}};
+\end{tikzpicture}
+\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]
+\pgfmathsetmacro{\radius}{0.2032}
+\foreach \i in {1,...,8} {
+    \pgfmathsetmacro{\xpos}{5.715 + (\i - 1)*(0.2794+0.8466666666666666)}
+    \pgfmathsetmacro{\ypos}{-3.5559999999999996}
+  \node[draw, anchor=north west, minimum width=0.8466666666666666cm, minimum height=0.8466666666666666cm] (box) at (\xpos cm, \ypos cm) {};
+}
+\foreach \i in {1,...,8} {
+ \pgfmathsetmacro{\xpos}{5.715 + (\i - 1)*(0.2794+0.8466666666666666) + 0.5*0.8466666666666666}
+  \foreach \j in {0,...,9} {
+    \pgfmathsetmacro{\spacing}{2*\radius + 0.1016}
+    \pgfmathsetmacro{\ypos}{-3.5559999999999996 - 0.8466666666666666 - 0.1016 - 0.2032 - \spacing * \j}
+    \node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (\xpos cm, \ypos cm) {\textcolor{bubblegray}{\j}};
+  }
+}
+\node[anchor=east] at (5.461cm, -3.979333333333333cm) {\textbf{Student ID:}};
+\node[anchor=east,font=\footnotesize] at (5.711cm, -6.2653333333333325cm) {Fill in the bubble};
+\node[anchor=east,font=\footnotesize] at (5.711cm, -6.665333333333333cm) {for each digit};
+\node[anchor=east,font=\footnotesize] at (5.711cm, -7.065333333333332cm) {of your ID:};
+\end{tikzpicture}
+\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]
+\draw[line width=0.4pt,opacity=0.75] (15.040000000000001cm, -4.88cm) rectangle (18.44cm, -8.28cm);
+\node at (16.740000000000002cm, -6.58cm) {\includegraphics[width=3.0cm,keepaspectratio]{qr_d82c07cd.png}};
+\node[anchor=north,opacity=0.75] at (16.740000000000002cm, -4.48cm)  {\footnotesize \textit{Make no marks}};\node[anchor=north,opacity=0.75] at (16.740000000000002cm, -8.18cm)  {\footnotesize \textit{in this box}};
+\end{tikzpicture}
+\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]
+\pgfmathsetmacro{\radius}{0.2032}
+\node[anchor=east] at (4.6274cm, -11.684846666666667cm){\textbf{1.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (4.881399999999999cm, -11.684846666666667cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (5.372466666666666cm, -11.684846666666667cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (4.6274cm, -12.192846666666666cm){\textbf{2.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (4.881399999999999cm, -12.192846666666666cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (5.372466666666666cm, -12.192846666666666cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (4.6274cm, -12.700846666666667cm){\textbf{3.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (4.881399999999999cm, -12.700846666666667cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (5.372466666666666cm, -12.700846666666667cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (4.6274cm, -13.208846666666666cm){\textbf{4.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (4.881399999999999cm, -13.208846666666666cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (5.372466666666666cm, -13.208846666666666cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (4.6274cm, -13.716846666666667cm){\textbf{5.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (4.881399999999999cm, -13.716846666666667cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (5.372466666666666cm, -13.716846666666667cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (8.095666666666666cm, -11.684846666666667cm){\textbf{6.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.349666666666666cm, -11.684846666666667cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.840733333333333cm, -11.684846666666667cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (8.095666666666666cm, -12.192846666666666cm){\textbf{7.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.349666666666666cm, -12.192846666666666cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.840733333333333cm, -12.192846666666666cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (8.095666666666666cm, -12.700846666666667cm){\textbf{8.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.349666666666666cm, -12.700846666666667cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.840733333333333cm, -12.700846666666667cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (9.3318cm, -12.700846666666667cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (9.822866666666666cm, -12.700846666666667cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (8.095666666666666cm, -13.208846666666666cm){\textbf{9.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.349666666666666cm, -13.208846666666666cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.840733333333333cm, -13.208846666666666cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (9.3318cm, -13.208846666666666cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (9.822866666666666cm, -13.208846666666666cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (8.095666666666666cm, -13.716846666666667cm){\textbf{10.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.349666666666666cm, -13.716846666666667cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (8.840733333333333cm, -13.716846666666667cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (11.563933333333333cm, -11.684846666666667cm){\textbf{11.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (11.817933333333333cm, -11.684846666666667cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.309cm, -11.684846666666667cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.800066666666666cm, -11.684846666666667cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (13.291133333333333cm, -11.684846666666667cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (11.563933333333333cm, -12.192846666666666cm){\textbf{12.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (11.817933333333333cm, -12.192846666666666cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.309cm, -12.192846666666666cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (11.563933333333333cm, -12.700846666666667cm){\textbf{13.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (11.817933333333333cm, -12.700846666666667cm) {\textcolor{bubblegray}{T}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.309cm, -12.700846666666667cm) {\textcolor{bubblegray}{F}};
+\node[anchor=east] at (11.563933333333333cm, -13.208846666666666cm){\textbf{14.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (11.817933333333333cm, -13.208846666666666cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.309cm, -13.208846666666666cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.800066666666666cm, -13.208846666666666cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (13.291133333333333cm, -13.208846666666666cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (11.563933333333333cm, -13.716846666666667cm){\textbf{15.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (11.817933333333333cm, -13.716846666666667cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.309cm, -13.716846666666667cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (12.800066666666666cm, -13.716846666666667cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (13.291133333333333cm, -13.716846666666667cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (15.0322cm, -11.684846666666667cm){\textbf{16.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.2862cm, -11.684846666666667cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.777266666666666cm, -11.684846666666667cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.26833333333333cm, -11.684846666666667cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.7594cm, -11.684846666666667cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (15.0322cm, -12.192846666666666cm){\textbf{17.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.2862cm, -12.192846666666666cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.777266666666666cm, -12.192846666666666cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.26833333333333cm, -12.192846666666666cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.7594cm, -12.192846666666666cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (15.0322cm, -12.700846666666667cm){\textbf{18.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.2862cm, -12.700846666666667cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.777266666666666cm, -12.700846666666667cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.26833333333333cm, -12.700846666666667cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.7594cm, -12.700846666666667cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (15.0322cm, -13.208846666666666cm){\textbf{19.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.2862cm, -13.208846666666666cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.777266666666666cm, -13.208846666666666cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.26833333333333cm, -13.208846666666666cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.7594cm, -13.208846666666666cm) {\textcolor{bubblegray}{d}};
+\node[anchor=east] at (15.0322cm, -13.716846666666667cm){\textbf{20.}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.2862cm, -13.716846666666667cm) {\textcolor{bubblegray}{a}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (15.777266666666666cm, -13.716846666666667cm) {\textcolor{bubblegray}{b}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.26833333333333cm, -13.716846666666667cm) {\textcolor{bubblegray}{c}};
+\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height=0.31000000000000005cm,text depth=0.09000000000000001cm,anchor=center] at (16.7594cm, -13.716846666666667cm) {\textcolor{bubblegray}{d}};
+\end{tikzpicture}
+\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]
+\draw[line width=0.4pt,opacity=0.75] (1.55cm, -1.9500000000000002cm) -- (1.55cm, -26.39cm);
+\draw[line width=0.4pt,opacity=0.75] (20.04cm, -1.9500000000000002cm) -- (20.04cm, -26.39cm);
+\draw[line width=0.4pt,opacity=0.75] (1.55cm, -1.9500000000000002cm) -- (20.04cm, -1.9500000000000002cm);
+\draw[line width=0.4pt,opacity=0.75] (1.55cm, -26.39cm) -- (20.04cm, -26.39cm);
+\node[anchor=east,font=\footnotesize,rotate=90,opacity=0.75] at (1.15cm, -14.17cm)  {Make no marks in the margins};
+\node[anchor=west,font=\footnotesize,rotate=270,opacity=0.75] at (20.439999999999998cm, -14.17cm)  {Make no marks in the margins};
+\end{tikzpicture}
+
+
+\end{document}
+

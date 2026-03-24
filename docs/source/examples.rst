@@ -9,36 +9,40 @@ from the root of the repository with the package installed.
 
 ----
 
-Math quiz (MCQ only)
---------------------
+Math quiz (MCQ only, QR-encoded answers)
+-----------------------------------------
 
 The ``simple_math.yaml`` bank contains 120 arithmetic questions spread across
 four topics: *integer addition*, *integer subtraction*, *integer multiplication*,
 and *integer division*.
 
 The following command generates **two randomised versions** of a 20-question
-quiz (5 questions per topic) with a 4-column answer sheet:
+quiz with a 4-column answer sheet.  The ``--encode-answers-in-qr`` flag
+encrypts the correct answers directly into each answer sheet's QR code, so
+no separate answer-key file is needed at grading time.  ``-sc`` and ``-sq``
+shuffle choices and questions independently for each version:
 
 .. code-block:: bash
 
    pyaota build \
+     --encode-answers-in-qr \
+     --font-size 10pt \
      -q examples/question_banks/simple_math.yaml \
      -n 2 -nq 20 -nc 4 \
-     -t "integer addition" "integer subtraction" \
-        "integer multiplication" "integer division" \
-     -od examples/generated/math_exam \
-     --seed 1 \
      --institution "Example University" \
-     --course "MATH-101" --term "Spring 2026" \
+     --course "MATH 101" --term "Spring 2026" \
      -en "Quiz 1" \
-     --cleanup --odd-page-answersheet
+     -od build \
+     -sc -sq
 
-Output files in ``examples/generated/math_exam/``:
+Output files in ``build/``:
 
 - ``exam-<version>.pdf`` — one PDF per exam version (questions + answer sheet)
-- ``exam_version_keys.csv`` — answer key for every version
+- ``exam_version_keys.csv`` — answer key for every version (kept as a backup)
 - ``answer_keys-AnswerKeys.pdf`` — printable answer-key summary
-- ``answersheet_layout.json`` — machine-readable layout used by the grader
+- ``answersheet_layout.json`` — layout used by the grader; contains the
+  encryption key needed to decode QR-embedded answers
+- ``qr_<version>.png`` — pre-generated QR code images included in each PDF
 
 **Instructions page and first questions page of a generated math quiz:**
 
@@ -50,28 +54,33 @@ Output files in ``examples/generated/math_exam/``:
 Grading the math quiz
 ~~~~~~~~~~~~~~~~~~~~~
 
+Because the answers are embedded in each answer sheet's QR code, no ``-k``
+keyfile is required:
+
 .. code-block:: bash
 
-   cd examples/generated/math_exam
    pyaota grade \
-       -i 1237_001.pdf \
-       -k exam_version_keys.csv \
-       -alj answersheet_layout.json \
-       --interactive
+       -i 1238_001.pdf \
+       -alj build/answersheet_layout.json \
+       -od graded
 
-**Scanned answer sheet (student: Robin Banks, ID: 00245963, version: 414c343c):**
+The grader reads the QR code, decrypts the answer key on the fly, and grades
+the sheet entirely from information printed on the page.  If a QR code cannot
+be read, running with ``--interactive`` will prompt for a keyfile as a fallback.
+
+**Scanned answer sheet (student ID: 10216942, version: 6baa9455):**
 
 .. image:: _static/examples/math_scanned_answersheet.png
    :width: 60%
    :align: center
-   :alt: Scanned answer sheet for student 00245963, exam version 414c343c
+   :alt: Scanned answer sheet for student 10216942, exam version 6baa9455
 
 **Graded answer sheet overlay:**
 
 .. image:: _static/examples/math_graded_answersheet.png
    :width: 60%
    :align: center
-   :alt: Graded answer sheet with all correct answers marked green, score 100.0%
+   :alt: Graded answer sheet overlay for student 10216942
 
 ----
 
@@ -245,6 +254,11 @@ Tips
   same version ordering and question selection.
 * Increase ``--num-exams`` (``-n``) to generate as many unique versions as
   needed for a large class.
+* Add ``--encode-answers-in-qr`` to embed encrypted answers in each QR code —
+  grading then requires only the ``answersheet_layout.json`` file, not a
+  separate answer-key CSV.
+* Add ``-sc`` / ``--shuffle-choices`` and ``-sq`` / ``--shuffle-questions`` to
+  vary question and choice ordering across versions.
 * Add ``--rasterize`` if your printer struggles with the TikZ-heavy answer sheet.
 * Add ``--odd-page-answersheet`` for double-sided printing so the answer sheet
   always falls on the right-hand (odd) page.
