@@ -321,7 +321,6 @@ def write_version_keys_pdf(
     })
 
     doc = Document(content=latex_content)
-    doc.version = "AnswerKeys"
     latex_compiler.build_document(doc, cleanup=True)
 
     output_pdf = output_dir / "answer_keys.pdf"

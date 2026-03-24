@@ -177,20 +177,21 @@
   },
   "qr_ul": [
     {
-      "magnitude": 6.5,
+      "magnitude": 6.0,
       "units": "inch"
     },
     {
-      "magnitude": 2.5,
+      "magnitude": 2.0,
       "units": "inch"
     }
   ],
   "qr_size": {
-    "magnitude": 1.5,
+    "magnitude": 3.0,
     "units": "centimeter"
   },
   "bubble_font_size_pt": 8.0,
   "force_odd_page": true,
+  "qr_answer_key": null,
   "warning_line_opacity": 0.75,
   "overlay_correct_choice_color": [
     0,

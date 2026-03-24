@@ -41,8 +41,7 @@ class LatexCompiler:
         version: str | int = document.version
 
         serial = document.version
-        self.working_job_name = self.job_name
-        self.working_job_name = self.job_name + f'-{serial}'
+        self.working_job_name = self.job_name + (f'-{serial}' if serial else '')
         document.write_source(local_output_name=self.working_job_name)
         self.FC.append(f'{self.working_job_name}.tex')
         output_option = ''

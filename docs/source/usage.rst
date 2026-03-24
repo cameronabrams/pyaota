@@ -219,3 +219,5 @@ Key options:
 
 - ``-i`` / ``--input-zip`` -- path to ZyBooks export ZIP
 - ``-o`` / ``--output-yaml`` -- output YAML question bank path
+
+The YAML file this generates needs some careful manual cleanup to be usable, but it can save time compared to starting from scratch.

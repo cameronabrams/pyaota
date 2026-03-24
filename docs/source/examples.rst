@@ -84,80 +84,61 @@ be read, running with ``--interactive`` will prompt for a keyfile as a fallback.
 
 ----
 
-History exam (MCQ + True/False)
----------------------------------
+History quiz (MCQ + True/False, QR-encoded answers)
+-----------------------------------------------------
 
 The ``simple_history.yaml`` bank mixes MCQ and True/False questions across
-eight topics.  This example draws 4 questions from each of four topics,
-producing two randomized 16-question versions:
+eight topics.  This example generates two randomized 20-question versions
+with answers encrypted into each answer sheet's QR code:
 
 .. code-block:: bash
 
    pyaota build \
+     --encode-answers-in-qr \
+     --font-size 10pt \
      -q examples/question_banks/simple_history.yaml \
-     -n 2 -nq 16 -nc 4 \
-     -t "Renaissance history" "American Revolution" \
-        "French Revolution" "New World Explorers" \
-     -od examples/generated/history_exam \
-     --seed 42 \
+     -n 2 -nq 20 -nc 4 \
      --institution "Example University" \
-     --course "HIST-201" --term "Spring 2026" \
-     -en "Midterm" \
-     --cleanup --odd-page-answersheet
+     --course "HIST 101" --term "Spring 2026" \
+     -en "Quiz 1" \
+     -od examples/generated/history_exam \
+     -sc -sq
 
 True/False questions are rendered with a bold ``True (T) / False (F)`` prefix
 instead of a separate choices list, keeping the exam compact.
 
-**Instructions page and first questions page of a generated history midterm:**
+**Instructions page and first questions page of a generated history quiz:**
 
 .. image:: _static/examples/history_spread.png
    :width: 100%
    :align: center
-   :alt: Instructions page (left) and first questions page (right) of a HIST-201 midterm
+   :alt: Instructions page (left) and first questions page (right) of a HIST-101 quiz
 
-Grading the history midterm
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Grading the history quiz
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-After students complete the exam, scan all answer sheets to a single PDF and
-run ``pyaota grade``.  The scanned PDF for this example is ``1236_001.pdf``
-(one page, one student):
+Because answers are embedded in the QR code, no keyfile is needed:
 
 .. code-block:: bash
 
    cd examples/generated/history_exam
    pyaota grade \
-       -i 1236_001.pdf \
-       -k exam_version_keys.csv \
-       -alj answersheet_layout.json \
-       --interactive
+       -i 1241_001.pdf \
+       -alj answersheet_layout.json
 
-**Scanned answer sheet (student: Amanda Hugginkiss, ID: 10245962, version: 46685257):**
+**Scanned answer sheet (student ID: 10214573, version: 6baa9455):**
 
 .. image:: _static/examples/history_scanned_answersheet.png
    :width: 60%
    :align: center
-   :alt: Scanned answer sheet for student 10245962, exam version 46685257
-
-With ``--interactive``, pyaota pauses on any question where no clear bubble
-fill is detected and opens a matplotlib window showing a close-up of the
-bubble row so the operator can confirm or supply the answer:
-
-.. image:: _static/examples/history_interactive_example.png
-   :width: 60%
-   :align: center
-   :alt: Interactive mode prompt for Q7 — no fill detected, operator selects the answer
+   :alt: Scanned answer sheet for student 10214573, exam version 6baa9455
 
 **Graded answer sheet overlay:**
 
 .. image:: _static/examples/history_graded_answersheet.png
    :width: 60%
    :align: center
-   :alt: Graded answer sheet with correct (green) and incorrect (red) overlays, score 56.2%
-
-The graded overlay marks each bubble green (correct) or red (incorrect) and
-prints the final score.  Questions left ambiguous without ``--interactive``
-(Q4 and Q7 here) are scored as wrong; running with ``--interactive`` would
-allow the operator to resolve them and recover those points.
+   :alt: Graded answer sheet overlay for student 10214573, exam version 6baa9455
 
 ----
 
