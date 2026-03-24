@@ -488,7 +488,10 @@ def make_exams_subcommand(args):
                                                                shuffle_choices=args.shuffle_choices,
                                                                balance_difficulty=getattr(args, 'balance_difficulty', False))
         logger.debug(f'Generated exam version {version_label} with {len(selected_questions)} questions.')
-        answers = [str(q.get("correct", "")).strip() for q in selected_questions]
+        answers = [
+            str(q["correct"] if "correct" in q else q.get("answer", "")).strip()
+            for q in selected_questions
+        ]
         version_answer_records.append((version_label, answers))
         answersheet_generator = AnswerSheetGenerator(
             layout_config=answer_sheet_layout,

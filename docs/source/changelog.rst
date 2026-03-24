@@ -8,6 +8,19 @@ All notable changes to pyaota will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+[0.4.0] - 2026-03-24
+--------------------
+
+Added
+~~~~~
+
+* **Interactive grading** (``--interactive`` flag on ``grade``) -- when a QR
+  code, student-ID field, or answer bubble cannot be read automatically, pyaota
+  pauses and prompts the operator at the terminal to supply the missing value.
+  For unanswered questions a matplotlib window displays the bubble row so the
+  operator can confirm or override the detected answer.  See :doc:`grading`
+  for full details.
+
 [0.3.0] - 2026-02-27
 --------------------
 

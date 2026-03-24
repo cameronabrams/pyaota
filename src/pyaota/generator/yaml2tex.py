@@ -456,7 +456,7 @@ def render_tf(
     """
     qid = q.get("id", "")
     points = q.get("points", 1)
-    answer = q.get("correct")
+    answer = q["answer"] if "answer" in q else q.get("correct")
     correct_key = "T" if answer else "F"
     topic = q.get("topic", "")
 

@@ -105,6 +105,8 @@ Key options:
 - ``-sc`` / ``--score-column`` -- gradebook column name for scores
 - ``-nc`` / ``--num-counted`` -- number of questions counted toward score
 - ``-qt`` / ``--question-tally`` -- output CSV for question-level statistics
+- ``--interactive`` -- pause and prompt for manual input when a QR code, student ID,
+  or bubble fill cannot be read automatically; see :doc:`grading` for details
 
 make-answersheet
 ~~~~~~~~~~~~~~~~

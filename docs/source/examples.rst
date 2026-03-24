@@ -47,6 +47,32 @@ Output files in ``examples/generated/math_exam/``:
    :align: center
    :alt: Instructions page (left) and first questions page (right) of a Math-101 quiz
 
+Grading the math quiz
+~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   cd examples/generated/math_exam
+   pyaota grade \
+       -i 1237_001.pdf \
+       -k exam_version_keys.csv \
+       -alj answersheet_layout.json \
+       --interactive
+
+**Scanned answer sheet (student: Robin Banks, ID: 00245963, version: 414c343c):**
+
+.. image:: _static/examples/math_scanned_answersheet.png
+   :width: 60%
+   :align: center
+   :alt: Scanned answer sheet for student 00245963, exam version 414c343c
+
+**Graded answer sheet overlay:**
+
+.. image:: _static/examples/math_graded_answersheet.png
+   :width: 60%
+   :align: center
+   :alt: Graded answer sheet with all correct answers marked green, score 100.0%
+
 ----
 
 History exam (MCQ + True/False)
@@ -79,6 +105,50 @@ instead of a separate choices list, keeping the exam compact.
    :width: 100%
    :align: center
    :alt: Instructions page (left) and first questions page (right) of a HIST-201 midterm
+
+Grading the history midterm
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After students complete the exam, scan all answer sheets to a single PDF and
+run ``pyaota grade``.  The scanned PDF for this example is ``1236_001.pdf``
+(one page, one student):
+
+.. code-block:: bash
+
+   cd examples/generated/history_exam
+   pyaota grade \
+       -i 1236_001.pdf \
+       -k exam_version_keys.csv \
+       -alj answersheet_layout.json \
+       --interactive
+
+**Scanned answer sheet (student: Amanda Hugginkiss, ID: 10245962, version: 46685257):**
+
+.. image:: _static/examples/history_scanned_answersheet.png
+   :width: 60%
+   :align: center
+   :alt: Scanned answer sheet for student 10245962, exam version 46685257
+
+With ``--interactive``, pyaota pauses on any question where no clear bubble
+fill is detected and opens a matplotlib window showing a close-up of the
+bubble row so the operator can confirm or supply the answer:
+
+.. image:: _static/examples/history_interactive_example.png
+   :width: 60%
+   :align: center
+   :alt: Interactive mode prompt for Q7 — no fill detected, operator selects the answer
+
+**Graded answer sheet overlay:**
+
+.. image:: _static/examples/history_graded_answersheet.png
+   :width: 60%
+   :align: center
+   :alt: Graded answer sheet with correct (green) and incorrect (red) overlays, score 56.2%
+
+The graded overlay marks each bubble green (correct) or red (incorrect) and
+prints the final score.  Questions left ambiguous without ``--interactive``
+(Q4 and Q7 here) are scored as wrong; running with ``--interactive`` would
+allow the operator to resolve them and recover those points.
 
 ----
 

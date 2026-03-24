@@ -22,6 +22,7 @@ Contents
 
    installation
    usage
+   grading
    examples
    question_schema
    changelog
