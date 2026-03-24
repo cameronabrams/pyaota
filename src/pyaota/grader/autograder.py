@@ -182,6 +182,60 @@ class Autograder:
 
             read_status = read_results.get("read_status", "success")
 
+            # Interactive recovery: prompt the user to supply missing data
+            # before treating the page as failed.
+            if interactive and read_status == "failed_read_qr":
+                sys.stderr.write(
+                    f"\n[Page {page_index}] QR code could not be read "
+                    f"({read_results.get('read_error', '')})\n"
+                )
+                sys.stderr.flush()
+                try:
+                    version_input = input(
+                        f"  Enter exam version label for page {page_index} (or blank to skip): "
+                    ).strip()
+                except EOFError:
+                    version_input = ""
+                if version_input:
+                    read_results["version"] = version_input
+                    # Run the steps that were skipped after the QR failure.
+                    for _step_name, _action in [
+                        ("read_student_id", reader._read_student_id),
+                        ("read_bubblefield", reader._read_bubblefield),
+                    ]:
+                        try:
+                            _action()
+                        except Exception as _exc:
+                            read_results["read_status"] = f"failed_{_step_name}"
+                            read_results["read_error"] = str(_exc)
+                            break
+                    else:
+                        read_results["read_status"] = "success"
+                    read_status = read_results["read_status"]
+
+            if interactive and read_status == "failed_read_student_id":
+                sys.stderr.write(
+                    f"\n[Page {page_index}] Student ID could not be read "
+                    f"({read_results.get('read_error', '')})\n"
+                )
+                sys.stderr.flush()
+                try:
+                    sid_input = input(
+                        f"  Enter student ID for page {page_index} (or blank to skip): "
+                    ).strip()
+                except EOFError:
+                    sid_input = ""
+                if sid_input:
+                    read_results["student_id_bubbles"] = sid_input
+                    # Run the bubble-field step that was skipped.
+                    try:
+                        reader._read_bubblefield()
+                        read_results["read_status"] = "success"
+                    except Exception as _exc:
+                        read_results["read_status"] = "failed_read_bubblefield"
+                        read_results["read_error"] = str(_exc)
+                    read_status = read_results["read_status"]
+
             if read_status != "success":
                 logger.warning(f"Page {page_index}: {read_status} — {read_results.get('read_error', '')}")
                 failed_pdf_name = f"failed_page_{page_index:03d}_{read_status}.pdf"
