@@ -40,7 +40,7 @@ Added
   separate choices block; the stem is prefixed with bold ``True (T) / False (F)``.
 * **T/F correct-answer highlighting** -- in ``compile-dump`` the correct answer
   for T/F questions is visually indicated with a filled circle (``\correctlabel``),
-  consistent with MCQ behaviour.
+  consistent with MCQ behavior.
 * **Greedy topic redistribution** -- ``get_random_selection`` no longer errors
   when a topic has fewer questions than the uniform quota; available questions
   are redistributed across better-stocked topics so the total count is always met.

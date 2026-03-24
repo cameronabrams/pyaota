@@ -38,7 +38,7 @@ Example::
    A,a,c,b,d,a
    B,c,a,d,b,c
 
-``True``/``False`` values are normalised to ``a``/``b`` respectively so that
+``True``/``False`` values are normalized to ``a``/``b`` respectively so that
 T/F questions grade correctly.
 
 Scoring
@@ -180,6 +180,6 @@ Debug output
 ------------
 
 Pass ``--debug-output-dir`` to save annotated images for every processed page.
-The overlay draws detected fiducials, bubble centres, fill percentages, and the
+The overlay draws detected fiducials, bubble centers, fill percentages, and the
 decoded QR/student-ID values, which helps diagnose alignment or threshold
 issues.

@@ -16,7 +16,7 @@ The ``simple_math.yaml`` bank contains 120 arithmetic questions spread across
 four topics: *integer addition*, *integer subtraction*, *integer multiplication*,
 and *integer division*.
 
-The following command generates **two randomised versions** of a 20-question
+The following command generates **two randomized versions** of a 20-question
 quiz with a 4-column answer sheet.  The ``--encode-answers-in-qr`` flag
 encrypts the correct answers directly into each answer sheet's QR code, so
 no separate answer-key file is needed at grading time.  ``-sc`` and ``-sq``
@@ -89,7 +89,7 @@ History exam (MCQ + True/False)
 
 The ``simple_history.yaml`` bank mixes MCQ and True/False questions across
 eight topics.  This example draws 4 questions from each of four topics,
-producing two randomised 16-question versions:
+producing two randomized 16-question versions:
 
 .. code-block:: bash
 

@@ -32,7 +32,7 @@ Subcommands
 build
 ~~~~~
 
-Generate one or more randomised exam versions from YAML question banks.
+Generate one or more randomized exam versions from YAML question banks.
 
 .. code-block:: bash
 
