@@ -455,7 +455,11 @@ def render_tf(
     """
     qid = q.get("id", "")
     points = q.get("points", 1)
-    answer = q["answer"] if "answer" in q else q.get("correct")
+    # QuestionSet normalizes ``correct`` to a bool; fall back to ``answer``
+    # for questions rendered without it
+    answer = q.get("correct", q.get("answer"))
+    if isinstance(answer, str):
+        answer = answer.strip().lower() in ("true", "t", "yes", "y")
     correct_key = "T" if answer else "F"
     topic = q.get("topic", "")
 

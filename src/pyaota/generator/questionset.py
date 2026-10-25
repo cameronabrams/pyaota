@@ -4,6 +4,7 @@
 Question set management for pyaota
 """
 
+import copy
 import shutil
 import yaml
 import logging
@@ -53,6 +54,53 @@ def _proportional_allocate(available: dict[int, int], total: int) -> dict[int, i
     return result
 
 
+_TF_TRUE = {"true", "t", "yes", "y"}
+_TF_FALSE = {"false", "f", "no", "n"}
+
+
+def normalize_question(q: dict) -> list[str]:
+    """
+    Give *q* one authoritative ``correct`` field, in place, and return a list of
+    problems (empty if none).
+
+    Banks give the correct answer as ``correct`` (documented) or ``answer``;
+    ``correct`` wins when both are present.  Afterwards:
+
+    - ``type`` is lower-case, defaulting to ``mcq``;
+    - for ``mcq``, ``correct`` is the matching choice key, matched without regard
+      to case (``B`` for keys ``a``..``d`` becomes ``b``);
+    - for ``tf``, ``correct`` is a bool; the strings ``"False"``, ``"f"``, ``"no"``
+      and so on are false, not truthy.
+    """
+    qid = q.get("id", "?")
+    qtype = str(q.get("type", "mcq")).strip().lower()
+    q["type"] = qtype
+    raw = q.get("correct")
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        raw = q.get("answer")
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return [f"question {qid}: no correct answer given (field 'correct' or 'answer')"]
+
+    if qtype == "tf":
+        if isinstance(raw, bool):
+            q["correct"] = raw
+        elif str(raw).strip().lower() in _TF_TRUE:
+            q["correct"] = True
+        elif str(raw).strip().lower() in _TF_FALSE:
+            q["correct"] = False
+        else:
+            return [f"question {qid}: true/false answer {raw!r} is not true or false"]
+    elif qtype == "mcq":
+        keys = [str(c.get("key", "")).strip() for c in q.get("choices", [])]
+        matches = [k for k in keys if k.lower() == str(raw).strip().lower()]
+        if len(matches) != 1:
+            return [f"question {qid}: correct answer {raw!r} does not match exactly one of the choice keys {keys}"]
+        q["correct"] = matches[0]
+    else:
+        return [f"question {qid}: unknown type {qtype!r} (expected 'mcq' or 'tf')"]
+    return []
+
+
 class QuestionSet:
     """
     Class to manage a set of questions loaded from YAML files.
@@ -88,6 +136,9 @@ class QuestionSet:
                     q["id"] = int(q["id"])
                 except (ValueError, TypeError):
                     pass
+        problems = [p for q in self.raw_question_list for p in normalize_question(q)]
+        if problems:
+            raise ValueError("Invalid question bank:\n  " + "\n  ".join(problems))
         self.questions_by_topic = {}
         for q in self.raw_question_list:
             topic = q.get("topic", "General")
@@ -253,6 +304,10 @@ class QuestionSet:
         if shuffle:
             logger.debug('Shuffling selected questions.')
             rng.shuffle(selected_questions)
+
+        # work on copies: shuffling choices below must not change the bank, or a
+        # version's choice order would depend on the versions built before it
+        selected_questions = [copy.deepcopy(q) for q in selected_questions]
 
         if shuffle_choices:
             # shuffle choices only for multiple-choice questions
