@@ -5,7 +5,7 @@ Document build functions for pyaota
 
 import logging
 
-from .yaml2tex import render_question
+from .yaml2tex import render_question, tex_escape
 
 from ..latex.content import (
     HEADMATTER,
@@ -58,10 +58,11 @@ class ExamDocument(Document):
         self.instructions = self.specs.get('instructions', '')
         self.endmessage = self.specs.get('endmessage', '')
         self.substitutions: dict = {
-            'INSTITUTION': self.institution,
-            'COURSE': self.course,
-            'TERM': self.term,
-            'DOCUMENTNAME': self.documentname,
+            # header fields are plain text: escape &, %, #, _ etc.
+            'INSTITUTION': tex_escape(self.institution or ''),
+            'COURSE': tex_escape(self.course or ''),
+            'TERM': tex_escape(self.term or ''),
+            'DOCUMENTNAME': tex_escape(self.documentname or ''),
             'VERSION': self.version,
             'FONTSIZE': self.specs.get('fontsize', '12pt'),
             'QUESTIONSPACING': self.specs.get('questionspacing', '24pt'),

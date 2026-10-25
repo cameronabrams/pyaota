@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A QR code with embedded answers, read with a layout file that has no `qr_answer_key`, is graded by its version label from the answer-key CSV instead of using the whole payload as the version (whose `/` characters crashed the run when saving the failed page).
 
+- Exam name, institution, course and term are escaped for LaTeX, so `#`, `&`, `%` and `_` in them no longer break the exam or answer-key PDF.
+- Unicode superscript digits (`m²`) render as superscripts instead of `\textbackslash{}textsuperscript\{2\}`; in verbatim and listings code they are kept as the Unicode character.
 - Answer sheets no longer crash when the question blocks do not divide evenly into the columns (including the `make-answersheet` default of 50 questions in 3 columns, and fewer blocks than columns). Generator and grader now share one slot layout; sheets that already worked keep identical bubble positions.
 - `make-answersheet` no longer requires a question list when placing bubbles.
 - `grade --question-tally` no longer crashes on the first run (`NameError`) or when appending to an existing tally (`KeyError`), which also prevented the failed-pages report from being written.

@@ -163,10 +163,10 @@ def build_answer_key_table_latex(
     parts.append(r"\pagestyle{fancy}")
     parts.append(r"\fancyhf{}")
     if institution or course or term:
-        header_parts = [p for p in [institution, course, term] if p]
+        header_parts = [tex_escape(p) for p in [institution, course, term] if p]
         parts.append(rf"\lhead{{{' -- '.join(header_parts)}}}")
     if exam_name:
-        parts.append(rf"\rhead{{{exam_name} -- Answer Keys}}")
+        parts.append(rf"\rhead{{{tex_escape(exam_name)} -- Answer Keys}}")
     else:
         parts.append(r"\rhead{Answer Keys}")
     parts.append(r"\cfoot{\thepage}")

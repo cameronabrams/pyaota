@@ -21,21 +21,18 @@ def normalize_punctuation(s: str) -> str:
         "–": "-",
         "—": "--",
         "\u2011": "-",  # non-breaking hyphen
-        # Superscript digits
-        "\u00b9": r"\textsuperscript{1}",
-        "\u00b2": r"\textsuperscript{2}",
-        "\u00b3": r"\textsuperscript{3}",
-        "\u2070": r"\textsuperscript{0}",
-        "\u2074": r"\textsuperscript{4}",
-        "\u2075": r"\textsuperscript{5}",
-        "\u2076": r"\textsuperscript{6}",
-        "\u2077": r"\textsuperscript{7}",
-        "\u2078": r"\textsuperscript{8}",
-        "\u2079": r"\textsuperscript{9}",
     }
     for k, v in replacements.items():
         s = s.replace(k, v)
     return s
+
+# Unicode superscript digits -> LaTeX.  Applied while escaping (not during
+# normalization), so the generated command is not itself escaped; verbatim
+# and listings code keeps the Unicode character.
+SUPERSCRIPT_DIGITS = {
+    ch: rf"\textsuperscript{{{d}}}"
+    for ch, d in zip("\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079", "0123456789")
+}
 
 def tex_escape(s: str) -> str:
     s = normalize_punctuation(s)
@@ -61,6 +58,7 @@ def tex_escape_plain(s: str) -> str:
         '}': r'\}',
         '~': r'\textasciitilde{}',
         '^': r'\textasciicircum{}',
+        **SUPERSCRIPT_DIGITS,
     }
     out = []
     for ch in s:
@@ -91,6 +89,7 @@ def tex_escape_texttt(s: str) -> str:
         '}': r'\}',
         '~': r'\textasciitilde{}',
         '^': r'\textasciicircum{}',
+        **SUPERSCRIPT_DIGITS,
     }
     out = []
     for ch in s:
