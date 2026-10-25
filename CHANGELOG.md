@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-25
+
 ### Changed
 
 - Depends on `opencv-python-headless` instead of `opencv-python`; pyaota uses no OpenCV GUI functions, and the headless build installs on servers and CI without system display libraries. If both are installed in one environment they conflict over `cv2`; uninstall `opencv-python`.
