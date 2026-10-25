@@ -152,7 +152,11 @@ correct answers directly in each answer sheet's QR code:
 At build time, a random 32-byte key is generated for the exam set and stored
 in ``answersheet_layout.json`` alongside the layout geometry.  Each answer
 sheet's QR code then contains the version label and the encrypted answer
-string rather than the version label alone.
+string rather than the version label alone.  Each version is encrypted
+independently, keyed on its version label, so a student who learns the answers
+to their own version (for example from a returned graded sheet) cannot use
+their QR code to decrypt any other version.  Sheets built by pyaota 0.5.0,
+which lacked this protection, can still be graded.
 
 At grade time, the grader reads the key from the layout JSON, decrypts the
 answers from the QR code, and grades without consulting

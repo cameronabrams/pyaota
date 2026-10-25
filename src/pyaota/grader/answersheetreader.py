@@ -838,13 +838,20 @@ class AnswerSheetReader:
                 continue
             if data:
                 raw = data.strip()
-                if ':' in raw and self.layout_config.qr_answer_key:
+                if ':' in raw:
                     version_part, payload = raw.split(':', 1)
                     self.results['version'] = version_part
+                    if not self.layout_config.qr_answer_key:
+                        # without the key the answers cannot be read; the
+                        # version label alone still lets a key CSV grade it
+                        logger.warning(
+                            f"QR code for version {version_part} carries encrypted answers, "
+                            f"but the layout has no qr_answer_key; using the answer-key CSV")
+                        break
                     try:
                         from ..util.qrcrypto import decrypt_answers
                         self.results['embedded_answers'] = decrypt_answers(
-                            self.layout_config.qr_answer_key, payload
+                            self.layout_config.qr_answer_key, payload, version_part
                         )
                         logger.debug(f"QR code decoded with embedded answers via '{label}': version={version_part}")
                     except ValueError as exc:

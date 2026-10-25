@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **QR answer encryption no longer shares one keystream across exam versions.** In 0.5.0 every version in a build was encrypted with the same keystream, so a student who learned their own version's answers (e.g. from a returned graded sheet) could recover it from their QR code and decrypt every other version from that build (such as a make-up sitting). Each version's keystream is now keyed on its version label, encryption and MAC keys are separate, and the MAC covers the version label. New QR payloads are marked `2.`; sheets printed by 0.5.0 still decrypt and grade. Rebuild any exam set whose versions have not all been administered yet.
+
 ### Fixed
+
+- A QR code with embedded answers, read with a layout file that has no `qr_answer_key`, is graded by its version label from the answer-key CSV instead of using the whole payload as the version (whose `/` characters crashed the run when saving the failed page).
 
 - Answer sheets no longer crash when the question blocks do not divide evenly into the columns (including the `make-answersheet` default of 50 questions in 3 columns, and fewer blocks than columns). Generator and grader now share one slot layout; sheets that already worked keep identical bubble positions.
 - `make-answersheet` no longer requires a question list when placing bubbles.

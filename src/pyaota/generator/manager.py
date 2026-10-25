@@ -522,7 +522,7 @@ def make_exams_subcommand(args):
                 'a' if a == 'True' else 'b' if a == 'False' else a.lower()
                 for a in answers
             ]
-            qr_content = f"{version_label}:{encrypt_answers(qr_key, normalised)}"
+            qr_content = f"{version_label}:{encrypt_answers(qr_key, normalised, version_label)}"
         else:
             qr_content = version_label
 

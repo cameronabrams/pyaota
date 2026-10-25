@@ -3,12 +3,25 @@ qrcrypto.py
 
 QR code image generation and lightweight answer encryption for pyaota.
 
-Encryption uses an HMAC-SHA256-based stream cipher (no external dependencies):
-  - Keystream derived from HMAC(key, block_counter) — CTR-mode equivalent
-  - 8-byte authentication tag appended to the ciphertext
-  - Standard base64 encoding (LaTeX-safe: no underscores)
+Encryption uses an HMAC-SHA256-based stream cipher (no external dependencies).
+One random key is generated per build and stored in ``answersheet_layout.json``.
 
-QR payload format:  <version_label>:<base64(ciphertext + 8-byte-mac)>
+Format 2 (current), QR payload ``<version_label>:2.<base64(ciphertext + tag)>``:
+  - separate encryption and MAC keys are derived from the build key;
+  - the keystream is HMAC(enc_key, version_label || block_counter), so every
+    version has its own keystream (the version label is the nonce; labels are
+    unique within a build);
+  - the 8-byte tag is HMAC(mac_key, "2" || version_label || ciphertext), so a
+    payload cannot be moved to another version label.
+
+Format 1 (pyaota 0.5.0), QR payload ``<version_label>:<base64(ciphertext + tag)>``:
+one keystream shared by every version of a build, so a student who learned
+their own version's answers could XOR them out of their QR code and decrypt
+every other version from the same build.  It is still decrypted, so sheets
+printed by 0.5.0 can be graded, but no longer written.  The ``2.`` prefix
+cannot begin a format-1 payload, because ``.`` is not a base64 character.
+
+Standard base64 is kept (LaTeX-safe: no underscores).
 """
 
 import base64
@@ -18,6 +31,7 @@ import secrets
 from pathlib import Path
 
 _MAC_LEN = 8  # bytes of HMAC-SHA256 used as authentication tag
+_FORMAT2_PREFIX = "2."
 
 
 def generate_key() -> str:
@@ -25,53 +39,73 @@ def generate_key() -> str:
     return secrets.token_bytes(32).hex()
 
 
-def _keystream(key: bytes, length: int) -> bytes:
-    """Expand *key* into *length* pseudorandom bytes using HMAC-SHA256."""
+def _keystream(key: bytes, length: int, nonce: bytes = b"") -> bytes:
+    """Expand *key* and *nonce* into *length* pseudorandom bytes using HMAC-SHA256."""
     stream = bytearray()
     counter = 0
     while len(stream) < length:
-        stream += hmac.new(key, counter.to_bytes(4, "big"), hashlib.sha256).digest()
+        stream += hmac.new(key, nonce + counter.to_bytes(4, "big"), hashlib.sha256).digest()
         counter += 1
     return bytes(stream[:length])
 
 
-def encrypt_answers(key_hex: str, answers: list) -> str:
+def _subkey(key: bytes, purpose: bytes) -> bytes:
+    return hmac.new(key, b"pyaota-qr-" + purpose, hashlib.sha256).digest()
+
+
+def _xor(data: bytes, stream: bytes) -> bytes:
+    return bytes(a ^ b for a, b in zip(data, stream))
+
+
+def encrypt_answers(key_hex: str, answers: list, version_label: str) -> str:
     """
-    Encrypt a list of single-character answer strings and return a
-    URL-safe base64 payload suitable for embedding in a QR code.
+    Encrypt a list of single-character answer strings for *version_label* and
+    return the payload to embed after ``<version_label>:`` in the QR code.
 
     Answers must already be normalised to single characters
     (True/False → a/b, MCQ choices lower-cased).
     """
     key = bytes.fromhex(key_hex)
+    label = version_label.encode()
     plaintext = "".join(answers).encode()
-    stream = _keystream(key, len(plaintext))
-    ciphertext = bytes(a ^ b for a, b in zip(plaintext, stream))
-    tag = hmac.new(key, ciphertext, hashlib.sha256).digest()[:_MAC_LEN]
-    return base64.b64encode(ciphertext + tag).decode()
+    ciphertext = _xor(plaintext, _keystream(_subkey(key, b"enc"), len(plaintext), nonce=label + b"|"))
+    tag = hmac.new(_subkey(key, b"mac"), b"2|" + label + b"|" + ciphertext, hashlib.sha256).digest()[:_MAC_LEN]
+    return _FORMAT2_PREFIX + base64.b64encode(ciphertext + tag).decode()
 
 
-def decrypt_answers(key_hex: str, payload: str) -> list:
-    """
-    Decrypt a base64 payload produced by *encrypt_answers*.
-
-    Returns a list of single-character answer strings.
-    Raises ``ValueError`` if the payload is malformed or the MAC check fails.
-    """
-    key = bytes.fromhex(key_hex)
+def _split_payload(b64: str) -> tuple[bytes, bytes]:
     try:
-        raw = base64.b64decode(payload)
+        raw = base64.b64decode(b64, validate=True)
     except Exception as exc:
         raise ValueError(f"QR payload is not valid base64: {exc}") from exc
     if len(raw) <= _MAC_LEN:
         raise ValueError("QR payload is too short to contain answers and MAC")
-    ciphertext, tag = raw[:-_MAC_LEN], raw[-_MAC_LEN:]
-    expected_tag = hmac.new(key, ciphertext, hashlib.sha256).digest()[:_MAC_LEN]
+    return raw[:-_MAC_LEN], raw[-_MAC_LEN:]
+
+
+def decrypt_answers(key_hex: str, payload: str, version_label: str) -> list:
+    """
+    Decrypt a payload produced by *encrypt_answers* (format 2) or by pyaota
+    0.5.0 (format 1) for *version_label*.
+
+    Returns a list of single-character answer strings.
+    Raises ``ValueError`` if the payload is malformed or the MAC check fails
+    (including a format-2 payload read under a different version label).
+    """
+    key = bytes.fromhex(key_hex)
+    if payload.startswith(_FORMAT2_PREFIX):
+        label = version_label.encode()
+        ciphertext, tag = _split_payload(payload[len(_FORMAT2_PREFIX):])
+        expected_tag = hmac.new(_subkey(key, b"mac"), b"2|" + label + b"|" + ciphertext,
+                                hashlib.sha256).digest()[:_MAC_LEN]
+        stream = _keystream(_subkey(key, b"enc"), len(ciphertext), nonce=label + b"|")
+    else:
+        ciphertext, tag = _split_payload(payload)
+        expected_tag = hmac.new(key, ciphertext, hashlib.sha256).digest()[:_MAC_LEN]
+        stream = _keystream(key, len(ciphertext))
     if not hmac.compare_digest(tag, expected_tag):
-        raise ValueError("QR payload MAC verification failed — wrong key or corrupted data")
-    stream = _keystream(key, len(ciphertext))
-    plaintext = bytes(a ^ b for a, b in zip(ciphertext, stream)).decode()
-    return list(plaintext)
+        raise ValueError("QR payload MAC verification failed — wrong key, wrong version, or corrupted data")
+    return list(_xor(ciphertext, stream).decode())
 
 
 # ---------------------------------------------------------------------------
