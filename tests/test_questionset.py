@@ -1,3 +1,5 @@
+import os
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 from pyaota.generator.questionset import QuestionSet
 
@@ -30,10 +32,11 @@ class TestQuestionSet(TestCase):
                text: The Earth is flat.
             answer: False
         """
-        with open('test_questions.yaml', 'w') as f:
-            f.write(sample_yaml)
-
-        qs = QuestionSet(['test_questions.yaml'])
+        with TemporaryDirectory() as d:
+            path = os.path.join(d, 'test_questions.yaml')
+            with open(path, 'w') as f:
+                f.write(sample_yaml)
+            qs = QuestionSet([path])
         self.assertIn('Math', qs.apparent_topics)
         self.assertIn('Science', qs.apparent_topics)
         self.assertEqual(len(qs.raw_question_list), 2)

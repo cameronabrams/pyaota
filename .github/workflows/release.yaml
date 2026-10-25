@@ -10,7 +10,7 @@ jobs:
   release:
     uses: cameronabrams/workflows/.github/workflows/python-release.yml@main
     with:
-      run_tests: false
+      run_tests: true
     secrets: inherit
 
   publish:

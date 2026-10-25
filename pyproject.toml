@@ -16,7 +16,7 @@ dependencies = [
   "pdf2image",
   "PyPDF2",
   "numpy",
-  "opencv-python",
+  "opencv-python-headless",
   "pint",
   "scipy",
   "pandas",
@@ -28,6 +28,9 @@ dependencies = [
 [project.optional-dependencies]
 ocr = [
   "tensorflow>=2.12",
+]
+test = [
+  "pytest",
 ]
 dev = [
   "pytest",
