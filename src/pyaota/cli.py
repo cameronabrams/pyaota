@@ -58,6 +58,19 @@ def save_args(args, filepath):
     with open(filepath, 'w') as f:
         yaml.dump(args_dict, f, default_flow_style=False)
 
+def explicit_dests(parsers, argv: list[str]) -> set[str]:
+    """
+    Return the ``dest`` of every option in *parsers* that appears in *argv*,
+    as ``--opt``, ``--opt=value``, ``--no-opt`` (BooleanOptionalAction) or ``-o``.
+    """
+    explicit = set()
+    for p in parsers:
+        for action in p._actions:
+            for opt in action.option_strings:
+                if any(tok == opt or (opt.startswith('--') and tok.startswith(opt + '=')) for tok in argv):
+                    explicit.add(action.dest)
+    return explicit
+
 def load_args_from_yaml(filepath):
     """
     Load args from YAML
@@ -612,10 +625,15 @@ def main(argv: list[str] | None = None) -> int:
         config_dict = load_args_from_yaml(args.config)
         logger.debug(f'Loaded config from {args.config}')
         logger.debug(f'Config contents: {config_dict}')
-        # Only override if not set on command line
+        # Config values replace defaults, but never an option given on the command line
+        explicit = explicit_dests(
+            [parser] + ([command_parsers[args.subcommand]] if args.subcommand in command_parsers else []),
+            sys.argv[1:] if argv is None else argv,
+        )
         for key, value in config_dict.items():
-            if not hasattr(args, key) or getattr(args, key) is None or isinstance(getattr(args, key), bool):
-                setattr(args, key, value)
+            if key in ('subcommand', 'config', 'save_config') or key in explicit:
+                continue
+            setattr(args, key, value)
         logger.debug(f'Args after loading config: {args}')
 
     # Save if requested
