@@ -99,11 +99,11 @@ class LatexCompiler:
         for c in commands:
             logger.debug(f'Running command: {c.c}')
             out, err = c.run()
-            logger.debug(f'Command output:')
+            logger.debug('Command output:')
             logger.debug('='*80)
             logger.debug(out)
             logger.debug('='*80)
-            logger.debug(f'Command error:')
+            logger.debug('Command error:')
             logger.debug('='*80)
             logger.debug(err)
             logger.debug('='*80)

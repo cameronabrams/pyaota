@@ -1,6 +1,5 @@
 from unittest import TestCase
 from pyaota.generator.document import Document, ExamDocument
-from pyaota.generator.questionset import QuestionSet
 
 class TestDocument(TestCase):
     def test_document_initialization(self):

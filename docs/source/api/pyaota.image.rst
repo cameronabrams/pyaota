@@ -12,6 +12,4 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   pyaota.image.blend
-   pyaota.image.diagnose
    pyaota.image.warper

@@ -214,7 +214,7 @@ class QuestionSet:
                 by_difficulty.setdefault(d, []).append(q)
 
             logger.debug(
-                f"Difficulty distribution in pool: "
+                "Difficulty distribution in pool: "
                 + ", ".join(f"lvl {d}: {len(qs)}" for d, qs in sorted(by_difficulty.items()))
             )
 
@@ -223,7 +223,7 @@ class QuestionSet:
             diff_allocations = _proportional_allocate(diff_available, num_questions)
 
             logger.debug(
-                f"Difficulty allocations: "
+                "Difficulty allocations: "
                 + ", ".join(f"lvl {d}: {diff_allocations[d]}" for d in sorted(diff_allocations))
             )
 

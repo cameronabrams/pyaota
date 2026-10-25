@@ -4,10 +4,8 @@ import shutil
 import stat
 import sys
 import tarfile
-import logging
 
 from collections import UserList
-from dataclasses import dataclass
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 

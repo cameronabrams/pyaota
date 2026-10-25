@@ -28,14 +28,11 @@ from pathlib import Path
 
 from typing import Dict, List, Optional, Tuple, Any
 
-import argparse
 import os
 import csv
 import sys
-import tempfile
 import logging
 import numpy as np
-import cv2
 import pandas as pd
 
 from pdf2image import convert_from_path, pdfinfo_from_path
@@ -424,7 +421,7 @@ class Autograder:
                 sys.stderr.flush()
                 try:
                     kf_input = input(
-                        f"  Enter path to answer-key CSV (or blank to skip): "
+                        "  Enter path to answer-key CSV (or blank to skip): "
                     ).strip()
                 except EOFError:
                     kf_input = ""
@@ -649,7 +646,7 @@ class Autograder:
         if failed_pages and failed_pages_dir_path is not None:
             report_path = failed_pages_dir_path / "failed_pages_report.txt"
             with open(report_path, "w", encoding="utf-8") as f:
-                f.write(f"Failed Pages Report\n")
+                f.write("Failed Pages Report\n")
                 f.write(f"{'=' * 60}\n")
                 f.write(f"Source PDF: {pdf_file_path}\n")
                 f.write(f"Total pages processed: {len(pages)}\n")

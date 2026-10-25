@@ -4,14 +4,10 @@ CLI dispatch functions for pyaota exam generator and grader.
 
 import csv
 import random
-import yaml
-import os
 import shutil
-import pickle
 import numpy as np
 import cv2
 from pathlib import Path
-from dataclasses import asdict
 from pdf2image import convert_from_path
 
 import re as _re
@@ -308,7 +304,6 @@ def write_version_keys_pdf(
     )
 
     # Create a temporary document object to hold the LaTeX
-    from .document import Document
 
     # Write LaTeX to a temporary file and compile
     latex_compiler = LatexCompiler(build_specs={

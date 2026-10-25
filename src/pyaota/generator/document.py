@@ -5,9 +5,6 @@ Document build functions for pyaota
 
 import logging
 
-from copy import deepcopy
-from importlib.resources import files
-from pathlib import Path
 from .yaml2tex import render_question
 
 from ..latex.content import (

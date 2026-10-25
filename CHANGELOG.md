@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Depends on `opencv-python-headless` instead of `opencv-python`; pyaota uses no OpenCV GUI functions, and the headless build installs on servers and CI without system display libraries. If both are installed in one environment they conflict over `cv2`; uninstall `opencv-python`.
 - Tests run in CI on every push to `main` and on pull requests (Python 3.10–3.13), and again before each release. New `test` extra (`pip install -e .[test]`).
 
+### Removed
+
+- Unused modules `pyaota.image.diagnose` (which could not run: it imported neither `cv2` nor a logger) and `pyaota.image.blend`.
+
 ### Security
 
 - **QR answer encryption no longer shares one keystream across exam versions.** In 0.5.0 every version in a build was encrypted with the same keystream, so a student who learned their own version's answers (e.g. from a returned graded sheet) could recover it from their QR code and decrypt every other version from that build (such as a make-up sitting). Each version's keystream is now keyed on its version label, encryption and MAC keys are separate, and the MAC covers the version label. New QR payloads are marked `2.`; sheets printed by 0.5.0 still decrypt and grade. Rebuild any exam set whose versions have not all been administered yet.

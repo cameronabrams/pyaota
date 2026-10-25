@@ -1,12 +1,11 @@
 from pathlib import Path
-from ..generator.answersheet import LayoutConfig, _ureg
+from ..generator.answersheet import LayoutConfig
 # from ..ocr.digit_ocr import ocr_digit_nn, load_digit_model
 from ..image.warper import warp
-from typing import Any, Dict, Tuple, List, Optional
+from typing import Any, Dict, Tuple, List
 import numpy as np
 import cv2
 import logging
-import sys
 from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
@@ -121,7 +120,7 @@ class AnswerSheetReader:
             self.results["read_status"] = "success"
 
         if self.diagnostics.get('debug_image') is not None:
-            debug_img_path = self.debug_output_path / f"debug_overlay_warped.png"
+            debug_img_path = self.debug_output_path / "debug_overlay_warped.png"
             cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
         return self.results
 
@@ -808,7 +807,7 @@ class AnswerSheetReader:
         }
         # write the debug image
         if self.diagnostics.get('debug_image') is not None:
-            debug_img_path = self.debug_output_path / f"qr.png"
+            debug_img_path = self.debug_output_path / "qr.png"
             cv2.imwrite(str(debug_img_path), self.diagnostics['debug_image'])
         # self.diagnostics['qr_crop_region'] = {
         #     'upper_left': (x0, y0),
@@ -816,7 +815,7 @@ class AnswerSheetReader:
         # }
 
         roi = gray[y0:y1, x0:x1]
-        debug_roi_path = self.debug_output_path / f"qr_roi.png"
+        debug_roi_path = self.debug_output_path / "qr_roi.png"
         cv2.imwrite(str(debug_roi_path), roi)
 
         # Adaptive QR reading: try full image and cropped ROI at native

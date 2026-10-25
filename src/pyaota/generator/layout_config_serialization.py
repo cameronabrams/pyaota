@@ -1,7 +1,7 @@
 """Serialization utilities for LayoutConfig with Pint quantities."""
 
 import json
-from dataclasses import asdict, fields
+from dataclasses import fields
 from typing import Any, Dict
 import pint
 
