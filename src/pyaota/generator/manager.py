@@ -415,6 +415,13 @@ def compile_dump_subcommand(args):
 
 
 def make_exams_subcommand(args):
+    # not argparse-required, so that --config can supply them
+    missing = [opt for opt, val in (('-q/--question-banks', args.question_banks),
+                                    ('-nq/--num-questions', args.num_questions),
+                                    ('-od/--output-dir', args.output_dir)) if not val]
+    if missing:
+        logger.error(f"build needs {', '.join(missing)} (on the command line or in --config)")
+        return 1
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
             'latex-engine': 'xelatex',

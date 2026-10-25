@@ -31,6 +31,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import os
 import csv
 import sys
+import tempfile
 import logging
 import numpy as np
 import pandas as pd
@@ -285,6 +286,11 @@ class Autograder:
         failed_pages: List[Dict[str, Any]] = []
         pages: List = []
 
+        # The reader always writes its diagnostic images, under fixed names, so
+        # give each page its own folder; without a debug dir, a temporary one.
+        scratch_debug = tempfile.TemporaryDirectory() if debug_output_dir_path is None else None
+        debug_root = Path(scratch_debug.name) if scratch_debug else debug_output_dir_path
+
         for page_index in range(1, total_pages + 1):
             sys.stderr.write(f"\rProcessing page {page_index}/{total_pages}...")
             sys.stderr.flush()
@@ -295,7 +301,7 @@ class Autograder:
             )[0]
             pages.append(page)
             img = np.array(page)
-            reader = AnswerSheetReader(img, layout_config=self.layout, debug_output_dir=debug_output_dir_path, interactive=interactive)
+            reader = AnswerSheetReader(img, layout_config=self.layout, debug_output_dir=debug_root / f"page_{page_index:03d}", interactive=interactive)
             read_results = reader.read()
 
             read_status = read_results.get("read_status", "success")
@@ -502,6 +508,8 @@ class Autograder:
 
             results.append(page_result)
 
+        if scratch_debug:
+            scratch_debug.cleanup()
         sys.stderr.write("\r" + " " * 40 + "\r")
         sys.stderr.flush()
 

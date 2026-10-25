@@ -107,3 +107,16 @@ class TestBuildAndGrade(TestCase):
                                   '33333333': '95.0'})                      # blank Q20
         self.assertIn('multiple marks', (d / 'graded' / 'failed_pages_report.txt').read_text())
         self.assertEqual(len(list(csv.DictReader(open(d / 'graded' / 'tally.csv')))), 3)
+        # each page keeps its own diagnostic images (default --debug-output-dir)
+        self.assertEqual(sorted(p.name for p in (d / 'debug-autograder').iterdir()),
+                         ['page_001', 'page_002', 'page_003', 'page_004'])
+        self.assertTrue((d / 'debug-autograder' / 'page_002' / 'warped_page.png').exists())
+
+    def test_build_without_required_options_fails_cleanly(self):
+        cwd = os.getcwd()
+        with TemporaryDirectory() as d:
+            os.chdir(d)
+            try:
+                self.assertEqual(cli.main(['build', '-q', str(BANK), '-nq', '5']), 1)
+            finally:
+                os.chdir(cwd)

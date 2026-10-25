@@ -3,6 +3,7 @@
 LaTeX compilation functions for pyaota
 """
 import logging
+import os
 import re
 
 from pathlib import Path
@@ -74,12 +75,17 @@ class LatexCompiler:
         
         repeated_command = (f'{self.latex_engine} -interaction=nonstopmode -file-line-error '
                                 f'-jobname={self.working_job_name} {output_option} {self.working_job_name}.tex')
-        commands.append(Command(repeated_command, ignore_codes=[1]))
+        # The .tex is written to the cwd, but QR images and question images go to
+        # build_dir. MiKTeX searches the output directory for inputs; TeX Live
+        # does not, so add build_dir to TEXINPUTS (the trailing separator keeps
+        # the default search path).
+        env = {'TEXINPUTS': str(build_path) + os.pathsep + os.environ.get('TEXINPUTS', '')}
+        commands.append(Command(repeated_command, ignore_codes=[1], env=env))
 
         self.FC.append(f'{self.build_dir}/{self.working_job_name}.aux')
         self.FC.append(f'{self.build_dir}/{self.working_job_name}.log')
         self.FC.append(f'{self.build_dir}/{self.working_job_name}.out')
-        commands.append(Command(repeated_command, ignore_codes=[1]))
+        commands.append(Command(repeated_command, ignore_codes=[1], env=env))
         return commands
 
     def build_document(self, document: Document = None, cleanup: bool = False):

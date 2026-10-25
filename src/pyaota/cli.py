@@ -163,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
     command_parsers["build"].add_argument(
         "-od",
         "--output-dir",
-        help="Output directory",
+        help="Output directory; required",
     )
     command_parsers["build"].add_argument(
         "--institution",
@@ -210,13 +210,13 @@ def main(argv: list[str] | None = None) -> int:
         "-nq",
         "--num-questions",
         type=int,
-        help="Number of questions on each exam",
+        help="Number of questions on each exam; required",
     )
     command_parsers["build"].add_argument(
         "-q",
         "--question-banks",
         nargs="+",
-        help="Paths to question banks (YAML/JSON)",
+        help="Paths to question banks (YAML/JSON); required",
     )
     command_parsers["build"].add_argument(
         "-nc",

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **TeX Live builds could not find the QR code images.** The `.tex` file is compiled from the current directory while QR codes (and copied question images) are written to `-od`; MiKTeX searches the output directory for inputs but TeX Live does not, so on TeX Live the answer sheet failed to load its QR code — silently before 0.6.0, which ignored LaTeX errors. The output directory is now added to `TEXINPUTS`.
+- `build` without `-q`, `-nq` or `-od` reports which are missing instead of crashing with a `TypeError`. They are not argparse-required, so `--config` can still supply them.
+- `grade` writes each page's diagnostic images to its own folder (`<debug dir>/page_NNN/`); before, every page overwrote the same files, leaving only the last page's. Calling `Autograder.grade_pdf` without a debug directory no longer crashes.
+
 ## [0.6.0] - 2026-10-25
 
 ### Changed
