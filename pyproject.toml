@@ -26,6 +26,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+interactive = [
+  "matplotlib",
+]
 test = [
   "pytest",
 ]

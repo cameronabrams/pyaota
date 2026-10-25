@@ -620,6 +620,12 @@ def make_answersheet_subcommand(args):
 
 def autograde_subcommand(args):
     # global _ureg
+    if getattr(args, 'interactive', False):
+        try:
+            import matplotlib  # noqa: F401  (needed to show bubble rows for review)
+        except ImportError:
+            logger.error("--interactive needs matplotlib: pip install 'pyaota[interactive]'")
+            return 1
     pdf = args.input_pdf
     keyfiles = args.keyfiles
     answersheetlayoutjson = args.answersheet_layout_json

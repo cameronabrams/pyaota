@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Depends on `opencv-python-headless` instead of `opencv-python`; pyaota uses no OpenCV GUI functions, and the headless build installs on servers and CI without system display libraries. If both are installed in one environment they conflict over `cv2`; uninstall `opencv-python`.
+- `grade --interactive` needs matplotlib, which was never declared; it is now the `interactive` extra (`pip install 'pyaota[interactive]'`), and `--interactive` stops at startup with that hint if it is missing instead of crashing mid-run.
 - Tests run in CI on every push to `main` and on pull requests (Python 3.10–3.13), and again before each release. New `test` extra (`pip install -e .[test]`).
 
 ### Removed

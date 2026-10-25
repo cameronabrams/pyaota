@@ -88,7 +88,9 @@ Interactive mode
 
 Pass ``--interactive`` to ``pyaota grade`` to enable interactive recovery at
 the terminal.  When a page fails to read automatically, pyaota pauses and
-prompts you to supply the missing information before moving on.
+prompts you to supply the missing information before moving on.  Interactive
+mode displays bubble rows with matplotlib, which is an optional dependency:
+``pip install 'pyaota[interactive]'``.
 
 .. code-block:: bash
 
