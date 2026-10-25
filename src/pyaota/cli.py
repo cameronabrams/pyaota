@@ -12,7 +12,6 @@ from .generator.manager import (
     make_exams_subcommand,
     make_answersheet_subcommand,
     compile_dump_subcommand,
-    tune_answersheetreader_subcommand,
     autograde_subcommand,
     return_subcommand,
 )
@@ -91,10 +90,6 @@ def main(argv: list[str] | None = None) -> int:
         'make-answersheet': dict(
             func = make_answersheet_subcommand,
             help = 'make a blank answer sheet PDF',
-        ),
-        'tune-answersheetreader': dict(
-            func = tune_answersheetreader_subcommand,
-            help = 'tune the answer sheet reader parameters',
         ),
         'bundle': dict(
             func = bundle_subcommand,
@@ -513,32 +508,6 @@ def main(argv: list[str] | None = None) -> int:
         default=False,
         action=ap.BooleanOptionalAction,
         help="Rasterize output PDF at 300 DPI for improved printer compatibility",
-    )
-
-    command_parsers["tune-answersheetreader"].add_argument(
-        "-i",
-        "--sample-pdf",
-        help="Sample PDF for tuning results",
-    )
-    command_parsers["tune-answersheetreader"].add_argument(
-        "-nc",
-        "--num-cols",
-        type=int,
-        default=3,
-        help="Number of columns in the answer sheet",
-    )
-    command_parsers["tune-answersheetreader"].add_argument(
-        "-nq",
-        "--num-questions",
-        type=int,
-        default=50,
-        help="Number of questions on the answer sheet",
-    )
-    command_parsers["tune-answersheetreader"].add_argument(
-        "-o",
-        "--output-image",
-        default="answersheetreader_tuning_overlay.png",
-        help="Path to output image file showing tuning overlay",
     )
 
     command_parsers["bundle"].add_argument(

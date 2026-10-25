@@ -5,8 +5,6 @@ CLI dispatch functions for pyaota exam generator and grader.
 import csv
 import random
 import shutil
-import numpy as np
-import cv2
 from pathlib import Path
 from pdf2image import convert_from_path
 
@@ -16,7 +14,6 @@ from .questionset import QuestionSet
 from .document import Document, ExamDocument
 from .answersheet import AnswerSheetGenerator, LayoutConfig, _ureg
 from .layout_config_serialization import save_layout_config, load_layout_config
-from ..grader.answersheetreader import AnswerSheetReader
 from ..grader.autograder import Autograder
 from ..grader.returner import return_graded_exams
 from ..latex.content import DEFAULT_EXAM_INSTRUCTIONS, DEFAULT_PAGESTYLES_TEMPLATE, QUESTION_BANK_DUMP_INSTRUCTIONS
@@ -620,32 +617,6 @@ def make_answersheet_subcommand(args):
     if getattr(args, 'rasterize', False):
         pdf_path = Path(args.output_dir) / f"{args.output_pdf}-SAMPLE.pdf"
         rasterize_pdf(pdf_path)
-
-def tune_answersheetreader_subcommand(args):
-    pdf = args.sample_pdf
-    # convert PDF to image
-    images = convert_from_path(pdf, dpi=300, fmt='png')
-    if not images:
-        logger.error(f"Could not convert PDF {pdf} to image.")
-        return
-
-    img = np.array(images[-1])
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-
-    answersheetreader = AnswerSheetReader(img=img, layout_config=LayoutConfig(
-        bubble_field_num_cols=args.num_cols,
-        num_questions = args.num_questions))
-
-    answersheetreader._find_indicials()
-    answersheetreader._warp_to_canonical()
-    answersheetreader._read_student_id()
-    # answersheetreader.diagnose_qr_detection()
-    answersheetreader._read_qr()
-    answersheetreader._read_bubblefield()
-    img = answersheetreader._diagnostic_overlay()
-    output_path = Path(args.output_image)
-    cv2.imwrite(str(output_path), img)
-    logger.info(f"Wrote diagnostic overlay image to {output_path}")
 
 def autograde_subcommand(args):
     # global _ureg

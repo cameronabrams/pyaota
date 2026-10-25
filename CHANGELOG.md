@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- The `tune-answersheetreader` subcommand, which always crashed (it called a reader method that does not exist). `grade` writes per-page debug overlays to its debug directory instead.
+- The unused `pyaota.ocr` package, its 1.6 MB digit model (previously shipped in every wheel), and the `ocr` extra; student IDs are read from bubbles only, as before.
 - Unused modules `pyaota.image.diagnose` (which could not run: it imported neither `cv2` nor a logger) and `pyaota.image.blend`.
 
 ### Security

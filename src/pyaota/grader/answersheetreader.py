@@ -1,6 +1,5 @@
 from pathlib import Path
 from ..generator.answersheet import LayoutConfig
-# from ..ocr.digit_ocr import ocr_digit_nn, load_digit_model
 from ..image.warper import warp
 from typing import Any, Dict, Tuple, List
 import numpy as np
@@ -25,58 +24,6 @@ def x_marks_the_spot(image, x_px, y_px):
         (0, 0, 255),
         2
     )
-
-# def get_centered_padded_digit(img_gray: np.ndarray, pad: int = 10) -> np.ndarray:
-#     """
-#     Takes a grayscale digit image, finds the ink bounding box,
-#     centers the digit in a new image, and adds uniform padding.
-    
-#     Returns a new grayscale image.
-#     """
-
-#     # Ensure grayscale
-#     if img_gray.ndim == 3:
-#         img_gray = cv2.cvtColor(img_gray, cv2.COLOR_BGR2GRAY)
-
-#     # Threshold to get binary ink mask (digit in black or white)
-#     _, th = cv2.threshold(
-#         img_gray, 0, 255,
-#         cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
-#     )
-#     # Now digit strokes are white (255), background black (0)
-
-#     # Find bounding box of the white pixels
-#     ys, xs = np.where(th > 0)  # coordinates where ink exists
-#     if len(xs) == 0 or len(ys) == 0:
-#         # no ink found ― return padded blank image
-#         h, w = img_gray.shape
-#         return 255 * np.ones((h + 2*pad, w + 2*pad), dtype=np.uint8)
-
-#     x_min, x_max = xs.min(), xs.max()
-#     y_min, y_max = ys.min(), ys.max()
-
-#     # Crop to bounding box
-#     cropped = img_gray[y_min:y_max+1, x_min:x_max+1]
-
-#     # Create padded new image
-#     new_h = (y_max - y_min + 1) + 2 * pad
-#     new_w = (x_max - x_min + 1) + 2 * pad
-
-#     canvas = 255 * np.ones((new_h, new_w), dtype=np.uint8)  # white background
-
-#     # Paste the Cropped digit in the center
-#     canvas[pad:pad + cropped.shape[0], pad:pad + cropped.shape[1]] = cropped
-
-#     return canvas
-
-# # Optionally load global model once if you like
-# _DIGIT_MODEL = None
-
-# def get_digit_model():
-#     global _DIGIT_MODEL
-#     if _DIGIT_MODEL is None:
-#         _DIGIT_MODEL = load_digit_model()
-#     return _DIGIT_MODEL
 
 class AnswerSheetReader:
     def __init__(self, img: np.ndarray, layout_config: LayoutConfig, debug_output_dir: Path = Path("debug"), interactive: bool = False):
@@ -1024,132 +971,8 @@ class AnswerSheetReader:
 
         self.diagnostics['id_bubble_centers'] = id_bubble_centers_px
 
-    # def _read_student_id_ocr(self):
-    #     config = self.layout_config
-    #     num_digits = config.student_id_num_digits
-    #     model = get_digit_model()
-        
-    #     # Image is already warped to canonical page coordinates
-    #     img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-    #     confidence_threshold = config.student_id_ocr_confidence_threshold
-
-    #     # Convert layout positions from physical units to pixels
-    #     id_box_ul_px = (
-    #         int(config.student_id_digit_boxes_ul[0].to('pxl').magnitude),
-    #         int(config.student_id_digit_boxes_ul[1].to('pxl').magnitude)
-    #     )
-    #     # write an X at the upper-left corner for diagnostics
-    #     debug_image = self.diagnostics.get('debug_image', None)
-    #     if debug_image is not None:
-    #         cv2.line(
-    #             debug_image,
-    #             (id_box_ul_px[0] - 10, id_box_ul_px[1] - 10),
-    #             (id_box_ul_px[0] + 10, id_box_ul_px[1] + 10),
-    #             (34, 122, 255),
-    #             3,
-    #         )
-    #         cv2.line(
-    #             debug_image,
-    #             (id_box_ul_px[0] - 10, id_box_ul_px[1] + 10),
-    #             (id_box_ul_px[0] + 10, id_box_ul_px[1] - 10),
-    #             (34, 122, 255),
-    #             3,
-    #         )
-    #     box_width_px = int(config.student_id_digit_boxes_box_size[0].to('pxl').magnitude)
-    #     box_height_px = int(config.student_id_digit_boxes_box_size[1].to('pxl').magnitude)
-    #     gap_px = int(config.student_id_digit_boxes_horiz_gap.to('pxl').magnitude)
-        
-    #     x0, y0 = id_box_ul_px
-        
-    #     digits: list[str] = []
-
-    #     outer_boxes = []
-    #     inner_boxes = []
-
-    #     for i in range(num_digits):
-    #         # Calculate this box's position
-    #         box_x0 = x0 + i * (box_width_px + gap_px)
-    #         box_x1 = box_x0 + box_width_px
-    #         box_y0 = y0
-    #         box_y1 = y0 + box_height_px
-    #         # draw this box for diagnostics
-    #         debug_image = self.diagnostics.get('debug_image', None)
-    #         if debug_image is not None:
-    #             cv2.rectangle(
-    #                 debug_image,
-    #                 (box_x0, box_y0),
-    #                 (box_x1, box_y1),
-    #                 (255, 0, 0),
-    #                 3,
-    #             )
-    #         outer_boxes.append((box_x0, box_y0, box_x1, box_y1))
-    #         # Extract cell
-    #         cell = img_gray[box_y0:box_y1, box_x0:box_x1]
-            
-    #         ch, cw = cell.shape
-    #         if ch <= 0 or cw <= 0:
-    #             digits.append("")
-    #             continue
-
-    #         # Inner crop to avoid borders
-    #         margin_y = int(config.student_id_digits_cell_margin_frac * ch)
-    #         margin_x = int(config.student_id_digits_cell_margin_frac * cw)
-    #         iy0 = box_y0 + margin_y
-    #         iy1 = box_y0 + ch - margin_y
-    #         ix0 = box_x0 + margin_x
-    #         ix1 = box_x0 + cw - margin_x
-
-    #         if iy1 <= iy0 or ix1 <= ix0:
-    #             digits.append("")
-    #             continue
-
-    #         inner = img_gray[iy0:iy1, ix0:ix1]
-    #         inner_boxes.append((ix0, iy0, ix1, iy1))
-    #         debug_image = self.diagnostics.get('debug_image', None)
-    #         if debug_image is not None:
-    #             logger.debug(f'ID OCR: digit {i+1}, outer box=({box_x0},{box_y0})-({box_x1},{box_y1}), inner box=({ix0},{iy0})-({ix1},{iy1})')
-    #             cv2.rectangle(
-    #                 debug_image,
-    #                 (ix0, iy0),
-    #                 (ix1, iy1),
-    #                 (0, 0, 255),
-    #                 3,
-    #             )
-    #         inner = get_centered_padded_digit(inner, pad=5)
-
-    #         # Run CNN OCR
-    #         digit, conf = ocr_digit_nn(inner, model=model)
-            
-    #         if conf < confidence_threshold:
-    #             digits.append("?")
-    #             if digit == '7':
-    #                 # Check if it's actually a 9 written upside down
-    #                 rotated_inner = cv2.rotate(inner, cv2.ROTATE_180)
-    #                 digit_rot, conf_rot = ocr_digit_nn(rotated_inner, model=model)
-    #                 if conf_rot >= confidence_threshold and digit_rot == '6':
-    #                     digits[-1] = '9'
-    #         else:
-    #             if digit == '3':
-    #                 # Might be an 8 with gaps
-    #                 flipped_inner = cv2.flip(inner, 1)
-    #                 digit_flp, conf_flp = ocr_digit_nn(flipped_inner, model=model)
-    #                 if conf_flp >= confidence_threshold and digit_flp == '8':
-    #                     digit = '8'
-    #             digits.append(digit)
-
-    #     # If all blanks, treat as no ID
-    #     if all(d == "" for d in digits):
-    #         self.results['student_id_ocr'] = None
-    #     else:
-    #         self.results['student_id_ocr'] = "".join(d if d else "?" for d in digits)
-
-    #     self.diagnostics['id_digit_outer_boxes'] = outer_boxes
-    #     self.diagnostics['id_digit_inner_boxes'] = inner_boxes
-
     def _read_student_id(self):
         """
-        Read the student ID from the warped answer-sheet image,
-        using both bubble detection and OCR methods.
+        Read the student ID bubbles from the warped answer-sheet image.
         """
         self._read_student_id_bubbles()
-        # self._read_student_id_ocr()

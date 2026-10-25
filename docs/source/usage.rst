@@ -151,23 +151,6 @@ Key options:
 - ``--odd-page-answersheet`` -- force the sheet to start on an odd-numbered page
 - ``--rasterize`` -- rasterize the output PDF at 300 DPI for printer compatibility
 
-tune-answersheetreader
-~~~~~~~~~~~~~~~~~~~~~~
-
-Generate a diagnostic overlay image to visually verify that the answer sheet
-reader parameters are correctly aligned.
-
-.. code-block:: bash
-
-   pyaota tune-answersheetreader -i sample.pdf -nq 50 -nc 3
-
-Key options:
-
-- ``-i`` / ``--sample-pdf`` -- sample PDF for tuning
-- ``-nq`` / ``--num-questions`` -- number of questions
-- ``-nc`` / ``--num-cols`` -- number of columns
-- ``-o`` / ``--output-image`` -- output overlay image path
-
 bundle
 ~~~~~~
 

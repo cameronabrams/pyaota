@@ -16,7 +16,6 @@ Subpackages
    pyaota.grader
    pyaota.image
    pyaota.latex
-   pyaota.ocr
    pyaota.util
 
 Submodules

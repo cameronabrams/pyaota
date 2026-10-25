@@ -26,9 +26,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ocr = [
-  "tensorflow>=2.12",
-]
 test = [
   "pytest",
 ]
@@ -53,12 +50,6 @@ pyaota = "pyaota.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyaota"]
-
-# Include non-.py package data inside src/pyaota/ (e.g., src/pyaota/data/**)
-[tool.hatch.build]
-include = [
-  "src/pyaota/data/**",
-]
 
 [tool.hatch.build.targets.sdist]
 include = [
