@@ -14,7 +14,7 @@ into your gradebook CSV.
 - Many versions from one bank, with questions and choices shuffled per version
 - Optional encryption of each version's answers in its QR code, so grading needs no key file
 - Per-page graded overlays, a failed-pages report, and interactive recovery for unreadable pages
-- Utilities to convert Word question exports, bundle PDFs for printing, and email graded sheets
+- Utilities to convert ZyBooks question exports (QTI XML or Word), bundle PDFs for printing, and email graded sheets (Windows/Outlook)
 
 ## Install
 

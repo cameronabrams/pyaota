@@ -608,7 +608,7 @@ def main(argv: list[str] | None = None) -> int:
         "-i",
         "--input-zip",
         required=True,
-        help="Path to a ZyBooks-exported zip file containing Word documents",
+        help="Path to a ZyBooks-exported zip file (QTI XML, or Word documents as a fallback)",
     )
     command_parsers["convert"].add_argument(
         "-o",

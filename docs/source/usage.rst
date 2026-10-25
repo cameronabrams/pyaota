@@ -8,19 +8,26 @@ accessed through subcommands.
 
    pyaota <subcommand> [options]
 
+Boolean options also have a ``--no-`` form (``--shuffle-choices`` /
+``--no-shuffle-choices``), useful for overriding a value loaded with
+``--config``.  Note that ``-nc`` and ``-sc`` mean different things in ``build``
+(answer-sheet columns, shuffle choices) and ``grade`` (questions counted,
+score column).
+
 Global options
 --------------
 
 ``--config <path>``
-   Load arguments from a YAML configuration file.
+   Load arguments from a YAML configuration file.  Every value in the file is
+   used except options also given on the command line, which take precedence.
 
 ``--save-config <path>``
-   Save the current arguments to a YAML file for later reuse.
+   Save the current arguments to a YAML file for later reuse with ``--config``.
 
 ``-b`` / ``--banner``
    Display a banner message at startup.
 
-``--logging-level {info,debug,warning}``
+``--logging-level {None,info,debug,warning}``
    Set the diagnostic logging level (default: ``debug``).
 
 ``-l`` / ``--log <path>``
@@ -41,24 +48,31 @@ Generate one or more randomized exam versions from YAML question banks.
 
 Key options:
 
-- ``-q`` / ``--question-banks`` -- paths to YAML question bank files
-- ``-n`` / ``--num-exams`` -- number of exam versions to generate
-- ``-nq`` / ``--num-questions`` -- questions per exam
-- ``-t`` / ``--topics`` -- topics to draw questions from
-- ``-od`` / ``--output-dir`` -- output directory
-- ``--seed`` -- random seed for reproducible generation
+- ``-q`` / ``--question-banks`` -- paths to YAML question bank files (required)
+- ``-nq`` / ``--num-questions`` -- questions per exam (required)
+- ``-od`` / ``--output-dir`` -- output directory (required)
+- ``-n`` / ``--num-exams`` -- number of exam versions to generate (default: ``1``)
+- ``-t`` / ``--topics`` -- topics to draw questions from, spread evenly; names
+  must match the bank's topics exactly (unknown names are ignored)
+- ``--seed`` -- seed for the version labels (default: ``0``).  Each version's
+  question selection and order are derived from its label, so the same seed and
+  options rebuild the same exams; change the seed to get new versions
 - ``-sq`` / ``--shuffle-questions`` -- shuffle question order per version
 - ``-sc`` / ``--shuffle-choices`` -- shuffle answer choices per version
 - ``-en`` / ``--exam-name`` -- exam title used in the header
 - ``-if`` / ``--instructions-file`` -- custom LaTeX instructions file
 - ``-pf`` / ``--pagestyles-file`` -- custom LaTeX page-styles file
-- ``--institution``, ``--course``, ``--term`` -- metadata for headers
+- ``--institution``, ``--course``, ``--term`` -- header text (defaults:
+  ``Drexel University``, ``ENGR-131``, ``202526``)
+- ``-en`` defaults to ``Exam``
 - ``--encode-answers-in-qr`` -- encrypt the correct answers into each answer
   sheet's QR code; when set, ``pyaota grade`` does not require a ``-k``
   keyfile — the grader decrypts the answers directly from the scanned QR.
   The encryption key is stored in ``answersheet_layout.json``.
 - ``--cleanup`` -- remove intermediate LaTeX files after compilation
-- ``-ow`` / ``--overwrite`` -- overwrite output directory if it exists
+- ``-ow`` / ``--overwrite`` -- **delete** the output directory and everything in
+  it before building; without it, an existing directory is reused (with a
+  warning)
 - ``--font-size {10pt,11pt,12pt}`` -- document font size (default: ``12pt``)
 - ``--question-spacing <LENGTH>`` -- vertical space between questions as a LaTeX
   length, e.g. ``24pt`` or ``1cm`` (default: ``24pt``)
@@ -79,6 +93,12 @@ Key options:
 - ``-nc`` / ``--num-cols`` -- number of bubble columns on the answer sheet
   (default: ``3``)
 
+Output, in ``-od``: ``exam-<version>.pdf`` per version (questions followed by
+the answer sheet), ``exam_version_keys.csv``, ``answer_keys.pdf``,
+``answersheet_layout.json`` (needed for grading) and ``qr_<version>.png``.  The
+LaTeX sources ``exam-<version>.tex`` are written to the current directory and
+kept unless ``--cleanup`` is given.
+
 compile-dump
 ~~~~~~~~~~~~
 
@@ -92,11 +112,18 @@ useful for review and proofreading.
 Key options:
 
 - ``-q`` / ``--question-banks`` -- paths to YAML question bank files
-- ``-od`` / ``--output-dir`` -- output directory
+- ``-od`` / ``--output-dir`` -- output directory (default: current directory)
 - ``-if`` / ``--instructions-file`` -- custom LaTeX instructions
-- ``--institution``, ``--course``, ``--term`` -- metadata
+- ``-pf`` / ``--pagestyles-file`` -- custom LaTeX page-styles file
+- ``--institution``, ``--course``, ``--term`` -- header text (same defaults as
+  ``build``)
 - ``--font-size {10pt,11pt,12pt}`` -- document font size (default: ``12pt``)
 - ``--question-spacing <LENGTH>`` -- vertical space between questions (default: ``24pt``)
+- ``--use-listings-from <TEX_FILE>`` -- set code with ``listings`` (see ``build``)
+- ``--keep-latex`` -- keep the intermediate ``.tex`` file
+
+The output is ``banks_full_dump-0.pdf``, with each question's id and the
+correct answer marked.
 
 grade
 ~~~~~
@@ -109,14 +136,18 @@ Automatically grade a scanned PDF of answer sheets.
 
 Key options:
 
-- ``-i`` / ``--input-pdf`` -- PDF of scanned answer sheets
+- ``-i`` / ``--input-pdf`` -- PDF of scanned answer sheets (needed)
 - ``-k`` / ``--keyfiles`` -- CSV answer key file(s); optional when answers are
   embedded in the QR code via ``--encode-answers-in-qr``
-- ``-alj`` / ``--answersheet-layout-json`` -- answer sheet layout JSON (required;
-  also carries the QR decryption key when ``--encode-answers-in-qr`` was used)
-- ``-od`` / ``--output-dir`` -- output directory for graded results
-- ``--debug-output-dir`` -- directory for debug overlay images
-- ``-fp`` / ``--failed-pages-dir`` -- directory for unreadable pages
+- ``-alj`` / ``--answersheet-layout-json`` -- the ``answersheet_layout.json``
+  written by ``build`` (needed; also carries the QR decryption key when
+  ``--encode-answers-in-qr`` was used)
+- ``-od`` / ``--output-dir`` -- output directory for graded sheets (default:
+  current directory)
+- ``--debug-output-dir`` -- directory for per-page diagnostic images (default:
+  ``debug-autograder``)
+- ``-fp`` / ``--failed-pages-dir`` -- directory for unreadable pages and the
+  failed-pages report (default: ``-od``)
 - ``-gb`` / ``--gradebooks`` -- gradebook CSV file(s) to update
 - ``-sc`` / ``--score-column`` -- gradebook column name for scores (default:
   ``'score'``)
@@ -125,10 +156,11 @@ Key options:
   ``'Final Exam [Total Pts: 100 Score] |3766016'``); takes precedence over
   ``--score-column`` when a unique match is found
 - ``-nc`` / ``--num-counted`` -- number of questions counted toward score
-- ``-qt`` / ``--question-tally`` -- output CSV for question-level statistics
-- ``--interactive`` -- pause and prompt for manual input when a QR code, student ID,
-  or bubble fill cannot be read automatically; if a QR-encoded answer key cannot
-  be decrypted, also prompts for a fallback keyfile CSV; see :doc:`grading` for details
+  (default: all)
+- ``-qt`` / ``--question-tally`` -- CSV recording each student's answers
+- ``--interactive`` -- pause and prompt for manual input when a QR code, student
+  ID or answer cannot be read, and for a keyfile when a version has no answer
+  key; needs ``pip install 'pyaota[interactive]'``; see :doc:`grading`
 
 make-answersheet
 ~~~~~~~~~~~~~~~~
@@ -139,13 +171,17 @@ Generate a blank answer sheet PDF.
 
    pyaota make-answersheet -nq 50 -nc 3 -o answersheet
 
+This writes ``answersheet-SAMPLE.pdf`` with a sample QR code.
+
 Key options:
 
-- ``-o`` / ``--output-pdf`` -- output PDF path
-- ``-nq`` / ``--num-questions`` -- number of questions
-- ``-nc`` / ``--num-cols`` -- number of bubble columns
-- ``-od`` / ``--output-dir`` -- output directory
+- ``-o`` / ``--output-pdf`` -- base name of the output file; ``-SAMPLE.pdf`` is
+  appended (default: ``answersheet``)
+- ``-nq`` / ``--num-questions`` -- number of questions (default: ``50``)
+- ``-nc`` / ``--num-cols`` -- number of bubble columns (default: ``3``)
+- ``-od`` / ``--output-dir`` -- output directory (default: current directory)
 - ``-idl`` / ``--student-id-num-digits`` -- digits in the student ID field
+  (default: ``8``)
 - ``--bubble-font-size <PT>`` -- absolute font size in points for bubble labels
   (default: ``8.0``)
 - ``--odd-page-answersheet`` -- force the sheet to start on an odd-numbered page
@@ -165,13 +201,18 @@ Key options:
 
 - ``-i`` / ``--input-dir`` -- directory of PDFs to bundle
 - ``-n`` / ``--bundle-size`` -- documents per bundle
-- ``-od`` / ``--output-dir`` -- output directory
+- ``-od`` / ``--output-dir`` -- output directory (default: ``bundles``); bundles
+  are named ``bundle_NNN.pdf``
 - ``--co-bundle`` -- also create a PDF of the last page from each document
 
 return
 ~~~~~~
 
 Email graded answer sheets and exam PDFs to students via Microsoft Outlook.
+This works only on Windows with Outlook installed and the ``pywin32`` package
+(``pip install pywin32``), which is not installed with pyaota.  Each student's
+graded sheet is found by name (``graded_<id>_<version>.pdf``) and sent with
+their exam version's PDF.
 
 .. code-block:: bash
 
@@ -182,11 +223,14 @@ Key options:
 - ``-gb`` / ``--gradebooks`` -- gradebook CSV file(s)
 - ``-gd`` / ``--graded-dir`` -- directory of graded answer sheet PDFs
 - ``-ed`` / ``--exams-dir`` -- directory of exam version PDFs
-- ``--email-column`` -- gradebook column with email/username
-- ``--email-suffix`` -- suffix to append (e.g., ``@drexel.edu``)
-- ``--subject`` -- email subject line
+- ``--email-column`` -- gradebook column with email/username (default:
+  ``Username``)
+- ``--email-suffix`` -- suffix to append (default: ``@drexel.edu``; use ``''``
+  if the column holds full addresses)
+- ``--subject`` -- email subject line (default: ``Your graded exam``)
 - ``--body`` -- email body text
 - ``--dry-run`` -- preview without sending
+- ``--sleep-seconds`` -- pause between emails (default: ``0.5``)
 
 convert
 ~~~~~~~

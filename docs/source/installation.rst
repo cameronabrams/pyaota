@@ -16,6 +16,17 @@ Install from PyPI
 
    pip install pyaota
 
+Optional extras
+---------------
+
+- ``pip install 'pyaota[interactive]'`` -- matplotlib, needed for
+  ``pyaota grade --interactive``
+- ``pip install 'pyaota[test]'`` -- pytest, to run the test suite
+- ``pip install 'pyaota[docs]'`` -- Sphinx and theme, to build this documentation
+
+``pyaota return`` (emailing graded sheets) also needs Windows, Microsoft
+Outlook and ``pip install pywin32``.
+
 Install from source
 -------------------
 
@@ -51,3 +62,13 @@ installed automatically by ``pip``.
 .. code-block:: bash
 
    sudo apt install poppler-utils
+
+**Linux (openSUSE):**
+
+.. code-block:: bash
+
+   sudo zypper install poppler-tools
+
+pyaota uses OpenCV's headless build (``opencv-python-headless``), so no display
+libraries are needed.  If ``opencv-python`` is also installed in the same
+environment the two conflict; uninstall ``opencv-python``.

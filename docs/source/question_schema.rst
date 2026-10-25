@@ -1,118 +1,159 @@
 YAML Question Schema
 ======================
 
-This document describes the complete YAML schema for multiple‑choice questions.
+This document describes the YAML schema for question banks: what pyaota reads
+and checks, followed by recommended authoring conventions.
 
 Top-Level Structure
 -------------------
 
-A question file contains one top‑level key:
+A question bank is a YAML file with a ``questions`` list and an optional
+``topics`` list:
 
 .. code-block:: yaml
 
+    topics:            # optional; topics are also collected from the questions
+      - Arithmetic
+      - Fractions
     questions:
       - <question>
       - <question>
       ...
 
+Several banks can be passed to one command (``-q a.yaml b.yaml``); their
+questions are merged.
+
 Question Structure
 ------------------
 
-Each question is a mapping with the following required fields:
-
 .. code-block:: yaml
 
-    id: <string>
-    topic: <string>
-    points: <integer>
-    type: mcq | tf
+    id: <integer or string>          # shown in compile-dump output
+    type: mcq | tf                   # default: mcq
+    topic: <string>                  # default: General
+    points: <integer>                # default: 1
+    difficulty: <integer 1-5>        # optional; used by --balance-difficulty
     stem: <list of stem blocks>
-    choices: <list of 4 choices if mcq>
-    correct: <a/b/c/d/true/false>
-    explanation: <string>
+    choices: <list of choices>       # mcq only
+    correct: <answer>                # or `answer:`; see below
 
-``mcq`` questions have four choices (a, b, c, d), while ``tf`` questions have two choices (true, false).
+The correct answer may be given as ``correct`` (preferred) or ``answer``;
+if both are present, ``correct`` is used.
+
+* **mcq:** ``correct`` is the key of one choice, matched without regard to case
+  (``B`` selects the choice keyed ``b``).
+* **tf:** ``correct`` is ``true`` or ``false``.  YAML booleans and the strings
+  ``true``/``t``/``yes``/``y`` and ``false``/``f``/``no``/``n`` (any case) are
+  accepted.
+
+When a bank is loaded, pyaota checks every question and stops with a list of
+problems (by question id) if any question has no answer, an answer that does
+not match exactly one choice key, a true/false answer it cannot read, or a type
+other than ``mcq`` or ``tf``.
 
 Stem Blocks
 -----------
 
-Each question must contain **at least one** stem block of type ``text``.
-A stem block has:
+The stem is a list of blocks rendered in order:
 
 .. code-block:: yaml
 
-    - type: text | code
+    - type: text            # default
       text: <string>
+    - type: code
+      text: <string>        # rendered verbatim; any language
+      style: <name>         # optional listings style (with --use-listings-from)
+    - type: image
+      src: <file name>      # looked up in an images/ folder next to the bank
+      width: <pixels>       # optional; about 500 px is the full line width
 
-Rules:
+Within ``text`` blocks (and choice texts):
 
-* ``type: text`` blocks may contain inline code using double-backticks (``like this``).
-* ``type: code`` blocks contain literal Python code.
-* Printed output in code must not include quotes.
-* Any literal newline in quoted YAML strings must appear as ``\n``.
-* Multi-line code is preferably written using YAML block scalars (``|``).
+* ``double backticks`` mark inline code, e.g. ````len(x)````.
+* ``@@...@@`` marks inline math, passed to LaTeX as ``$...$``, e.g.
+  ``@@x^2 + 1@@``.
+* LaTeX special characters (``# $ % & _ { } ~ ^ \``) are escaped
+  automatically, and Unicode superscript digits such as ``m²`` are typeset as
+  superscripts.  Runs of four or more underscores become a fill-in blank.
 
-Acceptable stem shapes include:
+Code is set verbatim by default.  Pass ``--use-listings-from <file.tex>`` (a
+file defining an ``lstdefinestyle``) to ``build`` or ``compile-dump`` to set it
+with the ``listings`` package instead; a block's or choice's ``style`` then
+selects a style other than the default one.
 
-* ``text``
-* ``text -> code``
-* ``text -> code -> text``
-* Multiple text blocks
-
-Not allowed:
-
-* A stem consisting only of ``code`` blocks.
+Images referenced by ``image`` blocks must be in an ``images/`` folder next to
+the bank file; they are copied into the output directory when the exam is
+built.
 
 Choices
 -------
 
-There must be exactly **four** choices, each with:
+Multiple-choice questions list their choices:
 
 .. code-block:: yaml
 
-    - key: a | b | c | d
-      type: text | code
-      text: <string>
+    choices:
+      - key: a
+        type: text | code   # default: text
+        text: <string>
+        style: <name>       # optional, code choices with listings only
 
-Use ``type: code`` when the choice represents code or a Python literal, e.g.:
+The answer sheet has bubbles ``a`` to ``d``, so a multiple-choice question has
+at most four choices, keyed ``a``, ``b``, ``c`` and ``d``.  With ``-sc``
+(``--shuffle-choices``) the choices are shuffled and relabelled for each exam
+version, and the answer key follows them.  Short choices are laid out in two
+columns automatically.
 
-* ``x = 2 + 3``
-* ``7``
-* ``"hello"``
-* ``x`` (identifier)
-* ``n % 10``
+True/false questions have no ``choices``; they are printed with a
+``True (T) / False (F)`` prefix and answered in the first two bubbles.
 
-Use ``type: text`` for prose answers.
+Example
+-------
 
-Correct Answer and Explanation
-------------------------------
+.. code-block:: yaml
 
-* ``correct`` must match one of: ``a``, ``b``, ``c``, ``d``, or ``true``, ``false`` for a true-false.
-* ``explanation`` is required and may contain inline code markup (``like this``).
+    topics:
+      - Basics
+    questions:
+      - id: 1
+        type: mcq
+        topic: Basics
+        difficulty: 2
+        stem:
+          - type: text
+            text: "What does this print?"
+          - type: code
+            text: |
+              console.log(typeof null);
+        choices:
+          - {key: a, type: code, text: "object"}
+          - {key: b, type: code, text: "null"}
+          - {key: c, type: code, text: "undefined"}
+          - {key: d, type: code, text: "boolean"}
+        correct: a
+      - id: 2
+        type: tf
+        topic: Basics
+        stem:
+          - type: text
+            text: "In JavaScript, an empty string is falsy."
+        correct: true
 
-Output Formatting Rules
------------------------
+Authoring Conventions
+---------------------
 
-* ``print("hello")`` → output is written as ``hello`` (no quotes).
-* Expression values show quotes *only* when the Python literal includes them.
-* Inline code only allowed in ``text`` blocks, never in ``code`` blocks.
+These conventions are not checked by pyaota, but they keep banks consistent
+and render well:
 
-Newline Rules
--------------
-
-Inside quoted YAML scalars:
-
-* Literal newlines **must** be written as ``\n``.
-* Use block scalars (``|``) for multi-line code when possible.
-
-Summary of Constraints
-----------------------
-
-1. Every question has at least one ``type: text`` stem block.
-2. Code-only stems are forbidden.
-3. Choices must use correct type (``text`` vs ``code``).
-4. Inline code only in text blocks using double-backticks.
-5. Exactly four choices per question.
-6. Explanation required.
-7. Printed output must never include quotes.
-
+* Give every question at least one ``text`` stem block; avoid stems made only
+  of code.
+* Use ``type: code`` for choices that are code or literals (``x = 2 + 3``,
+  ``"hello"``, ``n % 10``) and ``type: text`` for prose.
+* When a choice shows printed output, write it as printed (``hello``, not
+  ``"hello"``); show quotes only where the literal value includes them.
+* Use inline code (double backticks) only in ``text`` blocks, never inside
+  ``code`` blocks.
+* Write multi-line code with YAML block scalars (``|``).  Inside quoted YAML
+  strings, write newlines as ``\n``.
+* An ``explanation`` field may be kept with each question for your own
+  reference; pyaota does not print it.

@@ -24,6 +24,11 @@ Typical workflow
        -od results/ \
        -gb gradebook.csv
 
+``-k`` is optional for exams built with ``--encode-answers-in-qr`` (see
+`Encrypted answer embedding`_).  Results go to ``-od`` (default: the current
+directory); each graded sheet is written as ``graded_<student id>_<version>.pdf``
+showing the detected marks, the correct answers and the score.
+
 Answer key format
 -----------------
 
@@ -35,8 +40,11 @@ generated exam PDFs.
 Example::
 
    version_label,Q1,Q2,Q3,Q4,Q5
-   A,a,c,b,d,a
-   B,c,a,d,b,c
+   6baa9455,a,c,True,d,a
+   d82c07cd,c,a,d,False,c
+
+Version labels are the 8-digit hexadecimal labels printed on each exam and
+encoded in its QR code.
 
 ``True``/``False`` values are normalized to ``a``/``b`` respectively so that
 T/F questions grade correctly.
@@ -53,35 +61,70 @@ The score written to the gradebook is:
 
 .. math::
 
-   \text{score} = \frac{\text{num\_correct}}{\text{num\_counted}} \times 100
+   \text{score} = \min\left(\frac{\text{num\_correct}}{\text{num\_counted}}, 1\right) \times 100
+
+written with one decimal place (for example ``87.5``).  ``num_counted`` must not
+exceed the number of questions on the sheet.
 
 Gradebook integration
 ---------------------
 
 Pass one or more gradebook CSV files with ``-gb`` / ``--gradebooks``.  Each
 file must contain a ``Student ID`` column.  pyaota matches the detected student
-ID to the corresponding row and writes the following columns:
+ID to the corresponding row and writes the following columns, adding any that
+are missing:
 
 - ``version_label`` -- exam version read from the QR code
 - ``num_questions`` -- total questions on the sheet
 - ``num_correct`` -- correctly answered questions
-- ``score`` -- percentage score (or the column named by ``--score-column``)
-- ``status`` -- ``ok``, ``no_key``, or ``failed``
+- ``score`` -- percentage score (or the column chosen by ``--score-column`` /
+  ``--column-id``)
+- ``status`` -- ``ok``, or the failure status of the page (see `Failed pages`_)
+
+Each gradebook file is **rewritten in place**; keep a copy if you need the
+original.  The merge follows these rules:
+
+- **Leading zeros are ignored** when matching IDs, so a sheet bubbled
+  ``00512345`` updates the gradebook row ``512345``.
+- **Rows with no page in this run are left untouched**, so you can grade a
+  class in several batches.
+- **A failed page never overwrites an existing score.**  It records its status
+  only on a row that has no score yet.
+- **Duplicate pages:** if several pages read the same ID with the same version
+  and score (a sheet scanned twice), one is used.  If they disagree (for
+  example two students bubbled the same ID), no grade is written for that ID
+  and the conflict is listed in the failed-pages report.
+- **Unmatched IDs:** a graded page whose ID is in no gradebook is saved as a
+  failed page with status ``unmatched_id``.
+
+``--column-id <SUBSTRING>`` picks the score column by a case-sensitive
+substring of its name, which suits LMS exports such as
+``Final Exam [Total Pts: 100 Score] |3766016``.  If no column or more than one
+column matches, pyaota warns and falls back to ``--score-column``.
 
 Failed pages
 ------------
 
-Pages that cannot be fully read are saved as individual PDFs in the directory
-specified by ``-fp`` / ``--failed-pages-dir`` (defaults to the output
-directory).  A companion ``failed_pages_report.csv`` is written listing the
-page index, failure reason, and any data that was recovered.
+Pages that cannot be graded are saved as individual PDFs named
+``failed_page_<NNN>_<status>[_<version or id>].pdf`` in the directory given by
+``-fp`` / ``--failed-pages-dir`` (default: the output directory).  A text
+report, ``failed_pages_report.txt``, lists each failed page with its reason and
+saved file name.
 
-Common failure modes:
+Failure statuses:
 
-- ``failed_read_qr`` -- QR code too damaged or obscured to decode
-- ``failed_read_student_id`` -- student-ID bubble field could not be read
-- ``failed_read_bubblefield`` -- answer bubble region could not be processed
-- ``no_key`` -- QR code decoded but no answer key exists for that version label
+- ``failed_find_indicials`` / ``failed_warp`` -- the corner marks could not be
+  found, so the page could not be aligned
+- ``failed_read_qr`` -- the QR code could not be decoded
+- ``failed_read_student_id`` -- the student-ID field could not be read,
+  including a column with two or more marks of similar darkness
+- ``failed_read_bubblefield`` -- the answer bubbles could not be read
+- ``no_qr`` -- the page was read but yielded no version label
+- ``unknown_version`` -- no answer key (embedded or CSV) for the version read
+  from the QR code
+- ``key_length_mismatch`` -- the answer key for that version has a different
+  number of questions than the answer sheet
+- ``unmatched_id`` -- graded, but the student ID is in none of the gradebooks
 
 Interactive mode
 ----------------
@@ -90,13 +133,14 @@ Pass ``--interactive`` to ``pyaota grade`` to enable interactive recovery at
 the terminal.  When a page fails to read automatically, pyaota pauses and
 prompts you to supply the missing information before moving on.  Interactive
 mode displays bubble rows with matplotlib, which is an optional dependency:
-``pip install 'pyaota[interactive]'``.
+``pip install 'pyaota[interactive]'``; ``--interactive`` refuses to start
+without it.
 
 .. code-block:: bash
 
    pyaota grade -i scanned.pdf -k keys.csv -od results/ --interactive
 
-Three kinds of interactive prompts are issued:
+Four kinds of interactive prompts are issued:
 
 **QR code unreadable**
    A message like the following is printed and you are asked for the version label::
@@ -116,10 +160,17 @@ Three kinds of interactive prompts are issued:
 
    If you supply an ID, pyaota continues to read the answer bubbles.
 
-**No bubble fill detected**
-   For each question where no bubble appears filled, a matplotlib window opens
-   showing a cropped view of that bubble row, and you are prompted at the
-   terminal::
+**No answer key for the version**
+   If the version read from the QR code has no embedded answers and is not in
+   any ``-k`` keyfile, you are asked for the path to an answer-key CSV::
+
+      [Page 7] No answer key for version '6baa9455'
+        Enter path to answer-key CSV (or blank to skip):
+
+**Blank or ambiguous answer**
+   For each question where no bubble appears filled, or where two or more
+   bubbles are filled with no clear winner, a matplotlib window opens showing
+   that bubble row, and you are prompted at the terminal::
 
       Q3: enter answer (a/b/c/d) or '-' to leave blank: b
 
@@ -128,18 +179,21 @@ Three kinds of interactive prompts are issued:
 
 .. note::
 
-   Interactive mode requires a graphical display for the bubble-level prompts
-   (matplotlib is used).  On headless servers only the QR-code and student-ID
-   prompts will appear; bubble prompts are silently skipped when stdin is not
-   a TTY.
+   The answer prompts open a matplotlib window, so they need a graphical
+   display.  If standard input is closed (end of file), each prompt is skipped
+   and the page is graded as if ``--interactive`` had not been given.
 
 Question-level statistics
 -------------------------
 
-Pass ``-qt`` / ``--question-tally`` with a CSV path to write a per-question
-summary after grading.  Each row contains the question number, how many
-students answered each choice, and how many answered correctly.  This is
-useful for identifying questions that were poorly worded or unusually difficult.
+Pass ``-qt`` / ``--question-tally`` with a CSV path to record every
+student's answers.  The file has one row per student and version
+(``student_id``, ``version_label``, then ``Q1``, ``Q2``, … with the answer
+detected for each question, empty if blank).  If the file already exists, new
+rows are added and existing ones are kept, so batches can be tallied into one
+file.  Combined with ``exam_version_keys.csv`` it is the raw material for
+item analysis, such as finding questions that were poorly worded or unusually
+difficult.
 
 Encrypted answer embedding
 --------------------------
@@ -185,7 +239,8 @@ interactive mode.
 Debug output
 ------------
 
-Pass ``--debug-output-dir`` to save annotated images for every processed page.
-The overlay draws detected fiducials, bubble centers, fill percentages, and the
-decoded QR/student-ID values, which helps diagnose alignment or threshold
-issues.
+Every run saves diagnostic images for each page in
+``<debug dir>/page_<NNN>/`` (default debug dir: ``debug-autograder``; change it
+with ``--debug-output-dir``).  They show the detected corner marks, the
+straightened page, the QR region, and an overlay of bubble centers and the
+marks that were read, which helps diagnose alignment or threshold problems.

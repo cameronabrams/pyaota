@@ -9,12 +9,12 @@ from the root of the repository with the package installed.
 
 ----
 
-Math quiz (MCQ only, QR-encoded answers)
------------------------------------------
+Math quiz (QR-encoded answers)
+------------------------------
 
-The ``simple_math.yaml`` bank contains 120 arithmetic questions spread across
-four topics: *integer addition*, *integer subtraction*, *integer multiplication*,
-and *integer division*.
+The ``simple_math.yaml`` bank contains 120 arithmetic questions (80 multiple
+choice, 40 true/false) spread across four topics: *integer addition*, *integer
+subtraction*, *integer multiplication*, and *integer division*.
 
 The following command generates **two randomized versions** of a 20-question
 quiz with a 4-column answer sheet.  The ``--encode-answers-in-qr`` flag
@@ -67,7 +67,8 @@ QR code, no ``-k`` keyfile is required:
 
 The grader reads the QR code, decrypts the answer key on the fly, and grades
 the sheet entirely from information printed on the page.  If a QR code cannot
-be read, running with ``--interactive`` will prompt for a keyfile as a fallback.
+be read, running with ``--interactive`` prompts for the version label instead
+(and for a keyfile if that version has no answer key); see :doc:`grading`.
 
 **Scanned answer sheet (student ID: 10216942, version: 6baa9455):**
 
@@ -123,10 +124,10 @@ completed answer sheets scanned to ``scans.pdf``:
 
 .. code-block:: bash
 
-   cd examples/generated/history_exam
    pyaota grade \
        -i scans.pdf \
-       -alj answersheet_layout.json
+       -alj examples/generated/history_exam/answersheet_layout.json \
+       -od examples/generated/history_exam/graded
 
 **Scanned answer sheet (student ID: 10214573, version: 6baa9455):**
 
@@ -148,8 +149,10 @@ Programming quiz (code-block stems)
 -------------------------------------
 
 The ``simple_javascript.yaml`` bank contains questions whose stems include
-fenced code blocks.  pyaota renders these using the ``lstlisting`` environment,
-making it easy to ask students to interpret or debug code snippets.
+``code`` blocks, which are typeset verbatim, making it easy to ask students
+to interpret or debug code snippets.  For syntax highlighting, add
+``--use-listings-from <file.tex>`` with a file defining an ``lstdefinestyle``;
+code is then set with the ``listings`` package.
 
 .. code-block:: bash
 
@@ -204,6 +207,8 @@ default:
    pyaota make-answersheet \
      -nq 20 -nc 4 -o answersheet_20q \
      -od examples/generated/answersheet
+
+This writes ``examples/generated/answersheet/answersheet_20q-SAMPLE.pdf``.
 
 **Blank 20-question answer sheet:**
 
