@@ -140,3 +140,6 @@ dmypy.json
 
 # uv local lockfile (libraries: not committed)
 uv.lock
+
+# example build output (regenerate with the commands in docs/source/examples.rst)
+examples/generated/

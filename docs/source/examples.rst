@@ -39,7 +39,7 @@ Output files in ``build/``:
 
 - ``exam-<version>.pdf`` — one PDF per exam version (questions + answer sheet)
 - ``exam_version_keys.csv`` — answer key for every version (kept as a backup)
-- ``answer_keys-AnswerKeys.pdf`` — printable answer-key summary
+- ``answer_keys.pdf`` — printable answer-key summary
 - ``answersheet_layout.json`` — layout used by the grader; contains the
   encryption key needed to decode QR-embedded answers
 - ``qr_<version>.png`` — pre-generated QR code images included in each PDF
@@ -54,13 +54,14 @@ Output files in ``build/``:
 Grading the math quiz
 ~~~~~~~~~~~~~~~~~~~~~
 
-Because the answers are embedded in each answer sheet's QR code, no ``-k``
-keyfile is required:
+Print the exams, have them completed, and scan the answer sheets to a PDF
+(here ``scans.pdf``).  Because the answers are embedded in each answer sheet's
+QR code, no ``-k`` keyfile is required:
 
 .. code-block:: bash
 
    pyaota grade \
-       -i 1238_001.pdf \
+       -i scans.pdf \
        -alj build/answersheet_layout.json \
        -od graded
 
@@ -117,13 +118,14 @@ instead of a separate choices list, keeping the exam compact.
 Grading the history quiz
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Because answers are embedded in the QR code, no keyfile is needed:
+Because answers are embedded in the QR code, no keyfile is needed.  With the
+completed answer sheets scanned to ``scans.pdf``:
 
 .. code-block:: bash
 
    cd examples/generated/history_exam
    pyaota grade \
-       -i 1241_001.pdf \
+       -i scans.pdf \
        -alj answersheet_layout.json
 
 **Scanned answer sheet (student ID: 10214573, version: 6baa9455):**
