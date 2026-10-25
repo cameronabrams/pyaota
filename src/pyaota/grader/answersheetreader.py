@@ -488,77 +488,52 @@ class AnswerSheetReader:
             int(config.bubble_field_block_gap[0].to('pxl').magnitude),
             int(config.bubble_field_block_gap[1].to('pxl').magnitude)
         )
-        num_cols = config.bubble_field_num_cols
         block_row_gap_px = int(config.intrablock_row_gap.to('pxl').magnitude)
         block_choice_gap_px = int(config.intrablock_choice_gap.to('pxl').magnitude)
         block_numbering_gap_px = int(config.intrablock_numbering_gap.to('pxl').magnitude)
         bubble_radius_px = int(config.bubble_radius.to('pxl').magnitude)
         
-        num_questions = config.num_questions
         choice_keys = {'mcq': ["a", "b", "c", "d"], 'tf': ["T", "F"]}
-        
-        # Calculate block/column layout (matches placement logic)
-        n_whole_blocks = num_questions // blocksize
-        n_partial_block = 1 if (num_questions % blocksize) > 0 else 0
-        total_blocks = n_whole_blocks + n_partial_block
-        
-        n_blocks_per_column = total_blocks // num_cols
-        total_columns = total_blocks // n_blocks_per_column + (1 if (total_blocks % num_cols) > 0 else 0)
-        
         max_len_choice_keys = max(len(v) for v in choice_keys.values())
-        
-        qnum = 1
-        
+
         debug_image = self.diagnostics.get('debug_image', None)
 
-        centers: Dict[Tuple[int, str], Tuple[int, int]] = {} 
+        centers: Dict[Tuple[int, str], Tuple[int, int]] = {}
 
-        for col in range(total_columns):
-            # Calculate column x position (matches placement)
+        # same slot assignment the generator used to place the bubbles
+        for qidx, (col, block, row) in enumerate(config.bubble_field_slots()):
+            qnum = qidx + 1
             x_col_px = field_ul_px[0] + col * (
-                block_numbering_gap_px + 
-                (bubble_radius_px * 2 + block_choice_gap_px) * max_len_choice_keys + 
+                block_numbering_gap_px +
+                (bubble_radius_px * 2 + block_choice_gap_px) * max_len_choice_keys +
                 block_gap_px[0]
             )
-            
-            for block in range(n_blocks_per_column):
-                # Calculate block start y position
-                y_block_start_px = field_ul_px[1] + block * (
-                    block_row_gap_px * blocksize + block_gap_px[1]
-                )
-                # write an X at the block origin for debugging
-                if debug_image is not None:
-                    x_marks_the_spot(debug_image, x_col_px, y_block_start_px)
+            y_block_start_px = field_ul_px[1] + block * (
+                block_row_gap_px * blocksize + block_gap_px[1]
+            )
+            # write an X at the block origin for debugging
+            if debug_image is not None and row == 0:
+                x_marks_the_spot(debug_image, x_col_px, y_block_start_px)
 
-                for row in range(blocksize):
-                    if qnum > num_questions:
-                        break
-                    
-                    # Get question type from question list if available
-                    if hasattr(config, 'question_list') and config.question_list:
-                        q = config.question_list[qnum - 1]
-                        qtyp = q.get("type", "mcq").lower()
-                    else:
-                        qtyp = "mcq"  # Default
-                    
-                    choices = choice_keys[qtyp]
-                    
-                    # Calculate row y position
-                    y_base_px = y_block_start_px + row * block_row_gap_px
-                    
-                    # Starting x for choices
-                    x_choices_px = x_col_px + block_numbering_gap_px
-                    
-                    # draw an X in the debug image at the center of the first choice bubble
-                    if debug_image is not None:
-                        x_marks_the_spot(debug_image, x_choices_px, y_base_px)
-                    
-                    for i, key in enumerate(choices):
-                        # Calculate bubble center position
-                        x_bubble_px = x_choices_px + i * (block_choice_gap_px + bubble_radius_px * 2)
-                        y_bubble_px = y_base_px
-                        centers[(qnum, key)] = (x_bubble_px, y_bubble_px)
-                    qnum += 1
+            # Get question type from question list if available
+            if hasattr(config, 'question_list') and config.question_list:
+                q = config.question_list[qidx]
+                qtyp = q.get("type", "mcq").lower()
+            else:
+                qtyp = "mcq"  # Default
+
+            choices = choice_keys[qtyp]
+
+            y_base_px = y_block_start_px + row * block_row_gap_px
+            x_choices_px = x_col_px + block_numbering_gap_px
+
+            # draw an X in the debug image at the center of the first choice bubble
+            if debug_image is not None:
+                x_marks_the_spot(debug_image, x_choices_px, y_base_px)
+
+            for i, key in enumerate(choices):
+                x_bubble_px = x_choices_px + i * (block_choice_gap_px + bubble_radius_px * 2)
+                centers[(qnum, key)] = (x_bubble_px, y_base_px)
         self.diagnostics['bubbles'] = centers
         return centers
 

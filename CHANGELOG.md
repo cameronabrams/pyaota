@@ -5,6 +5,16 @@ All notable changes to pyaota will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Answer sheets no longer crash when the question blocks do not divide evenly into the columns (including the `make-answersheet` default of 50 questions in 3 columns, and fewer blocks than columns). Generator and grader now share one slot layout; sheets that already worked keep identical bubble positions.
+- `make-answersheet` no longer requires a question list when placing bubbles.
+- `grade --question-tally` no longer crashes on the first run (`NameError`) or when appending to an existing tally (`KeyError`), which also prevented the failed-pages report from being written.
+- LaTeX failures are no longer silently ignored: if the final engine pass fails or produces no PDF, the build stops with the errors from the log, before the answer-key CSV is written.
+- `answer_keys.pdf` is built again (the compiler required a `version` that plain documents lack), and no longer loads `xcolor` twice with clashing options.
+
 ## [0.5.0] - 2026-03-24
 
 ### Added

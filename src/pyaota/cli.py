@@ -19,6 +19,7 @@ from .generator.manager import (
 from .generator.wordexport2rawyaml import convert_subcommand
 from .util.bundle import bundle_subcommand
 from .util.text import banner, oxford
+from .latex.latexcompiler import LatexBuildError
 
 import logging
 logger = logging.getLogger(__name__)
@@ -659,7 +660,11 @@ def main(argv: list[str] | None = None) -> int:
         banner(print)
     func = subcommands.get(args.subcommand, {}).get('func', None)
     if func:
-        return func(args)
+        try:
+            return func(args)
+        except LatexBuildError as e:
+            logger.error(str(e))
+            return 1
     else:
         logger.debug(f'{args}')
         my_list = oxford(list(subcommands.keys()))

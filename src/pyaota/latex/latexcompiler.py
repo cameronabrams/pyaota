@@ -3,6 +3,7 @@
 LaTeX compilation functions for pyaota
 """
 import logging
+import re
 
 from pathlib import Path
 
@@ -11,6 +12,27 @@ from ..util.collectors import FileCollector
 from ..generator.document import Document
 
 logger = logging.getLogger(__name__)
+
+
+class LatexBuildError(RuntimeError):
+    """The LaTeX engine reported errors, or produced no PDF."""
+
+
+def latex_log_errors(log_path: Path, max_errors: int = 10) -> list[str]:
+    """
+    Return the error messages in a LaTeX log: lines starting with ``!`` and, since
+    pyaota compiles with ``-file-line-error``, lines of the form ``file:line: message``.
+    """
+    if not log_path.exists():
+        return []
+    errors = []
+    for line in log_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("!") or re.match(r"^[^\s:]+\.\w+:\d+: ", line):
+            errors.append(line.strip())
+            if len(errors) >= max_errors:
+                break
+    return errors
+
 
 class LatexCompiler:
     def __init__(self, build_specs: dict):
@@ -38,9 +60,8 @@ class LatexCompiler:
         commands = []
         if not document:
             return commands
-        version: str | int = document.version
-
-        serial = document.version
+        # only exam documents carry a version; it suffixes the job name
+        serial = getattr(document, 'version', None)
         self.working_job_name = self.job_name + (f'-{serial}' if serial else '')
         document.write_source(local_output_name=self.working_job_name)
         self.FC.append(f'{self.working_job_name}.tex')
@@ -73,6 +94,8 @@ class LatexCompiler:
             if True, deletes intermediate files after build (default is False)
             """
         commands = self._build_commands(document)
+        if not commands:
+            return
         for c in commands:
             logger.debug(f'Running command: {c.c}')
             out, err = c.run()
@@ -84,6 +107,17 @@ class LatexCompiler:
             logger.debug('='*80)
             logger.debug(err)
             logger.debug('='*80)
+        # Errors on earlier passes are expected (unresolved references); the final
+        # pass must be clean, or the PDF cannot be trusted.
+        pdf_path = Path(self.build_dir) / f'{self.working_job_name}.pdf'
+        log_path = Path(self.build_dir) / f'{self.working_job_name}.log'
+        if commands[-1].returncode != 0 or not pdf_path.exists():
+            errors = latex_log_errors(log_path)
+            detail = '\n  '.join(errors) if errors else '(no error lines found in the log)'
+            raise LatexBuildError(
+                f'{self.latex_engine} failed building {pdf_path} '
+                f'(exit code {commands[-1].returncode}); see {log_path}:\n  {detail}'
+            )
         if cleanup:
             logger.debug(f'Flushing {len(self.FC.data)} intermediate files.')
             self.FC.flush()

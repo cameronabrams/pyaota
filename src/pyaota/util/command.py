@@ -25,6 +25,7 @@ class Command:
         self.ignore_codes = ignore_codes
         self.options = options
         self.c = f'{self.command} ' + ' '.join([f'-{k} {v}' for k, v in self.options.items()])
+        self.returncode: int | None = None
         
     def run(self):
         """
@@ -34,6 +35,7 @@ class Command:
         out_bytes, err_bytes = process.communicate()
         out = out_bytes.decode("utf-8", errors="replace")
         err = err_bytes.decode("utf-8", errors="replace")
+        self.returncode = process.returncode
         if process.returncode != 0 and not process.returncode in self.ignore_codes:
             raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
         return out, err

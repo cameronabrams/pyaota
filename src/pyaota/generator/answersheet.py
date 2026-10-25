@@ -1,14 +1,11 @@
 # Author: Cameron F. Abrams, <cfa22@drexel.edu>
 
 from typing import Dict, List, Tuple, Sequence, Optional, Any
-import cv2
-import numpy as np
 import math
 from pathlib import Path
 import logging
 from dataclasses import dataclass, field
 import pint
-import pickle
 
 def setup_ureg() -> pint.UnitRegistry:
     ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit = True)
@@ -189,6 +186,26 @@ class LayoutConfig:
 
         self.bubble_field_ul = (ul_x, ul_y)
 
+    def bubble_field_slots(self) -> List[Tuple[int, int, int]]:
+        """
+        Return the ``(column, block, row)`` slot of each question, in question order.
+
+        Questions fill blocks of ``bubble_field_num_questions_per_block`` rows, and
+        blocks fill columns top to bottom, ``ceil(total_blocks / num_cols)`` blocks per
+        column.  The last column may be shorter, and with few questions fewer than
+        ``bubble_field_num_cols`` columns are used.  Both the generator and the grader
+        place bubbles from this, so their geometry cannot disagree.
+        """
+        blocksize = self.bubble_field_num_questions_per_block
+        total_blocks = math.ceil(self.num_questions / blocksize)
+        blocks_per_column = max(1, math.ceil(total_blocks / self.bubble_field_num_cols))
+        slots = []
+        for qidx in range(self.num_questions):
+            block_idx, row = divmod(qidx, blocksize)
+            col, block = divmod(block_idx, blocks_per_column)
+            slots.append((col, block, row))
+        return slots
+
 class AnswerSheetGenerator:
     def __init__(self, layout_config: LayoutConfig, question_list: Optional[List[dict]] = None):
         self.layout_config = layout_config
@@ -342,50 +359,28 @@ class AnswerSheetGenerator:
         choice_keys = {'mcq': ["a", "b", "c", "d"], 'tf': ["T", "F"]}
 
         lines: list[str] = []
-        opacity = config.warning_line_opacity
 
-        n_whole_blocks = num_questions // blocksize
-        n_partial_block = 1 if (num_questions % blocksize) > 0 else 0
-        size_partial_block = num_questions % blocksize if n_partial_block == 1 else 0
-        total_blocks = n_whole_blocks + n_partial_block
-
-        logger.debug(f'num_questions={num_questions}, n_whole_blocks={n_whole_blocks}, n_partial_block={n_partial_block}, size_partial_block={size_partial_block}, total_blocks={total_blocks}')
-
-        # 60 questions = 12 blocks, 3 columns = 4 blocks per column
-
-        n_blocks_per_column = total_blocks // num_cols
-        remainder_blocks = total_blocks % num_cols
-        total_columns = total_blocks // n_blocks_per_column + (1 if remainder_blocks > 0 else 0)
-        logger.debug(f'num_cols={num_cols}, n_blocks_per_column={n_blocks_per_column}, total_columns={total_columns}')
-        size_partial_column = remainder_blocks
-        assert total_columns == num_cols, f' total_columns {total_columns} != num_cols {num_cols} '
+        slots = config.bubble_field_slots()
+        logger.debug(f'num_questions={num_questions}, num_cols={num_cols}, columns used={slots[-1][0] + 1 if slots else 0}')
 
         max_len_choice_keys = max(len(v) for v in choice_keys.values())
 
         lines.append(r"\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]")
         lines.append(rf'\pgfmathsetmacro{{\radius}}{{{bubble_radius}}}')
-        qidx = 0
-        for col in range(total_columns):
+        for qidx, (col, block, row) in enumerate(slots):
             x_col = field_ul[0] + col * (block_numbering_gap + (block_choice_gap + bubble_radius * 2) * max_len_choice_keys + block_gap[0])
-            for block in range(n_blocks_per_column):
-                y_block_start = field_ul[1] + block * (block_row_gap * blocksize + block_gap[1])
-                for row in range(blocksize):
-                    q = self.question_list[qidx]
-                    qtyp = q.get("type", "mcq").lower()
-                    # choice_keys[qtyp] = sorted(choice_keys.get(qtyp, ["a", "b", "c", "d"]))
-                    qnum = qidx + 1
-                    # compute south west corner of the question's bubble row
-                    y_base = y_block_start + row * block_row_gap
-                    logger.debug(f'qidx={qidx}, qnum={qnum}, qtyp={qtyp}, x_col={(x_col*_ureg.cm).to("pxl")}, y_base={(y_base*_ureg.cm).to("pxl")}')
-                    lines.append(rf'\node[anchor=east] at ({x_col}cm, -{y_base}cm){{\textbf{{{qnum}.}}}};')
-                    # place bubbles for this question
-                    x_choices = x_col + config.intrablock_numbering_gap.to(_ureg.cm).magnitude
-                    for i, key in enumerate(choice_keys[qtyp]):
-                        x_bubble = x_choices + (i) * ((block_choice_gap + bubble_radius * 2))
-                        lines.append(rf'\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height={bubble_text_height}cm,text depth={bubble_text_depth}cm,anchor=center] at ({x_bubble}cm, -{y_base}cm) {{\textcolor{{bubblegray}}{{{key}}}}};')
-                    qidx += 1
-                    if qidx >= num_questions:
-                        break
+            y_block_start = field_ul[1] + block * (block_row_gap * blocksize + block_gap[1])
+            qtyp = self.question_list[qidx].get("type", "mcq").lower() if self.question_list is not None else "mcq"
+            qnum = qidx + 1
+            # compute south west corner of the question's bubble row
+            y_base = y_block_start + row * block_row_gap
+            logger.debug(f'qidx={qidx}, qnum={qnum}, qtyp={qtyp}, x_col={(x_col*_ureg.cm).to("pxl")}, y_base={(y_base*_ureg.cm).to("pxl")}')
+            lines.append(rf'\node[anchor=east] at ({x_col}cm, -{y_base}cm){{\textbf{{{qnum}.}}}};')
+            # place bubbles for this question
+            x_choices = x_col + block_numbering_gap
+            for i, key in enumerate(choice_keys[qtyp]):
+                x_bubble = x_choices + (i) * ((block_choice_gap + bubble_radius * 2))
+                lines.append(rf'\node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height={bubble_text_height}cm,text depth={bubble_text_depth}cm,anchor=center] at ({x_bubble}cm, -{y_base}cm) {{\textcolor{{bubblegray}}{{{key}}}}};')
         lines.append(r"\end{tikzpicture}")
 
         return "\n".join(lines)

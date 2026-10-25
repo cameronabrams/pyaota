@@ -158,7 +158,6 @@ def build_answer_key_table_latex(
     parts.append(r"\usepackage[landscape, margin=0.5in]{geometry}")
     parts.append(r"\usepackage{longtable}")
     parts.append(r"\usepackage{array}")
-    parts.append(r"\usepackage{xcolor}")
     parts.append(r"\usepackage[table]{xcolor}")
     parts.append(r"\usepackage{booktabs}")
     parts.append(r"\usepackage{fancyhdr}")

@@ -44,6 +44,49 @@ from .answersheetreader import AnswerSheetReader, LayoutConfig
 
 logger = logging.getLogger(__name__)
 
+
+def write_question_tally(tally_path: Path, results: List[Dict[str, Any]]) -> None:
+    """
+    Write one row per (student_id, version_label) with the answer detected for each
+    question, merging with any rows already in *tally_path*.  Pages that were not
+    graded (no answer key) are left out.  Rows already in the file win over new ones,
+    so re-grading a scan does not change the tally.
+    """
+    rows: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    if tally_path.exists():
+        with open(tally_path, "r", newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                rows[(row["student_id"], row["version_label"])] = row
+    num_existing = len(rows)
+
+    for res in results:
+        if not res.get("answer_key"):
+            continue
+        combo = (str(res["student_id"]), str(res["version_label"]))
+        if combo in rows:
+            continue
+        row: Dict[str, Any] = {"student_id": combo[0], "version_label": combo[1]}
+        answers = res.get("answers_detected") or {}
+        for qnum in range(1, len(res["answer_key"]) + 1):
+            row[f"Q{qnum}"] = answers.get(qnum)
+        rows[combo] = row
+
+    if len(rows) == num_existing:
+        logger.info(f"No new rows for question tally {tally_path}")
+        return
+
+    max_q = max(
+        (int(k[1:]) for row in rows.values() for k in row if k.startswith("Q") and k[1:].isdigit()),
+        default=0,
+    )
+    fieldnames = ["student_id", "version_label"] + [f"Q{qnum}" for qnum in range(1, max_q + 1)]
+    with open(tally_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows.values())
+    logger.info(f"Wrote question tally CSV ({len(rows) - num_existing} new rows) to {tally_path}")
+
+
 class Autograder:
     """
     Autograder for multi-page PDF answer sheets.
@@ -514,40 +557,7 @@ class Autograder:
                         logger.info(f"Page {pidx}: student ID {sid} not in any gradebook — saved to {failed_pdf_name}")
 
         if question_tally_path is not None:
-            # for each student ID, write a row that contains the exam version and their answers
-            question_tally_path = Path(question_tally_path)
-            if question_tally_path.exists():
-                # read existing rows and append only new ones
-                existing_rows: List[Dict[str, Any]] = []
-                with open(question_tally_path, "r", newline="", encoding="utf-8") as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        existing_rows.append(row)
-                existing_combos = set((row["student_id"], row["version_label"]) for row in existing_rows)
-                new_results = []
-                for res in results:
-                    combo = (res["student_id"], res["version_label"])
-                    if combo not in existing_combos:
-                        new_results.append(res)
-                results = existing_rows + new_results
-            if len(new_results) > 0:
-                with open(question_tally_path, "w", newline="", encoding="utf-8") as f:
-                    fieldnames = [
-                        "student_id",
-                        "version_label",
-                    ] + [f"Q{qnum}" for qnum in range(1, max(len(res["answer_key"] or []) for res in results) + 1)]
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    for res in results:
-                        row = {
-                            "student_id": res["student_id"],
-                            "version_label": res["version_label"],
-                        }
-                        answers = res["answers_detected"]
-                        for qnum in range(1, len(res["answer_key"] or []) + 1):
-                            row[f"Q{qnum}"] = answers.get(qnum)
-                        writer.writerow(row)
-                logger.info(f"Wrote question tally CSV to {question_tally_path}")
+            write_question_tally(Path(question_tally_path), results)
 
         # Generate report for failed/unparseable pages (after gradebook merge
         # so that unmatched-ID pages are included).
