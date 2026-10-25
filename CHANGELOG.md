@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-25
+
 ### Fixed
 
 - **TeX Live builds could not find the QR code images.** The `.tex` file is compiled from the current directory while QR codes (and copied question images) are written to `-od`; MiKTeX searches the output directory for inputs but TeX Live does not, so on TeX Live the answer sheet failed to load its QR code — silently before 0.6.0, which ignored LaTeX errors. The output directory is now added to `TEXINPUTS`.
