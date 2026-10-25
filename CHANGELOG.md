@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make-answersheet` no longer requires a question list when placing bubbles.
 - `grade --question-tally` no longer crashes on the first run (`NameError`) or when appending to an existing tally (`KeyError`), which also prevented the failed-pages report from being written.
 - LaTeX failures are no longer silently ignored: if the final engine pass fails or produces no PDF, the build stops with the errors from the log, before the answer-key CSV is written.
+- Grading no longer silently credits or overwrites the wrong student:
+  - multiple marks in a student-ID column are accepted only when one is clearly darker (by `runner_up_margin`), with a warning; otherwise the ID is unreadable and the page fails (or is prompted for with `--interactive`);
+  - pages that read the same student ID with different versions or scores are reported and no grade is written for that ID; identical duplicates (a sheet scanned twice) collapse to one;
+  - a page that fails after its ID is read no longer blanks a score written by an earlier run;
+  - a version key whose length differs from the answer sheet fails that page instead of crashing the run or grading missing questions as blank;
+  - zero-padded IDs that matched a gradebook row are no longer also reported as unmatched.
 - `answer_keys.pdf` is built again (the compiler required a `version` that plain documents lack), and no longer loads `xcolor` twice with clashing options.
 
 ## [0.5.0] - 2026-03-24

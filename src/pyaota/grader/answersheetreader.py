@@ -918,6 +918,7 @@ class AnswerSheetReader:
         spacing_px = 2 * bubble_radius_px + vgap_px
 
         id_digits: list[str] = ["?"] * num_digits
+        ambiguous: set[int] = set()  # columns with competing marks; not retried
         digit_coords: Dict[int, Tuple[int, int]] = {}
         id_bubble_centers_px: Dict[Tuple[int, int], Tuple[int, int]] = {}
         self.diagnostics['id_bubble_region'] = {
@@ -945,7 +946,7 @@ class AnswerSheetReader:
         pixel_thresholds = [127, 160, 190, 210]
 
         for pixel_thresh in pixel_thresholds:
-            unresolved = [idx for idx in range(num_digits) if id_digits[idx] == "?"]
+            unresolved = [idx for idx in range(num_digits) if id_digits[idx] == "?" and idx not in ambiguous]
             if not unresolved:
                 break
 
@@ -978,13 +979,24 @@ class AnswerSheetReader:
                             f"ID column {idx+1}: resolved at pixel_threshold={pixel_thresh} "
                             f"(digit={filled[0][0]}, fill={filled[0][1]:.3f})")
                 elif len(filled) > 1:
+                    # Several marks (an erasure, a stray mark, or two real marks).
+                    # Take the darkest only if it clearly stands out, as for answer
+                    # bubbles; otherwise leave the digit unresolved so the page fails
+                    # rather than crediting a grade to another student's ID.
                     filled.sort(key=lambda f: f[1], reverse=True)
-                    id_digits[idx] = str(filled[0][0])
-                    digit_coords[idx] = (filled[0][2], filled[0][3])
-                    if pixel_thresh > pixel_thresholds[0]:
-                        logger.debug(
-                            f"ID column {idx+1}: resolved at pixel_threshold={pixel_thresh} "
-                            f"(digit={filled[0][0]}, fill={filled[0][1]:.3f})")
+                    margin = filled[0][1] - filled[1][1]
+                    marks = ", ".join(f"{d} ({f:.2f})" for d, f, _, _ in filled)
+                    if margin >= config.runner_up_margin:
+                        id_digits[idx] = str(filled[0][0])
+                        digit_coords[idx] = (filled[0][2], filled[0][3])
+                        logger.warning(
+                            f"ID column {idx+1}: multiple marks [{marks}]; "
+                            f"taking {filled[0][0]} (margin {margin:.3f})")
+                    else:
+                        ambiguous.add(idx)
+                        logger.warning(
+                            f"ID column {idx+1}: ambiguous multiple marks [{marks}] "
+                            f"(margin {margin:.3f} < {config.runner_up_margin})")
 
         # Draw debug circles for resolved digits
         if debug_image is not None:
@@ -997,8 +1009,9 @@ class AnswerSheetReader:
             self.results['student_id_bubbles'] = None
             uncertain = [i for i, d in enumerate(id_digits) if d == "?"]
             raise RuntimeError(
-                f"Could not determine student ID: uncertain digit(s) at position(s) {uncertain} "
-                f"(partial read: {''.join(id_digits)})"
+                f"Could not determine student ID: uncertain digit(s) at position(s) {uncertain}"
+                + (f", multiple marks at {sorted(ambiguous)}" if ambiguous else "")
+                + f" (partial read: {''.join(id_digits)})"
             )
         else:
             self.results['student_id_bubbles'] = "".join(id_digits)

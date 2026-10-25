@@ -87,6 +87,84 @@ def write_question_tally(tally_path: Path, results: List[Dict[str, Any]]) -> Non
     logger.info(f"Wrote question tally CSV ({len(rows) - num_existing} new rows) to {tally_path}")
 
 
+def resolve_grade_records(grades_df: pd.DataFrame, score_column: str) -> Tuple[pd.DataFrame, Dict[str, str]]:
+    """
+    Reduce the per-page grade records to one per student (``_match_key``).
+
+    - Graded pages win over pages that failed.
+    - Several graded pages with the same version and score (a sheet scanned twice)
+      collapse to one.
+    - Several graded pages that disagree are a conflict: that ID is dropped and
+      returned in *conflicts* (match key -> description), so no grade is written
+      for it.  This catches two students bubbling the same ID.
+
+    Returns the chosen records indexed by ``_match_key`` with a boolean
+    ``_graded`` column, and the conflicts.
+    """
+    df = grades_df.copy()
+    df["_graded"] = df[score_column].astype(str).str.strip() != ""
+    chosen = []
+    conflicts: Dict[str, str] = {}
+    for match_key, group in df.groupby("_match_key", sort=False):
+        graded = group[group["_graded"]]
+        if graded.empty:
+            chosen.append(group.iloc[[-1]])
+            continue
+        outcomes = graded[["version_label", score_column]].astype(str).drop_duplicates()
+        if len(outcomes) > 1:
+            conflicts[match_key] = "; ".join(
+                f"page {r['page_index']}: version {r['version_label']}, score {r[score_column]}"
+                for _, r in graded.iterrows()
+            )
+            continue
+        if len(graded) > 1:
+            logger.info(f"Student ID {match_key}: {len(graded)} identical graded pages; using one")
+        chosen.append(graded.iloc[[-1]])
+    result = pd.concat(chosen) if chosen else df.iloc[0:0]
+    return result.set_index("_match_key"), conflicts
+
+
+def apply_grades_to_gradebook(
+    gb_df: pd.DataFrame,
+    new_grades: pd.DataFrame,
+    grade_fields: List[str],
+    score_column: str,
+    target_score_col: str,
+) -> Tuple[pd.Series, pd.Series]:
+    """
+    Write *new_grades* (from :func:`resolve_grade_records`) into *gb_df* in place,
+    matching rows on ``_match_key``.  *target_score_col* is the gradebook column
+    that receives *score_column*.
+
+    Rows with no new record are untouched.  A page that failed after its ID was
+    read carries no score: it may record its status on a row with no score yet,
+    but never overwrites a score an earlier run wrote.
+
+    Returns ``(in_new, update_mask)``: gradebook rows that had a record this run,
+    and those actually updated.
+    """
+    effective_grade_fields = [target_score_col if gf == score_column else gf for gf in grade_fields]
+    for gf in effective_grade_fields:
+        if gf not in gb_df.columns:
+            gb_df[gf] = ""
+
+    gb_new_grades = new_grades[grade_fields]
+    if target_score_col != score_column:
+        gb_new_grades = gb_new_grades.rename(columns={score_column: target_score_col})
+
+    in_new = gb_df["_match_key"].isin(new_grades.index)
+    graded = gb_df["_match_key"].map(new_grades["_graded"]).fillna(False).astype(bool)
+    no_score_yet = gb_df[target_score_col].astype(str).str.strip() == ""
+    update_mask = in_new & (graded | no_score_yet)
+    for gf in effective_grade_fields:
+        mapped = gb_df.loc[update_mask, "_match_key"].map(gb_new_grades[gf])
+        gb_df.loc[update_mask, gf] = [
+            str(v) if v not in ("", None) and not (isinstance(v, float) and pd.isna(v)) else ""
+            for v in mapped
+        ]
+    return in_new, update_mask
+
+
 class Autograder:
     """
     Autograder for multi-page PDF answer sheets.
@@ -370,6 +448,24 @@ class Autograder:
                 results.append(page_result)
                 continue
 
+            if len(key) != self.layout.num_questions:
+                # A short key would crash the overlay; a long one would grade
+                # questions that are not on the sheet as blank.
+                page_result["status"] = "key_length_mismatch"
+                failed_pdf_name = f"failed_page_{page_index:03d}_key_length_mismatch.pdf"
+                if failed_pages_dir_path is not None:
+                    page.save(str(failed_pages_dir_path / failed_pdf_name), "PDF", resolution=300.0)
+                reason = (f"Answer key for version {read_results['version']} has {len(key)} answers "
+                          f"but the answer sheet has {self.layout.num_questions} questions")
+                logger.warning(f"Page {page_index}: {reason}")
+                failed_pages.append({
+                    "page_index": page_index,
+                    "reason": reason,
+                    "saved_file": failed_pdf_name,
+                })
+                results.append(page_result)
+                continue
+
             page_result["answer_key"] = key
             num_q = len(key)
             page_result["num_questions"] = num_q
@@ -420,6 +516,7 @@ class Autograder:
                 if sid is not None:
                     score_frac = res.get("score_fraction")
                     grade_records.append({
+                        "page_index": res.get("page_index"),
                         "Student ID": str(sid).strip(),
                         "version_label": res.get("version_label", ""),
                         "num_questions": res.get("num_questions", ""),
@@ -446,10 +543,16 @@ class Autograder:
                 return stripped if stripped else "0"
 
             grades_df["_match_key"] = grades_df["Student ID"].apply(_normalize_id)
+            new_grades, conflicts = resolve_grade_records(grades_df, score_column)
+            for match_key, pages_info in conflicts.items():
+                reason = (f"Student ID {match_key} read on several pages with different results "
+                          f"({pages_info}); no grade written for this ID")
+                logger.warning(reason)
+                failed_pages.append({"page_index": "multiple", "reason": reason, "saved_file": "(see graded overlays)"})
             logger.debug(f"grades_df _match_key values: {grades_df['_match_key'].tolist()}")
             detected_ids = set(grades_df["Student ID"])
             logger.info(f"Detected {len(detected_ids)} student ID(s) from graded pages: {sorted(detected_ids)}")
-            matched_ids: set[str] = set()
+            matched_keys: set[str] = set(conflicts)  # conflicts are reported already
 
             for gb_path in gradebook_paths:
                 gb_path = Path(gb_path)
@@ -502,39 +605,21 @@ class Autograder:
                             f"{matches} — falling back to '{score_column}'"
                         )
 
-                # Build effective field list, substituting the resolved score column.
-                effective_grade_fields = [
-                    target_score_col if gf == score_column else gf
-                    for gf in grade_fields
-                ]
-
-                # Update only rows that have new grade data, preserving
-                # grades written by earlier runs.
-                for gf in effective_grade_fields:
-                    if gf not in gb_df.columns:
-                        gb_df[gf] = ""
-
-                new_grades = grades_df.drop_duplicates(subset="_match_key", keep="last") \
-                                      .set_index("_match_key")[grade_fields]
-                if target_score_col != score_column:
-                    new_grades = new_grades.rename(columns={score_column: target_score_col})
-
-                update_mask = gb_df["_match_key"].isin(new_grades.index)
-                for gf in effective_grade_fields:
-                    mapped = gb_df.loc[update_mask, "_match_key"].map(new_grades[gf])
-                    gb_df.loc[update_mask, gf] = [
-                        str(v) if v not in ("", None) and not (isinstance(v, float) and pd.isna(v)) else ""
-                        for v in mapped
-                    ]
+                in_new, update_mask = apply_grades_to_gradebook(
+                    gb_df, new_grades, grade_fields, score_column, target_score_col)
+                kept = int((in_new & ~update_mask).sum())
+                if kept:
+                    logger.info(f"Kept {kept} existing score(s) in {gb_path.name} over pages that failed this run")
                 logger.debug(f"After update, 'status' values: {gb_df['status'].tolist()}")
 
                 updated_count = int(update_mask.sum())
-                matched_ids.update(gb_df.loc[update_mask, "Student ID"].tolist())
+                matched_keys.update(gb_df.loc[in_new, "_match_key"].tolist())
 
                 gb_df.drop(columns=["_match_key"]).to_csv(gb_path, index=False)
                 logger.info(f"Updated {updated_count} of {len(gb_ids)} rows in gradebook {gb_path}")
 
-            unmatched = detected_ids - matched_ids
+            # compare normalized keys, so a zero-padded sheet ID that matched counts
+            unmatched = {sid for sid in detected_ids if _normalize_id(sid) not in matched_keys}
             if unmatched:
                 logger.warning(
                     f"{len(unmatched)} graded student ID(s) not found in any gradebook: "
