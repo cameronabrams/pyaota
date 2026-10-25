@@ -39,7 +39,6 @@ templates_path = ['_templates']
 
 # Mock imports that may not be available or broken in the docs build environment
 autodoc_mock_imports = [
-    'tensorflow', 'keras',
     'cv2',
     'pandas',
     'pdf2image',

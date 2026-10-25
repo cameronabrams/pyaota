@@ -15,5 +15,11 @@ help:
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
+# API pages are generated, not committed; same command as .readthedocs.yaml
+apidoc:
+	@sphinx-apidoc -q -f -M -e --implicit-namespaces -H "API Reference" --tocfile API -o "$(SOURCEDIR)/api" ../src/pyaota/
+
+.PHONY: apidoc
+
+%: Makefile apidoc
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
