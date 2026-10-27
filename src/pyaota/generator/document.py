@@ -74,9 +74,14 @@ class ExamDocument(Document):
         if self.extra_preamble:
             content += '\n' + self.extra_preamble
         content += '\n\n' + self.pagestyles + '\n\n' + BEGIN_DOCUMENT + '\n\n' + self.instructions + '\n\n'
+        question_columns = int(self.specs.get('questioncolumns', 1))
+        if question_columns > 1:
+            content += f'\\begin{{multicols}}{{{question_columns}}}\\raggedcolumns\n\n'
         for q in self.question_list:
             logger.debug(f'Rendering question: {q["id"]} {q["type"]}')
             content += self.question_renderer(q).rstrip() + '\n\n'
+        if question_columns > 1:
+            content += '\\end{multicols}\n\n'
         if self.endmessage:
             content += self.endmessage.rstrip() + '\n\n'
         if self.answersheet_tex:

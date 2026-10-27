@@ -282,6 +282,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Vertical space between questions as a LaTeX length (default: 24pt)",
     )
     command_parsers["build"].add_argument(
+        "--question-columns",
+        type=int,
+        default=1,
+        choices=[1, 2],
+        help="Set the questions in 1 or 2 columns (default: 1); 2 suits short code-reading questions",
+    )
+    command_parsers["build"].add_argument(
         "--bubble-font-size",
         type=float,
         default=8.0,

@@ -77,6 +77,12 @@ Key options:
 - ``--font-size {10pt,11pt,12pt}`` -- document font size (default: ``12pt``)
 - ``--question-spacing <LENGTH>`` -- vertical space between questions as a LaTeX
   length, e.g. ``24pt`` or ``1cm`` (default: ``24pt``)
+- ``--question-columns {1,2}`` -- set the questions in one or two columns
+  (default: ``1``).  Two columns suit short code-reading questions: a code
+  block rarely fills the line, so one column leaves half the page blank.  With
+  the answer sheet printed on the back, two columns fit 7–8 "what does this
+  print?" questions plus a short instruction paragraph on one side at 11pt;
+  pass ``-if`` with instructions that do not end in ``\clearpage``.
 - ``--bubble-font-size <PT>`` -- absolute font size in points for answer bubble
   labels (default: ``8.0``); independent of ``--font-size``
 - ``--odd-page-answersheet`` -- force the answer sheet to start on an odd-numbered

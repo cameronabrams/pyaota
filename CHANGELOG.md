@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `build --question-columns 2` sets the questions in two columns. Code-reading questions rarely fill the line, so this about doubles how many fit on a page: 7–8 "what does this print?" questions plus instructions fit on the front of a one-sheet quiz whose answer sheet is on the back.
+- Very short choices are set four to a row instead of two by two. The choice of 4, 2 or 1 columns takes the question's width into account, so it also works in two-column layouts.
+
 ### Fixed
 
 - **Exam LaTeX sources were written to the current directory**, not to `-od`. They contain the answer key, which made them easy to commit or hand out by mistake. They are now written to the output directory with the PDFs.

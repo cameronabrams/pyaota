@@ -483,6 +483,8 @@ def make_exams_subcommand(args):
     if use_listings_from:
         default_style, extra_preamble = _build_listings_extra_preamble(use_listings_from)
 
+    question_columns = getattr(args, 'question_columns', 1) or 1
+
     encode_answers = getattr(args, 'encode_answers_in_qr', False)
     qr_key = generate_key() if encode_answers else None
 
@@ -548,11 +550,13 @@ def make_exams_subcommand(args):
             version=version_label,
             instructions=exam_instructions,
             pagestyles=exam_pagestyles,
-            question_renderer=lambda q: render_question(q, default_style=default_style),
+            question_renderer=lambda q: render_question(q, default_style=default_style,
+                                                        line_width=1 / question_columns),
             question_list=selected_questions,
             answersheet_tex=answersheet_tex,
             fontsize=getattr(args, 'font_size', '12pt'),
             questionspacing=getattr(args, 'question_spacing', '24pt'),
+            questioncolumns=question_columns,
             endmessage="End of Exam\n\\clearpage",
             extra_preamble=extra_preamble,
         )

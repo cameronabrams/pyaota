@@ -276,12 +276,17 @@ def _visual_len(text: str) -> int:
     return len(s)
 
 
-def _choices_columns(choices: list[dict], max_text_len: int = 40, max_code_len: int = 28) -> int:
-    """Return 2 if all choices are short enough for a 2-column layout, else 1.
+def _choices_columns(choices: list[dict], max_text_len: int = 40, max_code_len: int = 28,
+                     line_width: float = 1.0) -> int:
+    """Return 4, 2 or 1: the most columns in which every choice fits.
 
-    Code choices use a tighter threshold because monospace glyphs are wider
-    than proportional-font glyphs at the same point size.
+    *max_text_len* and *max_code_len* are the longest choices that fit a
+    2-column layout across the full text width.  Code choices use a tighter
+    threshold because monospace glyphs are wider than proportional-font glyphs
+    at the same point size.  *line_width* is the fraction of the text width the
+    question has (0.5 when questions are set in two columns).
     """
+    longest = 0.0  # longest choice, as a fraction of the 2-column limit
     for choice in choices:
         ctype = choice.get("type", "text")
         raw = str(choice.get("text", ""))
@@ -289,12 +294,16 @@ def _choices_columns(choices: list[dict], max_text_len: int = 40, max_code_len: 
             lines = [l for l in raw.splitlines() if l.strip()]
             if not lines:
                 continue
-            if max(len(l) for l in lines) > max_code_len:
-                return 1
+            longest = max(longest, max(len(l) for l in lines) / max_code_len)
         else:
-            if _visual_len(raw) > max_text_len:
-                return 1
-    return 2
+            longest = max(longest, _visual_len(raw) / max_text_len)
+    longest /= line_width
+    # a quarter-width column, less its label, holds about 0.4 of a half-width one
+    if longest <= 0.4:
+        return 4
+    if longest <= 1:
+        return 2
+    return 1
 
 
 def render_choice(
@@ -364,12 +373,15 @@ def render_mcq(
     highlight_correct: bool = False,
     scramble_choices: bool = False,
     default_style: str | None = None,
+    line_width: float = 1.0,
 ) -> str:
     """
     Render a single multiple-choice question to LaTeX.
 
     - show_id: if True, prefix the first text stem block with "(ID) ".
     - highlight_correct: if True, visually mark the correct answer.
+    - line_width: fraction of the text width the question has; sets how many
+      columns the choices can use.
     """
     qid = q.get("id", "")
     points = q.get("points", 1)
@@ -411,7 +423,7 @@ def render_mcq(
     stem_tex = "\n".join(stem_lines).rstrip()
 
     # Render choices
-    ncols = _choices_columns(q.get("choices", []))
+    ncols = _choices_columns(q.get("choices", []), line_width=line_width)
     choice_lines: list[str] = []
     choice_lines.append(rf"\begin{{choices}}[{ncols}]")
     for choice in q.get("choices", []):
@@ -446,6 +458,7 @@ def render_tf(
     show_id: bool = False,
     highlight_correct: bool = False,
     default_style: str | None = None,
+    line_width: float = 1.0,
 ) -> str:
     """
     Render a single true/false question to LaTeX.
