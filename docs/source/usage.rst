@@ -54,9 +54,10 @@ Key options:
 - ``-n`` / ``--num-exams`` -- number of exam versions to generate (default: ``1``)
 - ``-t`` / ``--topics`` -- topics to draw questions from, spread evenly; names
   must match the bank's topics exactly (unknown names are ignored)
-- ``--seed`` -- seed for the version labels (default: ``0``).  Each version's
-  question selection and order are derived from its label, so the same seed and
-  options rebuild the same exams; change the seed to get new versions
+- ``--seed`` -- seed for the version labels (default: a new random seed for
+  each build, written to the log).  Each version's question selection and order
+  are derived from its label, so the same seed and options rebuild the same
+  exams
 - ``-sq`` / ``--shuffle-questions`` -- shuffle question order per version
 - ``-sc`` / ``--shuffle-choices`` -- shuffle answer choices per version
 - ``-en`` / ``--exam-name`` -- exam title used in the header

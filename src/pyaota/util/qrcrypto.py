@@ -109,8 +109,27 @@ def decrypt_answers(key_hex: str, payload: str, version_label: str) -> list:
 
 
 # ---------------------------------------------------------------------------
-# QR image generation
+# QR image generation and decoding
 # ---------------------------------------------------------------------------
+
+def decode_qr(img) -> tuple[str, object]:
+    """
+    Decode a QR code in *img* (a grayscale or BGR array).
+
+    Returns ``(text, points)``; *text* is empty if nothing was decoded.
+    OpenCV's classic detector misses a few percent of valid symbols (seen
+    with OpenCV 5.0 on version 3 and 4 codes), so the ArUco-based detector
+    is tried when it fails.
+    """
+    import cv2
+
+    data, points = "", None
+    for detector in (cv2.QRCodeDetector(), cv2.QRCodeDetectorAruco()):
+        data, points, _ = detector.detectAndDecode(img)
+        if data:
+            break
+    return data, points
+
 
 def generate_qr_png(
     content: str,
@@ -135,7 +154,6 @@ def generate_qr_png(
     """
     import qrcode
     import qrcode.constants
-    import cv2
     import numpy as np
     from PIL import Image
 
@@ -155,7 +173,7 @@ def generate_qr_png(
 
     # Full-resolution round-trip check
     arr = np.array(img.convert("L"))
-    decoded, _, _ = cv2.QRCodeDetector().detectAndDecode(arr)
+    decoded, _ = decode_qr(arr)
     if decoded != content:
         raise RuntimeError(
             f"QR round-trip verification failed for '{output_path.name}': "
@@ -168,7 +186,7 @@ def generate_qr_png(
         scan_px = max(scan_px, 1)
         pil_small = img.convert("L").resize((scan_px, scan_px), Image.LANCZOS)
         arr_small = np.array(pil_small)
-        decoded_small, _, _ = cv2.QRCodeDetector().detectAndDecode(arr_small)
+        decoded_small, _ = decode_qr(arr_small)
         if decoded_small != content:
             modules = qr.modules_count if hasattr(qr, "modules_count") else "?"
             px_per_module = scan_px / modules if modules != "?" else "?"

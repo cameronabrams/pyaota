@@ -69,3 +69,16 @@ class TestQrCrypto(TestCase):
         raw[0] ^= 1
         with self.assertRaises(ValueError):
             decrypt_answers(key, "2." + base64.b64encode(bytes(raw)).decode(), "11111111")
+
+    def test_decode_qr_reads_codes_the_classic_detector_misses(self):
+        # payloads from real builds that cv2.QRCodeDetector (OpenCV 5.0) returned '' for
+        import numpy as np
+        import qrcode
+        from pyaota.util.qrcrypto import decode_qr
+        for content in ['e6f4590b:2.zJinaQljX2c7pTMFzP3U', 'd8570102:2.d+Xo0jfrpSDGpsqpdlU=',
+                        '7a024204:2.Bbg9Q8RBdrNbXtS0BzA=']:
+            qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=4)
+            qr.add_data(content)
+            qr.make(fit=True)
+            img = np.array(qr.make_image(fill_color="black", back_color="white").convert("L"))
+            self.assertEqual(decode_qr(img)[0], content)

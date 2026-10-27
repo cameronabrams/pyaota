@@ -239,7 +239,8 @@ Tips
 ----
 
 * Use ``--seed`` to make builds reproducible: the same seed always produces the
-  same version ordering and question selection.
+  same version ordering and question selection.  Without it each build draws a
+  new seed and logs it.
 * Increase ``--num-exams`` (``-n``) to generate as many unique versions as
   needed for a large class.
 * Add ``--encode-answers-in-qr`` to embed encrypted answers in each QR code —

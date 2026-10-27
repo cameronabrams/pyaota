@@ -1,6 +1,7 @@
 from pathlib import Path
 from ..generator.answersheet import LayoutConfig
 from ..image.warper import warp
+from ..util.qrcrypto import decode_qr
 from typing import Any, Dict, Tuple, List
 import numpy as np
 import cv2
@@ -716,7 +717,6 @@ class AnswerSheetReader:
         Read the QR code from the warped answer-sheet image.
         """
         config = self.layout_config
-        detector = cv2.QRCodeDetector()
         gray = cv2.cvtColor(self.working_image, cv2.COLOR_BGR2GRAY)
         # gray = cv2.resize(gray, None, fx=0.5, fy=0.5)
 
@@ -778,7 +778,7 @@ class AnswerSheetReader:
         points = None
         for label, img in attempts:
             try:
-                data, points, _ = detector.detectAndDecode(img)
+                data, points = decode_qr(img)
             except Exception as e:
                 logger.debug(f"QR attempt '{label}' raised: {e}")
                 continue

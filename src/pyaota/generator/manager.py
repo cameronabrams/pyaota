@@ -440,8 +440,10 @@ def make_exams_subcommand(args):
     if not output_dir.exists():
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    default_seed = 0
-    seed = args.seed if args.seed is not None else default_seed
+    # A fixed default seed gave every build the same version labels, and since
+    # each version's shuffle is seeded by its label, the same question and
+    # choice order for a given bank.  Draw a fresh seed unless one is given.
+    seed = args.seed if args.seed is not None else random.SystemRandom().randrange(2**32)
     id_generator = random.Random(seed)
     # Generate until you have enough unique ones
     hex_strings = []
@@ -452,7 +454,8 @@ def make_exams_subcommand(args):
             seen.add(hex_id)
             hex_strings.append(hex_id)
     hex_strings.sort()
-    logger.info(f'Using master seed {seed} for RNG that generates exam version numbers.')
+    logger.info(f'Using master seed {seed} for RNG that generates exam version numbers '
+                f'(pass --seed {seed} to reproduce this build).')
     logger.info(f'Generating {args.num_exams} exam versions with version numbers: {", ".join(hex_strings)}')
     question_set = QuestionSet(question_banks=yaml_paths)
     question_set.copy_images_to(Path.cwd())
