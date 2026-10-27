@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-27
+
 ### Added
 
 - `build --question-columns 2` sets the questions in two columns. Code-reading questions rarely fill the line, so this about doubles how many fit on a page: 7–8 "what does this print?" questions plus instructions fit on the front of a one-sheet quiz whose answer sheet is on the back.
