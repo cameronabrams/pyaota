@@ -64,8 +64,11 @@ class LatexCompiler:
         # only exam documents carry a version; it suffixes the job name
         serial = getattr(document, 'version', None)
         self.working_job_name = self.job_name + (f'-{serial}' if serial else '')
-        document.write_source(local_output_name=self.working_job_name)
-        self.FC.append(f'{self.working_job_name}.tex')
+        # The .tex goes in build_dir with the PDF: exam sources carry the answer
+        # key, so they must not be left in the current directory.
+        tex_stem = Path(self.build_dir) / self.working_job_name
+        document.write_source(local_output_name=str(tex_stem))
+        self.FC.append(f'{tex_stem}.tex')
         output_option = ''
         if self.build_dir != '.':
             output_option = f'-output-directory={self.build_dir}'
@@ -74,11 +77,11 @@ class LatexCompiler:
             build_path.mkdir(parents=True, exist_ok=True)
         
         repeated_command = (f'{self.latex_engine} -interaction=nonstopmode -file-line-error '
-                                f'-jobname={self.working_job_name} {output_option} {self.working_job_name}.tex')
-        # The .tex is written to the cwd, but QR images and question images go to
-        # build_dir. MiKTeX searches the output directory for inputs; TeX Live
-        # does not, so add build_dir to TEXINPUTS (the trailing separator keeps
-        # the default search path).
+                                f'-jobname={self.working_job_name} {output_option} {tex_stem}.tex')
+        # TeX resolves \input and \includegraphics against the cwd, not the
+        # .tex file's folder, and QR images are in build_dir. MiKTeX searches the
+        # output directory for inputs; TeX Live does not, so add build_dir to
+        # TEXINPUTS (the trailing separator keeps the default search path).
         env = {'TEXINPUTS': str(build_path) + os.pathsep + os.environ.get('TEXINPUTS', '')}
         commands.append(Command(repeated_command, ignore_codes=[1], env=env))
 

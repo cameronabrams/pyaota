@@ -97,8 +97,9 @@ Key options:
 Output, in ``-od``: ``exam-<version>.pdf`` per version (questions followed by
 the answer sheet), ``exam_version_keys.csv``, ``answer_keys.pdf``,
 ``answersheet_layout.json`` (needed for grading) and ``qr_<version>.png``.  The
-LaTeX sources ``exam-<version>.tex`` are written to the current directory and
-kept unless ``--cleanup`` is given.
+LaTeX sources ``exam-<version>.tex`` are written there too and kept unless
+``--cleanup`` is given; they contain the answer key, so keep them from
+students.
 
 compile-dump
 ~~~~~~~~~~~~

@@ -80,6 +80,9 @@ class TestBuildAndGrade(TestCase):
         self.assertEqual(cli.main(['build', '--encode-answers-in-qr', '-q', str(BANK), '-n', '2', '-nq', '20',
                                    '-nc', '4', '-sc', '-sq', '-en', 'Quiz 1', '-od', 'build']) or 0, 0)
         build = d / 'build'
+        # exam sources carry the answer key: they belong in -od, not the cwd
+        self.assertEqual(list(d.glob('*.tex')), [])
+        self.assertTrue(list(build.glob('exam-*.tex')))
         layout = load_layout_config(build / 'answersheet_layout.json', LayoutConfig, _ureg)
         keys = {r['version_label']: [r[f'Q{i}'] for i in range(1, 21)]
                 for r in csv.DictReader(open(build / 'exam_version_keys.csv'))}

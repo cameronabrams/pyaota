@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Exam LaTeX sources were written to the current directory**, not to `-od`. They contain the answer key, which made them easy to commit or hand out by mistake. They are now written to the output directory with the PDFs.
 - **Builds aborted at random with "QR round-trip verification failed".** OpenCV's QR detector fails to read a few percent of valid codes (about 1 in 40 with OpenCV 5.0), so a build of many versions usually hit one. Building and grading now fall back to OpenCV's ArUco-based QR detector, which reads them.
 - **Every build without `--seed` produced the same version labels**, because the default seed was 0. Each version's question selection and order are seeded by its label, so builds from the same bank in different terms gave the same labels and the same orderings. Each build now draws a random seed and logs it; `--seed` still makes a build reproducible. The answer-encryption key was always random per build.
 
