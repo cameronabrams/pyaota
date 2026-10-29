@@ -81,3 +81,14 @@ class TestQuestionColumns(TestCase):
         q = dict(self.QUESTION, choices=[{'key': k, 'type': 'code', 'text': '3.5 0.5'} for k in 'abcd'])
         self.assertIn(r'\begin{choices}[4]', render_question(q))
         self.assertIn(r'\begin{choices}[2]', render_question(q, column_width_pt=HALF))
+
+
+class TestTrueFalseLabel(TestCase):
+
+    def test_label_has_its_own_line(self):
+        q = {'id': 1, 'type': 'tf', 'correct': True, 'stem': [{'type': 'text', 'text': '[1] is a list.'}]}
+        self.assertIn(r'\textbf{True\,(T)\,/\,False\,(F)}\newline [1] is a list.', render_question(q))
+        key_t = render_question(q, highlight_correct=True)
+        key_f = render_question(dict(q, correct=False), highlight_correct=True)
+        self.assertIn(r'\correctlabel{T}\,True\,/\,False\,(F)\newline [1]', key_t)
+        self.assertIn(r'True\,(T)\,/\,\correctlabel{F}\,False\newline [1]', key_f)

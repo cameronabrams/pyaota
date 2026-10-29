@@ -506,14 +506,17 @@ def render_tf(
                 block["text"] = f"({qid}) " + orig
                 break
 
-    # Build the T/F prefix label
+    # Build the T/F prefix label.  It gets a line of its own: followed by the
+    # statement, a justified first line stretched badly in narrow columns.
+    # \newline, not \\, so a statement starting with "[" is not read as an
+    # optional argument.
     if highlight_correct:
         if correct_key == "T":
-            tf_label = r"\correctlabel{T}\,True\,/\,False\,(F)\enspace "
+            tf_label = r"\correctlabel{T}\,True\,/\,False\,(F)\newline "
         else:
-            tf_label = r"True\,(T)\,/\,\correctlabel{F}\,False\enspace "
+            tf_label = r"True\,(T)\,/\,\correctlabel{F}\,False\newline "
     else:
-        tf_label = r"\textbf{True\,(T)\,/\,False\,(F)}\enspace "
+        tf_label = r"\textbf{True\,(T)\,/\,False\,(F)}\newline "
 
     # Render stem, prepending the T/F label
     stem_lines: list[str] = []

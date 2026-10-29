@@ -106,8 +106,8 @@ with answers encrypted into each answer sheet's QR code:
      -od examples/generated/history_exam \
      -sc -sq
 
-True/False questions are rendered with a bold ``True (T) / False (F)`` prefix
-instead of a separate choices list, keeping the exam compact.
+True/False questions are rendered with a bold ``True (T) / False (F)`` label on
+its own line, above the statement, instead of a separate choices list.
 
 **Instructions page and first questions page of a generated history quiz:**
 

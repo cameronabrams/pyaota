@@ -105,7 +105,8 @@ version, and the answer key follows them.  Short choices are laid out
 automatically in two columns, or all four on one row when they are very short.
 
 True/false questions have no ``choices``; they are printed with a
-``True (T) / False (F)`` prefix and answered in the first two bubbles.
+``True (T) / False (F)`` label on its own line above the statement and
+answered in the first two bubbles.
 
 Example
 -------
