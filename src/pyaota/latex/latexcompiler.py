@@ -67,6 +67,7 @@ class LatexCompiler:
         # The .tex goes in build_dir with the PDF: exam sources carry the answer
         # key, so they must not be left in the current directory.
         tex_stem = Path(self.build_dir) / self.working_job_name
+        tex_stem.parent.mkdir(parents=True, exist_ok=True)
         document.write_source(local_output_name=str(tex_stem))
         self.FC.append(f'{tex_stem}.tex')
         output_option = ''

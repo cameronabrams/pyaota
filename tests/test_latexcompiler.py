@@ -33,3 +33,16 @@ class TestLatexErrors(TestCase):
                     compiler.build_document(Document("\\documentclass{article}"))
             finally:
                 os.chdir(cwd)
+
+    def test_source_is_written_into_a_new_build_dir(self):
+        cwd = os.getcwd()
+        with TemporaryDirectory() as d:
+            os.chdir(d)
+            try:
+                compiler = LatexCompiler({'paths': {'latex-engine': 'false', 'build-dir': 'new/dir'},
+                                          'job-name': 'doc'})
+                with self.assertRaises(LatexBuildError):
+                    compiler.build_document(Document("\\documentclass{article}"))
+                self.assertTrue(Path('new/dir/doc.tex').exists())
+            finally:
+                os.chdir(cwd)
