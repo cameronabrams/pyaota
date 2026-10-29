@@ -881,7 +881,7 @@ class AnswerSheetReader:
             'y1': ul_y_px + box_height_px + vgap_px + spacing_px * 10,
         }
 
-        # Pre-compute column geometry (centres + per-column bubble y positions)
+        # Pre-compute column geometry (centers + per-column bubble y positions)
         col_geometry: list[Tuple[int, list[int]]] = []  # (col_center_x, [bubble_y_0..9])
         for i in range(1, num_digits + 1):
             col_center_x = ul_x_px + int(round((i - 1) * (gap_px + box_width_px))) + int(np.round(0.5 * box_width_px))

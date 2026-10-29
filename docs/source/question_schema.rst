@@ -100,7 +100,7 @@ Multiple-choice questions list their choices:
 
 The answer sheet has bubbles ``a`` to ``d``, so a multiple-choice question has
 at most four choices, keyed ``a``, ``b``, ``c`` and ``d``.  With ``-sc``
-(``--shuffle-choices``) the choices are shuffled and relabelled for each exam
+(``--shuffle-choices``) the choices are shuffled and relabeled for each exam
 version, and the answer key follows them.  Short choices are laid out
 automatically in two columns, or all four on one row when they are very short.
 

@@ -62,7 +62,7 @@ def encrypt_answers(key_hex: str, answers: list, version_label: str) -> str:
     Encrypt a list of single-character answer strings for *version_label* and
     return the payload to embed after ``<version_label>:`` in the QR code.
 
-    Answers must already be normalised to single characters
+    Answers must already be normalized to single characters
     (True/False → a/b, MCQ choices lower-cased).
     """
     key = bytes.fromhex(key_hex)

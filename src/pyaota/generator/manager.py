@@ -521,12 +521,12 @@ def make_exams_subcommand(args):
         version_answer_records.append((version_label, answers))
 
         if encode_answers:
-            # Normalise to single characters (same as autograder CSV loading)
-            normalised = [
+            # Normalize to single characters (same as autograder CSV loading)
+            normalized = [
                 'a' if a == 'True' else 'b' if a == 'False' else a.lower()
                 for a in answers
             ]
-            qr_content = f"{version_label}:{encrypt_answers(qr_key, normalised, version_label)}"
+            qr_content = f"{version_label}:{encrypt_answers(qr_key, normalized, version_label)}"
         else:
             qr_content = version_label
 
