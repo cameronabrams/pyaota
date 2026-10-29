@@ -254,6 +254,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Overwrite output directory if it exists",
     )
     command_parsers["build"].add_argument(
+        "--force",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Replace a build in the output directory even if its QR codes carry "
+             "encrypted answers (sheets printed from it then need a copy of its "
+             "answersheet_layout.json to grade)",
+    )
+    command_parsers["build"].add_argument(
         "-if",
         "--instructions-file",
         type=str,

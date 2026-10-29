@@ -801,7 +801,12 @@ class AnswerSheetReader:
                         )
                         logger.debug(f"QR code decoded with embedded answers via '{label}': version={version_part}")
                     except ValueError as exc:
-                        raise RuntimeError(f"QR answer decryption failed: {exc}") from exc
+                        # the usual cause is a rebuild: each build draws a new key
+                        raise RuntimeError(
+                            f"QR answer decryption failed for version {version_part}: {exc}. "
+                            f"This sheet probably came from a different build; grade it with "
+                            f"that build's answersheet_layout.json (or with its key CSV and a "
+                            f"copy of the layout without qr_answer_key)") from exc
                 else:
                     self.results['version'] = raw
                     logger.debug(f"QR code detected via '{label}': {self.results['version']}")

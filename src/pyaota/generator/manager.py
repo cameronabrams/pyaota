@@ -3,6 +3,7 @@ CLI dispatch functions for pyaota exam generator and grader.
 """
 
 import csv
+import json
 import random
 import shutil
 from pathlib import Path
@@ -423,6 +424,10 @@ def make_exams_subcommand(args):
     if missing:
         logger.error(f"build needs {', '.join(missing)} (on the command line or in --config)")
         return 1
+    absent = [b for b in args.question_banks if not Path(b).is_file()]
+    if absent:
+        logger.error(f"question bank(s) not found: {', '.join(map(str, absent))}")
+        return 1
     single_page = getattr(args, 'single_page', False)
     if single_page and args.num_questions > LayoutConfig.single_page_max_questions:
         logger.error(f'--single-page holds at most {LayoutConfig.single_page_max_questions} '
@@ -448,6 +453,19 @@ def make_exams_subcommand(args):
     })
     yaml_paths = args.question_banks
     output_dir = Path(args.output_dir)
+    # Each build draws a new QR key, so replacing a keyed build leaves any sheets
+    # already printed from it ungradeable from their QR codes.
+    old_layout = output_dir / 'answersheet_layout.json'
+    if old_layout.exists() and not getattr(args, 'force', False):
+        try:
+            old_key = json.loads(old_layout.read_text()).get('qr_answer_key')
+        except (OSError, ValueError, AttributeError):
+            old_key = None
+        if old_key:
+            logger.error(f'{output_dir} holds a build whose QR codes carry answers encrypted '
+                         f'with the key in {old_layout}; sheets printed from it can only be '
+                         f'graded with that file. Use a new -od, or pass --force to replace it.')
+            return 1
     if output_dir.exists():
         logger.warning(f"Output directory {output_dir} already exists.")
         if args.overwrite:

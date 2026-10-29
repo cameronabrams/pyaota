@@ -74,6 +74,11 @@ Key options:
 - ``-ow`` / ``--overwrite`` -- **delete** the output directory and everything in
   it before building; without it, an existing directory is reused (with a
   warning)
+- ``--force`` -- replace a build whose QR codes carry encrypted answers.
+  Without it, build refuses to touch an output directory whose
+  ``answersheet_layout.json`` holds a key, since every build draws a new key and
+  sheets already printed from the old build could no longer be graded from their
+  QR codes
 - ``--font-size {10pt,11pt,12pt}`` -- document font size (default: ``12pt``)
 - ``--question-spacing <LENGTH>`` -- vertical space between questions as a LaTeX
   length, e.g. ``24pt`` or ``1cm`` (default: ``24pt``)

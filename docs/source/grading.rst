@@ -214,6 +214,14 @@ to their own version (for example from a returned graded sheet) cannot use
 their QR code to decrypt any other version.  Sheets built by pyaota 0.5.0,
 which lacked this protection, can still be graded.
 
+Each build draws a new key, so a sheet can only be decrypted with the layout
+JSON of the build it was printed from.  Keep that file for as long as sheets
+from the build may come back; ``pyaota build`` will not replace a keyed build
+in its output directory without ``--force``.  A sheet graded with the wrong
+layout stops with "QR answer decryption failed ... This sheet probably came
+from a different build".  If the right layout is lost, grade with the build's
+key CSV and a copy of a layout from which ``qr_answer_key`` has been removed.
+
 At grade time, the grader reads the key from the layout JSON, decrypts the
 answers from the QR code, and grades without consulting
 ``exam_version_keys.csv``.  No additional flags or arguments are needed —
