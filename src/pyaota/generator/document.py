@@ -76,12 +76,16 @@ class ExamDocument(Document):
         content += '\n\n' + self.pagestyles + '\n\n' + BEGIN_DOCUMENT + '\n\n' + self.instructions + '\n\n'
         question_columns = int(self.specs.get('questioncolumns', 1))
         if question_columns > 1:
-            content += f'\\begin{{multicols}}{{{question_columns}}}\\raggedcolumns\n\n'
+            sep = self.specs.get('questioncolumnsep', '2em')
+            rule = '0.4pt' if self.specs.get('questioncolumnrule', False) else '0pt'
+            content += (f'\\begingroup\\setlength{{\\columnsep}}{{{sep}}}'
+                        f'\\setlength{{\\columnseprule}}{{{rule}}}\n'
+                        f'\\begin{{multicols}}{{{question_columns}}}\\raggedcolumns\n\n')
         for q in self.question_list:
             logger.debug(f'Rendering question: {q["id"]} {q["type"]}')
             content += self.question_renderer(q).rstrip() + '\n\n'
         if question_columns > 1:
-            content += '\\end{multicols}\n\n'
+            content += '\\end{multicols}\\endgroup\n\n'
         if self.endmessage:
             content += self.endmessage.rstrip() + '\n\n'
         if self.answersheet_tex:

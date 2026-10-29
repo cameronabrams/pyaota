@@ -99,6 +99,8 @@ HEADMATTER = r"""
 
 \newenvironment{choices}[1][1]{%
   \def\choicecols{#1}%
+  % not the question columns' gap or rule
+  \setlength{\columnsep}{10pt}\setlength{\columnseprule}{0pt}%
   \ifnum#1>1\relax
     \begin{multicols}{#1}%
   \fi

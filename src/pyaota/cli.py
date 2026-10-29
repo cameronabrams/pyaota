@@ -289,6 +289,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Set the questions in 1 or 2 columns (default: 1); 2 suits short code-reading questions",
     )
     command_parsers["build"].add_argument(
+        "--question-column-sep",
+        type=str,
+        default="2em",
+        metavar="LENGTH",
+        help="Gap between question columns as a LaTeX length (default: 2em)",
+    )
+    command_parsers["build"].add_argument(
+        "--question-column-rule",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Draw a rule between question columns",
+    )
+    command_parsers["build"].add_argument(
         "--bubble-font-size",
         type=float,
         default=8.0,

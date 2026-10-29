@@ -9,7 +9,7 @@ from pathlib import Path
 from pdf2image import convert_from_path
 
 import re as _re
-from .yaml2tex import render_question, tex_escape
+from .yaml2tex import TEXTWIDTH_PT, length_to_pt, render_question, tex_escape
 from .questionset import QuestionSet
 from .document import Document, ExamDocument
 from .answersheet import AnswerSheetGenerator, LayoutConfig, _ureg
@@ -422,6 +422,17 @@ def make_exams_subcommand(args):
     if missing:
         logger.error(f"build needs {', '.join(missing)} (on the command line or in --config)")
         return 1
+    question_columns = getattr(args, 'question_columns', 1) or 1
+    question_column_sep = getattr(args, 'question_column_sep', '2em') or '2em'
+    font_pt = float(getattr(args, 'font_size', '12pt').removesuffix('pt'))
+    try:
+        sep_pt = length_to_pt(question_column_sep, font_pt)
+    except ValueError as e:
+        logger.error(f'--question-column-sep: {e}')
+        return 1
+    # the width each question is set in; it decides how many columns its choices use
+    question_width_pt = (TEXTWIDTH_PT - (question_columns - 1) * sep_pt) / question_columns
+
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
             'latex-engine': 'xelatex',
@@ -482,8 +493,6 @@ def make_exams_subcommand(args):
     use_listings_from = getattr(args, 'use_listings_from', None)
     if use_listings_from:
         default_style, extra_preamble = _build_listings_extra_preamble(use_listings_from)
-
-    question_columns = getattr(args, 'question_columns', 1) or 1
 
     encode_answers = getattr(args, 'encode_answers_in_qr', False)
     qr_key = generate_key() if encode_answers else None
@@ -551,12 +560,15 @@ def make_exams_subcommand(args):
             instructions=exam_instructions,
             pagestyles=exam_pagestyles,
             question_renderer=lambda q: render_question(q, default_style=default_style,
-                                                        line_width=1 / question_columns),
+                                                        column_width_pt=question_width_pt,
+                                                        font_pt=font_pt),
             question_list=selected_questions,
             answersheet_tex=answersheet_tex,
             fontsize=getattr(args, 'font_size', '12pt'),
             questionspacing=getattr(args, 'question_spacing', '24pt'),
             questioncolumns=question_columns,
+            questioncolumnsep=question_column_sep,
+            questioncolumnrule=getattr(args, 'question_column_rule', False),
             endmessage="End of Exam\n\\clearpage",
             extra_preamble=extra_preamble,
         )

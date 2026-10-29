@@ -83,6 +83,9 @@ Key options:
   the answer sheet printed on the back, two columns fit 7–8 "what does this
   print?" questions plus a short instruction paragraph on one side at 11pt;
   pass ``-if`` with instructions that do not end in ``\clearpage``.
+- ``--question-column-sep <LENGTH>`` -- gap between question columns as a LaTeX
+  length (default: ``2em``)
+- ``--question-column-rule`` -- draw a rule between question columns
 - ``--bubble-font-size <PT>`` -- absolute font size in points for answer bubble
   labels (default: ``8.0``); independent of ``--font-size``
 - ``--odd-page-answersheet`` -- force the answer sheet to start on an odd-numbered

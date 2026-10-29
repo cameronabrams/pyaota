@@ -276,33 +276,50 @@ def _visual_len(text: str) -> int:
     return len(s)
 
 
-def _choices_columns(choices: list[dict], max_text_len: int = 40, max_code_len: int = 28,
-                     line_width: float = 1.0) -> int:
+# Page and font metrics for the choice-column fit check, in TeX points.
+TEXTWIDTH_PT = 469.755        # letter paper with 1in margins (6.5in)
+CHOICE_INDENT_EM = 2.0        # enumerate leftmargin in the choices environment
+CHOICE_COLUMN_SEP_PT = 10.0   # \columnsep inside the choices environment
+CHOICE_FIT_SLACK_PT = 2.0
+MONO_EM_PER_CHAR = 0.525      # Latin Modern Mono, the \ttfamily font: exact
+# Text choices wrap within their column, so this need not be exact. It is set
+# so that a full-width question keeps its old 2-column limit of 40 characters.
+TEXT_EM_PER_CHAR = 0.42
+
+_TEX_UNITS_PT = {'pt': 1.0, 'bp': 72.27 / 72, 'in': 72.27, 'cm': 72.27 / 2.54,
+                 'mm': 72.27 / 25.4, 'pc': 12.0}
+
+
+def length_to_pt(length: str, font_pt: float = 12.0) -> float:
+    """Convert a LaTeX length such as ``2em``, ``18pt`` or ``0.5cm`` to points."""
+    m = re.fullmatch(r'\s*([0-9]*\.?[0-9]+)\s*(pt|bp|in|cm|mm|pc|em)\s*', str(length))
+    if not m:
+        raise ValueError(f"cannot read LaTeX length {length!r}; use a number with pt, bp, in, cm, mm, pc or em")
+    value, unit = float(m.group(1)), m.group(2)
+    return value * (font_pt if unit == 'em' else _TEX_UNITS_PT[unit])
+
+
+def _choice_width_pt(choice: dict, font_pt: float) -> float:
+    """Estimated natural width of a choice's text, in points."""
+    raw = str(choice.get("text", ""))
+    if choice.get("type", "text") == "code":
+        lines = [l for l in raw.splitlines() if l.strip()]
+        return max((len(l) for l in lines), default=0) * MONO_EM_PER_CHAR * font_pt
+    return _visual_len(raw) * TEXT_EM_PER_CHAR * font_pt
+
+
+def _choices_columns(choices: list[dict], column_width_pt: float = TEXTWIDTH_PT,
+                     font_pt: float = 12.0) -> int:
     """Return 4, 2 or 1: the most columns in which every choice fits.
 
-    *max_text_len* and *max_code_len* are the longest choices that fit a
-    2-column layout across the full text width.  Code choices use a tighter
-    threshold because monospace glyphs are wider than proportional-font glyphs
-    at the same point size.  *line_width* is the fraction of the text width the
-    question has (0.5 when questions are set in two columns).
+    *column_width_pt* is the width the question is set in: the text width, or
+    one question column's width when questions are set in columns.
     """
-    longest = 0.0  # longest choice, as a fraction of the 2-column limit
-    for choice in choices:
-        ctype = choice.get("type", "text")
-        raw = str(choice.get("text", ""))
-        if ctype == "code":
-            lines = [l for l in raw.splitlines() if l.strip()]
-            if not lines:
-                continue
-            longest = max(longest, max(len(l) for l in lines) / max_code_len)
-        else:
-            longest = max(longest, _visual_len(raw) / max_text_len)
-    longest /= line_width
-    # a quarter-width column, less its label, holds about 0.4 of a half-width one
-    if longest <= 0.4:
-        return 4
-    if longest <= 1:
-        return 2
+    widest = max((_choice_width_pt(c, font_pt) for c in choices), default=0.0)
+    for ncols in (4, 2):
+        col = (column_width_pt - (ncols - 1) * CHOICE_COLUMN_SEP_PT) / ncols
+        if widest + CHOICE_INDENT_EM * font_pt + CHOICE_FIT_SLACK_PT <= col:
+            return ncols
     return 1
 
 
@@ -344,7 +361,7 @@ def render_choice(
         # space handling, causing spaces inside string literals (e.g. " ") to
         # disappear in the rendered output.
         lines = []
-        lines.append(rf"  \choice[{label}]{{}}")
+        lines.append(rf"  \choice[{label}]{{}}%")
         lines.append(tex.lstrip('\n'))
         lines.append("")  # blank line between code choices
         return "\n".join(lines)
@@ -373,15 +390,16 @@ def render_mcq(
     highlight_correct: bool = False,
     scramble_choices: bool = False,
     default_style: str | None = None,
-    line_width: float = 1.0,
+    column_width_pt: float = TEXTWIDTH_PT,
+    font_pt: float = 12.0,
 ) -> str:
     """
     Render a single multiple-choice question to LaTeX.
 
     - show_id: if True, prefix the first text stem block with "(ID) ".
     - highlight_correct: if True, visually mark the correct answer.
-    - line_width: fraction of the text width the question has; sets how many
-      columns the choices can use.
+    - column_width_pt, font_pt: the width the question is set in and the
+      document font size; they decide how many columns the choices use.
     """
     qid = q.get("id", "")
     points = q.get("points", 1)
@@ -423,7 +441,7 @@ def render_mcq(
     stem_tex = "\n".join(stem_lines).rstrip()
 
     # Render choices
-    ncols = _choices_columns(q.get("choices", []), line_width=line_width)
+    ncols = _choices_columns(q.get("choices", []), column_width_pt=column_width_pt, font_pt=font_pt)
     choice_lines: list[str] = []
     choice_lines.append(rf"\begin{{choices}}[{ncols}]")
     for choice in q.get("choices", []):
@@ -458,7 +476,8 @@ def render_tf(
     show_id: bool = False,
     highlight_correct: bool = False,
     default_style: str | None = None,
-    line_width: float = 1.0,
+    column_width_pt: float = TEXTWIDTH_PT,
+    font_pt: float = 12.0,
 ) -> str:
     """
     Render a single true/false question to LaTeX.
