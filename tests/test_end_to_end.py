@@ -123,3 +123,54 @@ class TestBuildAndGrade(TestCase):
                 self.assertEqual(cli.main(['build', '-q', str(BANK), '-nq', '5']), 1)
             finally:
                 os.chdir(cwd)
+
+    def test_single_page_build_fill_grade(self):
+        cwd = os.getcwd()
+        with TemporaryDirectory() as d:
+            os.chdir(d)
+            try:
+                self._run_single_page(Path(d))
+            finally:
+                os.chdir(cwd)
+
+    def _run_single_page(self, d):
+        self.assertEqual(cli.main(['build', '--encode-answers-in-qr', '--single-page', '-q', str(BANK),
+                                   '-n', '2', '-nq', '4', '--seed', '1', '-sc', '-sq', '--question-columns', '2',
+                                   '--font-size', '10pt', '-en', 'Quiz 1', '-od', 'build']) or 0, 0)
+        build = d / 'build'
+        layout = load_layout_config(build / 'answersheet_layout.json', LayoutConfig, _ureg)
+        self.assertTrue(layout.single_page)
+        keys = {r['version_label']: [r[f'Q{i}'] for i in range(1, 5)]
+                for r in csv.DictReader(open(build / 'exam_version_keys.csv'))}
+        v1, v2 = list(keys)
+        from pdf2image import pdfinfo_from_path
+        self.assertEqual(pdfinfo_from_path(str(build / f'exam-{v1}.pdf'))['Pages'], 1)
+        ids = lambda s: [[int(c)] for c in s]
+        pages = [
+            _fill_sheet(build, layout, keys, v1, ids('10214573')),
+            _fill_sheet(build, layout, keys, v2, ids('00512345'), wrong={2}, rotate=0.4, noise=8),
+        ]
+        pages[0].save(d / 'scans.pdf', save_all=True, append_images=pages[1:], resolution=300.0)
+        gradebook = d / 'gradebook.csv'
+        with open(gradebook, 'w', newline='') as f:
+            csv.writer(f).writerows([['Student ID', 'score'], ['10214573', ''], ['512345', '']])
+        cli.main(['grade', '-i', 'scans.pdf', '-alj', 'build/answersheet_layout.json', '-od', 'graded',
+                  '-gb', str(gradebook)])
+        scores = {r['Student ID']: r['score'] for r in csv.DictReader(open(gradebook))}
+        self.assertEqual(scores, {'10214573': '100.0', '512345': '75.0'})
+
+    def test_single_page_overflow_fails_the_build(self):
+        cwd = os.getcwd()
+        with TemporaryDirectory() as d:
+            os.chdir(d)
+            try:
+                # ten one-column questions at 12pt cannot fit above the strip
+                self.assertEqual(cli.main(['build', '--single-page', '-q', str(BANK), '-nq', '10',
+                                           '--seed', '1', '-en', 'Quiz', '-od', 'build']), 1)
+                log = next(Path('build').glob('exam-*.log')).read_text()
+                self.assertRegex(log, r'pyaota: the questions of version \w+ do not fit above the answer strip')
+                self.assertEqual(cli.main(['build', '--single-page', '-q', str(BANK), '-nq', '11',
+                                           '-en', 'Quiz', '-od', 'build2']), 1)
+                self.assertFalse(Path('build2').exists())
+            finally:
+                os.chdir(cwd)

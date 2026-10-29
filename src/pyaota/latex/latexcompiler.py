@@ -82,7 +82,10 @@ class LatexCompiler:
         # .tex file's folder, and QR images are in build_dir. MiKTeX searches the
         # output directory for inputs; TeX Live does not, so add build_dir to
         # TEXINPUTS (the trailing separator keeps the default search path).
-        env = {'TEXINPUTS': str(build_path) + os.pathsep + os.environ.get('TEXINPUTS', '')}
+        # max_print_line keeps TeX Live from wrapping log lines at 79 characters,
+        # so latex_log_errors reports whole messages
+        env = {'TEXINPUTS': str(build_path) + os.pathsep + os.environ.get('TEXINPUTS', ''),
+               'max_print_line': '10000'}
         commands.append(Command(repeated_command, ignore_codes=[1], env=env))
 
         self.FC.append(f'{self.build_dir}/{self.working_job_name}.aux')

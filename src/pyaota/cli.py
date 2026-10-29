@@ -289,6 +289,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Set the questions in 1 or 2 columns (default: 1); 2 suits short code-reading questions",
     )
     command_parsers["build"].add_argument(
+        "--single-page",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Put the questions and a bottom answer strip on one page (at most 10 questions); "
+             "the build fails if the questions do not fit above the strip",
+    )
+    command_parsers["build"].add_argument(
         "--question-column-sep",
         type=str,
         default="2em",

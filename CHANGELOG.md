@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `build --single-page` puts a short quiz on one side of one sheet: the questions on top and an answer strip across the bottom with the name line, QR code, student-ID grid and up to 10 question bubbles, whose rows line up with the ID-digit rows. The corner marks are where they are on a full answer sheet, so grading is unchanged. A version whose questions do not fit above the strip stops the build with an error naming it, instead of being clipped.
 - `build --question-column-sep LENGTH` sets the gap between question columns (default `2em`, wider than before), and `--question-column-rule` draws a rule between them. Neither affects the columns of answer choices.
 
 ### Fixed
 
 - **Four-across choices could overflow their column.** Whether choices go 4, 2 or 1 to a row is now decided from the actual widths: the document font size, the question column's width (including the gap), and Latin Modern Mono's exact character width for code. Before, it was a character count that ignored font size, and a `\columnsep` set for the question columns also widened the gaps between choices. Code choices up to 32 characters (was 28) now go two to a row at full width.
+- LaTeX error messages in build failures are no longer cut off at 79 characters on TeX Live.
 
 ## [0.7.0] - 2026-10-27
 

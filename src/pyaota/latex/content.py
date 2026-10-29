@@ -160,6 +160,14 @@ Questions begin on the next page.
 \clearpage
 """
 
+# used with build --single-page if no instructions file is given
+DEFAULT_SINGLE_PAGE_INSTRUCTIONS = r"""
+\noindent\textbf{Instructions:} Pencil only.  Write your name and student ID in the answer
+area at the bottom of this page, fill in the bubble for each digit of your ID, and fill in
+one bubble per question.  Hand in this sheet.
+\medskip
+"""
+
 # used if --instructions argument is not provided for the build-answersheet subcommand
 QUESTION_BANK_DUMP_INSTRUCTIONS = r"""
 This document contains a full dump of all questions in the selected question banks.

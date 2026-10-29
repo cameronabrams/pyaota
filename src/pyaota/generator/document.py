@@ -73,7 +73,17 @@ class ExamDocument(Document):
         content = HEADMATTER
         if self.extra_preamble:
             content += '\n' + self.extra_preamble
-        content += '\n\n' + self.pagestyles + '\n\n' + BEGIN_DOCUMENT + '\n\n' + self.instructions + '\n\n'
+        content += '\n\n' + self.pagestyles + '\n\n' + BEGIN_DOCUMENT + '\n\n'
+        single_page = self.specs.get('singlepage', False)
+        if single_page and self.answersheet_tex:
+            # the answer strip is drawn first, on page 1, and everything must
+            # fit above it: a second page means the questions were too long
+            content += (r'\AtEndDocument{\ifnum\value{page}>1 \GenericError{}{pyaota: the questions '
+                        r'of version <<<VERSION>>> do not fit above the answer strip}{Use fewer or '
+                        r'shorter questions, a smaller --font-size, or the two-page layout.}{}\fi}'
+                        '\n')
+            content += self.answersheet_tex.rstrip() + '\n'
+        content += self.instructions + '\n\n'
         question_columns = int(self.specs.get('questioncolumns', 1))
         if question_columns > 1:
             sep = self.specs.get('questioncolumnsep', '2em')
@@ -88,7 +98,7 @@ class ExamDocument(Document):
             content += '\\end{multicols}\\endgroup\n\n'
         if self.endmessage:
             content += self.endmessage.rstrip() + '\n\n'
-        if self.answersheet_tex:
+        if self.answersheet_tex and not single_page:
             content += '% Answer Sheet\n\n'
             content += self.answersheet_tex.rstrip() + '\n\n'
         content += END_DOCUMENT +'\n'

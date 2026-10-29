@@ -83,6 +83,15 @@ Key options:
   the answer sheet printed on the back, two columns fit 7–8 "what does this
   print?" questions plus a short instruction paragraph on one side at 11pt;
   pass ``-if`` with instructions that do not end in ``\clearpage``.
+- ``--single-page`` -- put the questions and the answer area on one page: a
+  strip across the bottom holds the name line, the QR code, the student-ID grid
+  and one column of question bubbles, and the questions are set above it.  For
+  short quizzes of at most 10 questions; it pairs well with
+  ``--question-columns 2``.  Without ``-if`` it uses short instructions that
+  fit the page.  If any version's questions do not fit above the strip, the
+  build stops and names that version; nothing is clipped.  The sheets are
+  graded exactly like two-page ones.  About 6 short code-reading questions fit
+  at 11pt; check longer ones by building.
 - ``--question-column-sep <LENGTH>`` -- gap between question columns as a LaTeX
   length (default: ``2em``)
 - ``--question-column-rule`` -- draw a rule between question columns

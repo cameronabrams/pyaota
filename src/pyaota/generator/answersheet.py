@@ -137,6 +137,13 @@ class LayoutConfig:
 
     force_odd_page: bool = False
 
+    # Single-page layout: the answer fields go in a strip across the bottom of
+    # the page and the questions are set above it.  Positions are computed in
+    # __post_init__; the corner marks stay where they are on a full sheet.
+    single_page: bool = False
+    single_page_max_questions: int = 10
+    strip_top: pint.Quantity = 7.4 * _ureg.inch  # questions must end above this
+
     qr_answer_key: str = None  # hex-encoded 32-byte key; if set, answers are encrypted in the QR code
 
     warning_line_opacity: float = 0.75
@@ -158,6 +165,9 @@ class LayoutConfig:
     version_report_position: Tuple[pint.Quantity, pint.Quantity] = (0.5 * _ureg.inch, 0.45 * _ureg.inch)
 
     def __post_init__(self):
+        if self.single_page:
+            self._place_strip()
+            return
         max_len = max(len(self.choice_keys), len(self.tf_keys))
         choice_stride = self.intrablock_choice_gap + 2 * self.bubble_radius
         col_stride = (
@@ -184,6 +194,29 @@ class LayoutConfig:
         ul_y = student_id_bottom + self.bubble_field_header_gap
 
         self.bubble_field_ul = (ul_x, ul_y)
+
+    def _place_strip(self):
+        """
+        Lay out the single-page answer strip: the name line across the top,
+        then the QR code, the student-ID grid and one column of question
+        bubbles side by side.  The question rows share the y positions of the
+        ten ID-digit rows.
+        """
+        if self.num_questions > self.single_page_max_questions:
+            raise ValueError(
+                f"the single-page layout holds at most {self.single_page_max_questions} "
+                f"questions, not {self.num_questions}")
+        inch = _ureg.inch
+        self.name_blank_ul = (1.4 * inch, self.strip_top + 0.25 * inch)
+        self.name_blank_size = (5.75 * inch, 0.3 * inch)
+        self.qr_ul = (0.85 * inch, self.strip_top + 0.9 * inch)
+        self.student_id_digit_boxes_ul = (2.4 * inch, self.strip_top + 0.55 * inch)
+        self.bubble_field_num_cols = 1
+        self.bubble_field_block_gap = (self.bubble_field_block_gap[0], 0 * inch)
+        first_digit_row_y = (self.student_id_digit_boxes_ul[1]
+                             + self.student_id_digit_boxes_box_size[1]
+                             + self.bubble_column_vert_gap + self.bubble_radius)
+        self.bubble_field_ul = (6.45 * inch, first_digit_row_y)
 
     def bubble_field_slots(self) -> List[Tuple[int, int, int]]:
         """
@@ -294,6 +327,11 @@ class AnswerSheetGenerator:
         lines.append(rf'    \node[circle,draw,inner sep=0pt,minimum size=2*\radius cm,font=\bubblefont,text height={bubble_text_height}cm,text depth={bubble_text_depth}cm,anchor=center] at (\xpos cm, \ypos cm) {{\textcolor{{bubblegray}}{{\j}}}};')
         lines.append(r'  }')
         lines.append(r'}')
+        if config.single_page:
+            lines.append(rf'\node[anchor=south west] at ({ul_x}cm, {ul_y + 0.05}cm) '
+                         r'{\textbf{Student ID:} \footnotesize fill in the bubble for each digit};')
+            lines.append(r"\end{tikzpicture}")
+            return "\n".join(lines)
         # place the label "Student ID:" to the left of the boxes
         main_label_x = ul_x - (0.1*_ureg.inch).to(_ureg.cm).magnitude
         main_label_y = ul_y - box_height / 2
@@ -434,6 +472,20 @@ class AnswerSheetGenerator:
         lines.append(r"\end{tikzpicture}")
         return "\n".join(lines)
 
+    def _place_strip_rule(self) -> str:
+        """A rule across the page where the questions end and the strip begins."""
+        config = self.layout_config
+        opacity = config.warning_line_opacity
+        y = -config.strip_top.to(_ureg.cm).magnitude
+        west = (config.indicial_west_offset + config.indicial_sep + 0.5 * _ureg.cm).to(_ureg.cm).magnitude
+        east = (config.canonical_width + config.indicial_east_offset
+                - config.indicial_sep - 0.5 * _ureg.cm).to(_ureg.cm).magnitude
+        return "\n".join([
+            r"\begin{tikzpicture}[remember picture,overlay,shift={(current page.north west)}]",
+            rf"\draw[line width=0.8pt,opacity={opacity}] ({west}cm, {y}cm) -- ({east}cm, {y}cm);",
+            r"\end{tikzpicture}",
+        ])
+
     def generate_tex_full(self):
         pass
 
@@ -448,11 +500,24 @@ class AnswerSheetGenerator:
         right = config.page_right_margin.to(_ureg.inch).magnitude
 
         lines: list[str] = []
-        if config.force_odd_page:
+        if config.single_page:
+            # Goes at the start of the page: the overlays land on page 1 and the
+            # questions are set above the strip.  The page style has no footer,
+            # which would otherwise sit in the strip.
+            strip_bottom_margin = (config.canonical_height - config.strip_top).to(_ureg.inch).magnitude
+            lines.append(r"\thispagestyle{answersheet}")
+            lines.append(rf"\newgeometry{{top={top}in,bottom={strip_bottom_margin + 0.15}in,"
+                         rf"left={left}in,right={right}in}}")
+            # a zero-width box: the overlays take no room, the line breaks
+            # between them add no space, and the sheet's 12pt font stays inside
+            lines.append(r"\noindent\makebox[0pt][l]{%")
+            lines.append(r"\fontsize{12pt}{14.4pt}\selectfont")
+        elif config.force_odd_page:
             lines.append(r"\ifodd\value{page}\else\thispagestyle{empty}\mbox{}\clearpage\fi")
-        lines.append(r"\thispagestyle{answersheet}")
-        lines.append(rf"\newgeometry{{top={top}in,bottom={bottom}in,left={left}in,right={right}in}}")
-        lines.append(r"\fontsize{12pt}{14.4pt}\selectfont")
+        if not config.single_page:
+            lines.append(r"\thispagestyle{answersheet}")
+            lines.append(rf"\newgeometry{{top={top}in,bottom={bottom}in,left={left}in,right={right}in}}")
+            lines.append(r"\fontsize{12pt}{14.4pt}\selectfont")
         bfpt = config.bubble_font_size_pt
         bfskip = round(bfpt * 1.2, 2)
         lines.append(rf"\newcommand{{\bubblefont}}{{\fontsize{{{bfpt}pt}}{{{bfskip}pt}}\selectfont}}")
@@ -463,5 +528,9 @@ class AnswerSheetGenerator:
         lines.append(self._place_qr_code(qr_image_filename=qr_image_filename))
         lines.append(self._place_bubblefield())
         lines.append(self._place_boundary_warnings())
+        if config.single_page:
+            lines.append(self._place_strip_rule())
+            # no \par: the overlays share the instructions' first line
+            lines.append("}%")
 
         return "\n".join(lines)

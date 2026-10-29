@@ -16,7 +16,8 @@ from .answersheet import AnswerSheetGenerator, LayoutConfig, _ureg
 from .layout_config_serialization import save_layout_config, load_layout_config
 from ..grader.autograder import Autograder
 from ..grader.returner import return_graded_exams
-from ..latex.content import DEFAULT_EXAM_INSTRUCTIONS, DEFAULT_PAGESTYLES_TEMPLATE, QUESTION_BANK_DUMP_INSTRUCTIONS
+from ..latex.content import (DEFAULT_EXAM_INSTRUCTIONS, DEFAULT_PAGESTYLES_TEMPLATE,
+                             DEFAULT_SINGLE_PAGE_INSTRUCTIONS, QUESTION_BANK_DUMP_INSTRUCTIONS)
 from ..latex.latexcompiler import LatexCompiler
 from ..util.collectors import on_rm_error
 from ..util.qrcrypto import generate_key, encrypt_answers, generate_qr_png
@@ -422,6 +423,11 @@ def make_exams_subcommand(args):
     if missing:
         logger.error(f"build needs {', '.join(missing)} (on the command line or in --config)")
         return 1
+    single_page = getattr(args, 'single_page', False)
+    if single_page and args.num_questions > LayoutConfig.single_page_max_questions:
+        logger.error(f'--single-page holds at most {LayoutConfig.single_page_max_questions} '
+                     f'questions; -nq is {args.num_questions}')
+        return 1
     question_columns = getattr(args, 'question_columns', 1) or 1
     question_column_sep = getattr(args, 'question_column_sep', '2em') or '2em'
     font_pt = float(getattr(args, 'font_size', '12pt').removesuffix('pt'))
@@ -478,7 +484,7 @@ def make_exams_subcommand(args):
         with open(args.instructions_file, 'r', encoding='utf-8') as f:
             exam_instructions = f.read()
     else:
-        exam_instructions = DEFAULT_EXAM_INSTRUCTIONS
+        exam_instructions = DEFAULT_SINGLE_PAGE_INSTRUCTIONS if single_page else DEFAULT_EXAM_INSTRUCTIONS
 
     pagestyles_file = getattr(args, 'pagestyles_file', None)
     if pagestyles_file is not None:
@@ -503,6 +509,7 @@ def make_exams_subcommand(args):
         bubble_font_size_pt = getattr(args, 'bubble_font_size', 8.0),
         force_odd_page = getattr(args, 'odd_page_answersheet', False),
         qr_answer_key = qr_key,
+        single_page = single_page,
     )
     json_answersheet_layout_path = output_dir/"answersheet_layout.json"
     save_layout_config(answer_sheet_layout, json_answersheet_layout_path, _ureg)
@@ -566,10 +573,11 @@ def make_exams_subcommand(args):
             answersheet_tex=answersheet_tex,
             fontsize=getattr(args, 'font_size', '12pt'),
             questionspacing=getattr(args, 'question_spacing', '24pt'),
+            singlepage=single_page,
             questioncolumns=question_columns,
             questioncolumnsep=question_column_sep,
             questioncolumnrule=getattr(args, 'question_column_rule', False),
-            endmessage="End of Exam\n\\clearpage",
+            endmessage="" if single_page else "End of Exam\n\\clearpage",
             extra_preamble=extra_preamble,
         )
 
