@@ -136,7 +136,7 @@ class TestBuildAndGrade(TestCase):
     def _run_single_page(self, d):
         self.assertEqual(cli.main(['build', '--encode-answers-in-qr', '--single-page', '-q', str(BANK),
                                    '-n', '2', '-nq', '4', '--seed', '1', '-sc', '-sq', '--question-columns', '2',
-                                   '--font-size', '10pt', '-en', 'Quiz 1', '-od', 'build']) or 0, 0)
+                                   '--question-boxes', '--font-size', '10pt', '-en', 'Quiz 1', '-od', 'build']) or 0, 0)
         build = d / 'build'
         layout = load_layout_config(build / 'answersheet_layout.json', LayoutConfig, _ureg)
         self.assertTrue(layout.single_page)

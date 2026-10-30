@@ -5,7 +5,7 @@ Document build functions for pyaota
 
 import logging
 
-from .yaml2tex import render_question, tex_escape
+from .yaml2tex import QUESTION_BOX_PAD_PT, QUESTION_BOX_RULE_PT, render_question, tex_escape
 
 from ..latex.content import (
     HEADMATTER,
@@ -66,6 +66,10 @@ class ExamDocument(Document):
             'VERSION': self.version,
             'FONTSIZE': self.specs.get('fontsize', '12pt'),
             'QUESTIONSPACING': self.specs.get('questionspacing', '24pt'),
+            'QUESTIONBOXES': (r'\questionboxestrue' if self.specs.get('questionboxes', False)
+                              else ''),
+            'QUESTIONBOXPAD': f'{QUESTION_BOX_PAD_PT}pt',
+            'QUESTIONBOXRULE': f'{QUESTION_BOX_RULE_PT}pt',
         }
         self.extra_preamble = self.specs.get('extra_preamble', '')
         self.pagestyles = self.specs.get('pagestyles', DEFAULT_PAGESTYLES_TEMPLATE)

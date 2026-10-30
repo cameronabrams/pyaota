@@ -10,7 +10,7 @@ from pathlib import Path
 from pdf2image import convert_from_path
 
 import re as _re
-from .yaml2tex import TEXTWIDTH_PT, length_to_pt, render_question, tex_escape
+from .yaml2tex import QUESTION_BOX_INSET_PT, TEXTWIDTH_PT, length_to_pt, render_question, tex_escape
 from .questionset import QuestionSet
 from .document import Document, ExamDocument
 from .answersheet import AnswerSheetGenerator, LayoutConfig, _ureg
@@ -443,6 +443,9 @@ def make_exams_subcommand(args):
         return 1
     # the width each question is set in; it decides how many columns its choices use
     question_width_pt = (TEXTWIDTH_PT - (question_columns - 1) * sep_pt) / question_columns
+    question_boxes = getattr(args, 'question_boxes', False)
+    if question_boxes:
+        question_width_pt -= QUESTION_BOX_INSET_PT
 
     latex_compiler = LatexCompiler(build_specs={
         'paths': {
@@ -595,6 +598,7 @@ def make_exams_subcommand(args):
             questioncolumns=question_columns,
             questioncolumnsep=question_column_sep,
             questioncolumnrule=getattr(args, 'question_column_rule', False),
+            questionboxes=question_boxes,
             endmessage="" if single_page else "End of Exam\n\\clearpage",
             extra_preamble=extra_preamble,
         )

@@ -73,6 +73,12 @@ class TestQuestionColumns(TestCase):
         # the choices environment resets both for its own columns
         self.assertIn(r'\setlength{\columnsep}{10pt}\setlength{\columnseprule}{0pt}', doc.content)
 
+    def test_question_boxes_are_opt_in(self):
+        self.assertNotIn(r'\questionboxestrue', ExamDocument({'question_list': [self.QUESTION]}).content)
+        doc = ExamDocument({'question_list': [self.QUESTION], 'questionboxes': True})
+        self.assertIn('\n\\questionboxestrue\n', doc.content)
+        self.assertNotIn('<<<', doc.content)
+
     def test_one_column_is_unchanged(self):
         doc = ExamDocument({'question_list': [self.QUESTION]})
         self.assertNotIn(r'\begin{multicols}{', doc.content.split(r'\begin{document}')[1].split(r'\begin{mcq}')[0])

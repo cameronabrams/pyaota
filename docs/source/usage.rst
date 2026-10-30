@@ -100,6 +100,11 @@ Key options:
 - ``--question-column-sep <LENGTH>`` -- gap between question columns as a LaTeX
   length (default: ``2em``)
 - ``--question-column-rule`` -- draw a rule between question columns
+- ``--question-boxes`` -- draw a thin frame around each question (number, stem,
+  code and choices), with a little padding inside it. A question is never split
+  across columns or pages, framed or not. The frame narrows the question
+  slightly, which the choice-column fit allows for, and on a single page the
+  fit check counts its height
 - ``--bubble-font-size <PT>`` -- absolute font size in points for answer bubble
   labels (default: ``8.0``); independent of ``--font-size``
 - ``--odd-page-answersheet`` -- force the answer sheet to start on an odd-numbered

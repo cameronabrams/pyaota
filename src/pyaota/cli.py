@@ -317,6 +317,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Draw a rule between question columns",
     )
     command_parsers["build"].add_argument(
+        "--question-boxes",
+        default=False,
+        action=ap.BooleanOptionalAction,
+        help="Draw a thin frame around each question",
+    )
+    command_parsers["build"].add_argument(
         "--bubble-font-size",
         type=float,
         default=8.0,

@@ -278,6 +278,9 @@ def _visual_len(text: str) -> int:
 
 # Page and font metrics for the choice-column fit check, in TeX points.
 TEXTWIDTH_PT = 469.755        # letter paper with 1in margins (6.5in)
+QUESTION_BOX_PAD_PT = 4.0      # \questionboxpad: space between a question box's frame and its text
+QUESTION_BOX_RULE_PT = 0.4     # \questionboxrule: the frame's thickness
+QUESTION_BOX_INSET_PT = 2 * (QUESTION_BOX_PAD_PT + QUESTION_BOX_RULE_PT)
 CHOICE_INDENT_EM = 2.0        # enumerate leftmargin in the choices environment
 CHOICE_COLUMN_SEP_PT = 10.0   # \columnsep inside the choices environment
 CHOICE_FIT_SLACK_PT = 2.0

@@ -71,29 +71,56 @@ HEADMATTER = r"""
 
 \newcounter{question}
 
+% Each question is set in a box so it is never split across columns or pages;
+% with question boxes on, the box is framed, and the question is narrowed by
+% the frame's padding and rule on each side.
+\newsavebox{\questionbox}
+\newif\ifquestionboxes
+\newlength{\questionboxpad}\setlength{\questionboxpad}{<<<QUESTIONBOXPAD>>>}
+\newlength{\questionboxrule}\setlength{\questionboxrule}{<<<QUESTIONBOXRULE>>>}
+\newlength{\questionboxinset}
+<<<QUESTIONBOXES>>>
+\ifquestionboxes
+  \setlength{\questionboxinset}{\dimexpr2\questionboxpad+2\questionboxrule\relax}
+\else
+  \setlength{\questionboxinset}{0pt}
+\fi
+
 \newenvironment{mcq}[3]{%
   \refstepcounter{question}%
-  \par\medskip
+  \par\ifquestionboxes\else\medskip\fi % a frame's padding stands in for the skip
   \def\questionid{#1}%
   \def\questionpoints{#2}%
   \def\questioncorrect{#3}%
-  \noindent\begin{minipage}{\linewidth}%
+  \noindent\begin{lrbox}{\questionbox}\begin{minipage}{\dimexpr\linewidth-\questionboxinset\relax}%
     \textbf{\thequestion.}\enspace
 }{%
-  \end{minipage}%
+  \end{minipage}\end{lrbox}%
+  \ifquestionboxes
+    {\setlength{\fboxsep}{\questionboxpad}\setlength{\fboxrule}{\questionboxrule}%
+     \fbox{\usebox{\questionbox}}}%
+  \else
+    \usebox{\questionbox}%
+  \fi
   \par\vspace{<<<QUESTIONSPACING>>>}%
 }
 
 \newenvironment{tf}[3]{%
   \refstepcounter{question}%
-  \par\medskip
+  \par\ifquestionboxes\else\medskip\fi % a frame's padding stands in for the skip
   \def\questionid{#1}%
   \def\questionpoints{#2}%
   \def\questioncorrect{#3}%
-  \noindent\begin{minipage}{\linewidth}%
+  \noindent\begin{lrbox}{\questionbox}\begin{minipage}{\dimexpr\linewidth-\questionboxinset\relax}%
     \textbf{\thequestion.}\enspace
 }{%
-  \end{minipage}%
+  \end{minipage}\end{lrbox}%
+  \ifquestionboxes
+    {\setlength{\fboxsep}{\questionboxpad}\setlength{\fboxrule}{\questionboxrule}%
+     \fbox{\usebox{\questionbox}}}%
+  \else
+    \usebox{\questionbox}%
+  \fi
   \par\vspace{<<<QUESTIONSPACING>>>}%
 }
 

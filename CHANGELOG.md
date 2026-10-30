@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `build --single-page` puts a short quiz on one side of one sheet: the questions on top and an answer strip across the bottom with the name line, QR code, student-ID grid and up to 10 question bubbles, whose rows line up with the ID-digit rows. The corner marks are where they are on a full answer sheet, so grading is unchanged. A version whose questions do not fit above the strip stops the build with an error naming it, instead of being clipped.
 - `build --question-column-sep LENGTH` sets the gap between question columns (default `2em`, wider than before), and `--question-column-rule` draws a rule between them. Neither affects the columns of answer choices.
 - `build` refuses to replace a build in its output directory whose QR codes carry encrypted answers, with or without `-ow`: every build draws a new key, so sheets already printed from the old build could no longer be graded from their QR codes. `--force` replaces it anyway.
+- `build --question-boxes` draws a thin frame (0.4pt rule, 4pt padding) around each question. The choice-column fit allows for the narrower width, and the frame's padding replaces the small skip above each question, so a framed question is only about 4pt taller. All 180 versions of the ENGR 131 week-1 single-page quizzes (6 questions, 2 columns, 10pt) still fit.
 
 ### Changed
 
