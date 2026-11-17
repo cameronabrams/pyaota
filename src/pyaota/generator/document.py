@@ -81,9 +81,13 @@ class ExamDocument(Document):
         single_page = self.specs.get('singlepage', False)
         if single_page and self.answersheet_tex:
             # the answer strip is drawn first, on page 1, and everything must
-            # fit above it: a second page means the questions were too long
+            # fit above it: a second page means the questions were too long.
+            # The PDF can still have one page: when multicols cannot move a
+            # question on, it ships an overfull column that runs into the
+            # strip and starts a page 2 holding nothing but discarded space.
             content += (r'\AtEndDocument{\ifnum\value{page}>1 \GenericError{}{pyaota: the questions '
-                        r'of version <<<VERSION>>> do not fit above the answer strip}{Use fewer or '
+                        r'of version <<<VERSION>>> do not fit above the answer strip (a question '
+                        r'runs into the strip or onto a second page)}{Use fewer or '
                         r'shorter questions, a smaller --font-size, or the two-page layout.}{}\fi}'
                         '\n')
             content += self.answersheet_tex.rstrip() + '\n'
