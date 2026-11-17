@@ -16,6 +16,11 @@ from ..latex.content import (
 
 logger = logging.getLogger(__name__)
 
+def single_page_overflow_message(version: str) -> str:
+    return (f'pyaota: the questions of version {version} do not fit above the answer strip '
+            f'(a question runs into the strip or onto a second page)')
+
+
 class Document:
     def __init__(self, content: str = ""):
         self.content: str = content
@@ -80,19 +85,28 @@ class ExamDocument(Document):
         content += '\n\n' + self.pagestyles + '\n\n' + BEGIN_DOCUMENT + '\n\n'
         single_page = self.specs.get('singlepage', False)
         if single_page and self.answersheet_tex:
-            # the answer strip is drawn first, on page 1, and everything must
-            # fit above it: a second page means the questions were too long.
-            # The PDF can still have one page: when multicols cannot move a
-            # question on, it ships an overfull column that runs into the
-            # strip and starts a page 2 holding nothing but discarded space.
-            content += (r'\AtEndDocument{\ifnum\value{page}>1 \GenericError{}{pyaota: the questions '
-                        r'of version <<<VERSION>>> do not fit above the answer strip (a question '
-                        r'runs into the strip or onto a second page)}{Use fewer or '
-                        r'shorter questions, a smaller --font-size, or the two-page layout.}{}\fi}'
-                        '\n')
+            # The answer strip is drawn first, on page 1, and the questions must
+            # fit above it.  Count the pages actually shipped out: the page counter
+            # alone also advances when the questions fit and only the space after
+            # the last one spills over, onto a page 2 that is never output.  A
+            # column multicols ships too tall (into the strip) without a second
+            # page is caught from the log, by LatexCompiler's overfull-page check.
+            content += (r'\newcount\pyaotapages'
+                        r'\AddToHook{shipout/after}{\global\advance\pyaotapages 1 }'
+                        r'\AddToHook{enddocument/afterlastpage}{\ifnum\pyaotapages>1 '
+                        r'\GenericError{}{' + single_page_overflow_message('<<<VERSION>>>') + '}'
+                        r'{Use fewer or shorter questions, a smaller --font-size, or the two-page '
+                        r'layout.}{}\fi}' '\n')
             content += self.answersheet_tex.rstrip() + '\n'
         content += self.instructions + '\n\n'
         question_columns = int(self.specs.get('questioncolumns', 1))
+        if question_columns > 1 and single_page:
+            # the room left for the question columns, and the space each question
+            # adds below its box, for packing the questions if they overflow
+            content += (r'\par\typeout{pyaota-measure: room \the\dimexpr'
+                        r'\ifdim\pagegoal=\maxdimen\textheight\else\pagegoal\fi'
+                        r'-\pagetotal-\multicolsep\relax\space gap \the\dimexpr<<<QUESTIONSPACING>>>'
+                        r'\ifquestionboxes\else+\medskipamount\fi+\lineskip\relax}' '\n')
         if question_columns > 1:
             sep = self.specs.get('questioncolumnsep', '2em')
             rule = '0.4pt' if self.specs.get('questioncolumnrule', False) else '0pt'

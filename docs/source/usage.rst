@@ -93,8 +93,13 @@ Key options:
   and one column of question bubbles, and the questions are set above it.  For
   short quizzes of at most 10 questions; it pairs well with
   ``--question-columns 2``.  Without ``-if`` it uses short instructions that
-  fit the page.  If any version's questions do not fit above the strip, the
-  build stops and names that version; nothing is clipped.  The sheets are
+  fit the page.  With two question columns, a version whose questions overflow
+  in the order drawn is rebuilt with them packed into the columns: the first
+  column's questions, then the second's, each kept in drawn order and numbered
+  1, 2, ... down the columns; its answer key, QR code and bubbles follow the new
+  order, and the build log says which versions were reordered.  If a version
+  still does not fit above the strip, the build stops and names that version;
+  nothing is clipped.  The sheets are
   graded exactly like two-page ones.  About 6 short code-reading questions fit
   at 11pt; check longer ones by building.
 - ``--question-column-sep <LENGTH>`` -- gap between question columns as a LaTeX

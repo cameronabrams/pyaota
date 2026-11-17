@@ -46,3 +46,24 @@ class TestLatexErrors(TestCase):
                 self.assertTrue(Path('new/dir/doc.tex').exists())
             finally:
                 os.chdir(cwd)
+
+    def test_overfull_page_fails_when_asked(self):
+        # a stand-in engine whose PDF has a column shipped too tall
+        cwd = os.getcwd()
+        with TemporaryDirectory() as d:
+            os.chdir(d)
+            try:
+                engine = Path(d) / 'fake-tex'
+                engine.write_text('#!/bin/sh\ntouch doc.pdf\n'
+                                  'printf "Overfull \\\\\\\\vbox (9.3pt too high) has occurred '
+                                  'while \\\\\\\\output is active []\\\\n" > doc.log\n')
+                engine.chmod(0o755)
+                compiler = LatexCompiler({'paths': {'latex-engine': str(engine), 'build-dir': '.'},
+                                          'job-name': 'doc'})
+                compiler.build_document(Document("\\documentclass{article}"))
+                self.assertIn('Overfull \\vbox (9.3pt', Path('doc.log').read_text())
+                with self.assertRaisesRegex(LatexBuildError, 'too full: a column is 9.3pt too tall'):
+                    compiler.build_document(Document("\\documentclass{article}"),
+                                            overfull_page_error='too full')
+            finally:
+                os.chdir(cwd)

@@ -5,6 +5,7 @@ Needs xelatex and poppler (pdftoppm) on PATH; skipped otherwise.
 """
 import csv
 import os
+import re
 import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -12,6 +13,7 @@ from unittest import TestCase, skipUnless
 
 import cv2
 import numpy as np
+import yaml
 from PIL import Image
 
 from pyaota import cli
@@ -158,6 +160,51 @@ class TestBuildAndGrade(TestCase):
                   '-gb', str(gradebook)])
         scores = {r['Student ID']: r['score'] for r in csv.DictReader(open(gradebook))}
         self.assertEqual(scores, {'10214573': '100.0', '512345': '75.0'})
+
+    def test_single_page_packs_overflowing_questions(self):
+        cwd = os.getcwd()
+        with TemporaryDirectory() as d:
+            os.chdir(d)
+            try:
+                self._run_packing(Path(d))
+            finally:
+                os.chdir(cwd)
+
+    def _run_packing(self, d):
+        # code blocks of these lengths overflow two columns in the order drawn
+        # with --seed 1, but fit once the tall one is moved
+        bank = d / 'bank.yaml'
+        questions = [{'id': f'q{i}', 'type': 'mcq', 'topic': 't',
+                      'stem': [{'type': 'text', 'text': 'What does this print?'},
+                               {'type': 'code', 'text': ''.join(f'x{j} = {j}\n' for j in range(n))}],
+                      'choices': [{'key': k, 'text': f'choice {k}'} for k in 'abcd'],
+                      'correct': 'abcd'[i % 4]}
+                     for i, n in enumerate([6, 2, 8, 2, 1, 2], start=1)]
+        bank.write_text(yaml.safe_dump({'questions': questions}))
+        with self.assertLogs('pyaota', level='INFO') as logs:
+            self.assertEqual(cli.main(['build', '--encode-answers-in-qr', '--single-page', '-q', str(bank),
+                                       '-n', '1', '-nq', '6', '--seed', '1', '--question-columns', '2',
+                                       '--font-size', '10pt', '-en', 'Quiz', '-od', 'build']) or 0, 0)
+        self.assertTrue(any('reordering them as' in m for m in logs.output))
+        build = d / 'build'
+        keys = {r['version_label']: [r[f'Q{i}'] for i in range(1, 7)]
+                for r in csv.DictReader(open(build / 'exam_version_keys.csv'))}
+        (v,) = keys
+        # the PDF's questions are in the key's order
+        tex = (build / f'exam-{v}.tex').read_text()
+        self.assertEqual(re.findall(r'\\begin\{mcq\}\{q\d\}\{1\}\{(\w)\}', tex), keys[v])
+        from pdf2image import pdfinfo_from_path
+        self.assertEqual(pdfinfo_from_path(str(build / f'exam-{v}.pdf'))['Pages'], 1)
+        layout = load_layout_config(build / 'answersheet_layout.json', LayoutConfig, _ureg)
+        _fill_sheet(build, layout, keys, v, [[int(c)] for c in '10214573'], wrong={6}).save(
+            d / 'scans.pdf', resolution=300.0)
+        gradebook = d / 'gradebook.csv'
+        with open(gradebook, 'w', newline='') as f:
+            csv.writer(f).writerows([['Student ID', 'score'], ['10214573', '']])
+        # graded from the QR code, so its answers must follow the new order too
+        cli.main(['grade', '-i', 'scans.pdf', '-alj', 'build/answersheet_layout.json', '-od', 'graded',
+                  '-gb', str(gradebook)])
+        self.assertEqual(next(csv.DictReader(open(gradebook)))['score'], f'{500 / 6:.1f}')
 
     def test_single_page_overflow_fails_the_build(self):
         cwd = os.getcwd()

@@ -86,6 +86,23 @@ HEADMATTER = r"""
   \setlength{\questionboxinset}{0pt}
 \fi
 
+% Set the question (framed or not) and log its height, from which a single-page
+% build that overflows packs its questions into the columns.
+\newsavebox{\questionoutbox}
+\newcommand{\putquestionbox}{%
+  \sbox{\questionoutbox}{%
+    \ifquestionboxes
+      \setlength{\fboxsep}{\questionboxpad}\setlength{\fboxrule}{\questionboxrule}%
+      \fbox{\usebox{\questionbox}}%
+    \else
+      \usebox{\questionbox}%
+    \fi}%
+  \typeout{pyaota-measure: question \thequestion\space
+    \the\dimexpr\ht\questionoutbox+\dp\questionoutbox\relax}%
+  \usebox{\questionoutbox}%
+  \par\vspace{<<<QUESTIONSPACING>>>}%
+}
+
 \newenvironment{mcq}[3]{%
   \refstepcounter{question}%
   \par\ifquestionboxes\else\medskip\fi % a frame's padding stands in for the skip
@@ -96,13 +113,7 @@ HEADMATTER = r"""
     \textbf{\thequestion.}\enspace
 }{%
   \end{minipage}\end{lrbox}%
-  \ifquestionboxes
-    {\setlength{\fboxsep}{\questionboxpad}\setlength{\fboxrule}{\questionboxrule}%
-     \fbox{\usebox{\questionbox}}}%
-  \else
-    \usebox{\questionbox}%
-  \fi
-  \par\vspace{<<<QUESTIONSPACING>>>}%
+  \putquestionbox
 }
 
 \newenvironment{tf}[3]{%
@@ -115,13 +126,7 @@ HEADMATTER = r"""
     \textbf{\thequestion.}\enspace
 }{%
   \end{minipage}\end{lrbox}%
-  \ifquestionboxes
-    {\setlength{\fboxsep}{\questionboxpad}\setlength{\fboxrule}{\questionboxrule}%
-     \fbox{\usebox{\questionbox}}}%
-  \else
-    \usebox{\questionbox}%
-  \fi
-  \par\vspace{<<<QUESTIONSPACING>>>}%
+  \putquestionbox
 }
 
 \newenvironment{choices}[1][1]{%

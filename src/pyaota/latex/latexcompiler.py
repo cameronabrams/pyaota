@@ -95,7 +95,8 @@ class LatexCompiler:
         commands.append(Command(repeated_command, ignore_codes=[1], env=env))
         return commands
 
-    def build_document(self, document: Document = None, cleanup: bool = False):
+    def build_document(self, document: Document = None, cleanup: bool = False,
+                       overfull_page_error: str = None):
         """
         Builds the specified document by running the necessary commands.
         
@@ -105,6 +106,10 @@ class LatexCompiler:
             the **Document** instance to compile (default is None)
         cleanup : bool, optional
             if True, deletes intermediate files after build (default is False)
+        overfull_page_error : str, optional
+            if given, a page or column shipped out taller than its space (TeX's
+            "Overfull \\vbox ... while \\output is active") fails the build with
+            this message
             """
         commands = self._build_commands(document)
         if not commands:
@@ -131,6 +136,12 @@ class LatexCompiler:
                 f'{self.latex_engine} failed building {pdf_path} '
                 f'(exit code {commands[-1].returncode}); see {log_path}:\n  {detail}'
             )
+        if overfull_page_error and log_path.exists():
+            m = re.search(r'^Overfull \\vbox \(([\d.]+pt) too high\) has occurred while \\output is active',
+                          log_path.read_text(encoding="utf-8", errors="replace"), re.MULTILINE)
+            if m:
+                raise LatexBuildError(f'{overfull_page_error}: a column is {m.group(1)} too tall; '
+                                      f'see {log_path}')
         if cleanup:
             logger.debug(f'Flushing {len(self.FC.data)} intermediate files.')
             self.FC.flush()

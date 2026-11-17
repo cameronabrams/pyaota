@@ -12,14 +12,15 @@ from pdf2image import convert_from_path
 import re as _re
 from .yaml2tex import QUESTION_BOX_INSET_PT, TEXTWIDTH_PT, length_to_pt, render_question, tex_escape
 from .questionset import QuestionSet
-from .document import Document, ExamDocument
+from .document import Document, ExamDocument, single_page_overflow_message
 from .answersheet import AnswerSheetGenerator, LayoutConfig, _ureg
+from .packing import packed_order_from_log
 from .layout_config_serialization import save_layout_config, load_layout_config
 from ..grader.autograder import Autograder
 from ..grader.returner import return_graded_exams
 from ..latex.content import (DEFAULT_EXAM_INSTRUCTIONS, DEFAULT_PAGESTYLES_TEMPLATE,
                              DEFAULT_SINGLE_PAGE_INSTRUCTIONS, QUESTION_BANK_DUMP_INSTRUCTIONS)
-from ..latex.latexcompiler import LatexCompiler
+from ..latex.latexcompiler import LatexBuildError, LatexCompiler
 from ..util.collectors import on_rm_error
 from ..util.qrcrypto import generate_key, encrypt_answers, generate_qr_png
 
@@ -540,22 +541,12 @@ def make_exams_subcommand(args):
     # write_answer_sheet_layout_yaml(answer_sheet_layout, output_path=output_dir/"answer_sheet_layout.yaml")
     # generate the list of version numbers as 8-byte hexadecimal strings
 
-    for version_label in hex_strings:
-        # generate an 8-digit version as an integer and then zero-pad to string
-        version_rng_seed = int(version_label, 16)
-
-        selected_questions = question_set.get_random_selection(num_questions=args.num_questions,
-                                                               topics_order=args.topics,
-                                                               seed=version_rng_seed,
-                                                               shuffle=args.shuffle_questions,
-                                                               shuffle_choices=args.shuffle_choices,
-                                                               balance_difficulty=getattr(args, 'balance_difficulty', False))
-        logger.debug(f'Generated exam version {version_label} with {len(selected_questions)} questions.')
+    def build_version(version_label, selected_questions):
+        """Write the QR code and answer sheet of a version and build its PDF; return its answers."""
         answers = [
             str(q["correct"] if "correct" in q else q.get("answer", "")).strip()
             for q in selected_questions
         ]
-        version_answer_records.append((version_label, answers))
 
         if encode_answers:
             # Normalize to single characters (same as autograder CSV loading)
@@ -604,7 +595,39 @@ def make_exams_subcommand(args):
         )
 
         exam_doc = ExamDocument(document_specs=exam_doc_specs)
-        latex_compiler.build_document(exam_doc, cleanup=args.cleanup)
+        latex_compiler.build_document(
+            exam_doc, cleanup=args.cleanup,
+            overfull_page_error=single_page_overflow_message(version_label) if single_page else None)
+        return answers
+
+    # an overflowing single-page version is rebuilt with its questions packed
+    # into the two columns
+    pack = single_page and question_columns == 2
+
+    for version_label in hex_strings:
+        # generate an 8-digit version as an integer and then zero-pad to string
+        version_rng_seed = int(version_label, 16)
+
+        selected_questions = question_set.get_random_selection(num_questions=args.num_questions,
+                                                               topics_order=args.topics,
+                                                               seed=version_rng_seed,
+                                                               shuffle=args.shuffle_questions,
+                                                               shuffle_choices=args.shuffle_choices,
+                                                               balance_difficulty=getattr(args, 'balance_difficulty', False))
+        logger.debug(f'Generated exam version {version_label} with {len(selected_questions)} questions.')
+        try:
+            answers = build_version(version_label, selected_questions)
+        except LatexBuildError:
+            order = packed_order_from_log(output_dir / f'exam-{version_label}.log') if pack else None
+            if order is None or order == list(range(len(selected_questions))):
+                raise
+            # Number the questions down the first column, then the second; the
+            # answer key, QR code and bubbles follow the new order.
+            logger.info(f'Version {version_label}: the questions overflow the page in their '
+                        f'drawn order; reordering them as {[i + 1 for i in order]} to fit the columns')
+            selected_questions = [selected_questions[i] for i in order]
+            answers = build_version(version_label, selected_questions)
+        version_answer_records.append((version_label, answers))
         if getattr(args, 'rasterize', False):
             pdf_path = output_dir / f"exam-{version_label}.pdf"
             rasterize_pdf(pdf_path)
